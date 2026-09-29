@@ -37,7 +37,7 @@ demo/site/images/           3D renders only (see tools/README.md) + logo.webp, l
                             headshots from relianthomemtg.com/staff (the original site's own photos)
                             turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
-demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
+demo/site/brand/            favicon (32 + 192px PNG, the duck), apple-touch-icon, share.png (1200×630 link preview, no renders); all from tools/make_logo.py
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
