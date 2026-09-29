@@ -18,8 +18,12 @@ walk-through). Don't use them anywhere else on the site.
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
   door slab.
 - `door-open.jpg`: the same door open, with the doorway and fireplace rectangles.
-- `inside-1…4.jpg`, `look-left.jpg`, `look-right.jpg`: the walk inside, anchored on the
-  fireplace rectangle.
+- `inside-1…4.jpg`: the walk inside, anchored on the fireplace rectangle. The `inside-*`
+  rectangles are chained from the door-open fireplace rectangle with a scale + offset fit to SIFT
+  matches between each pair of neighbors (OpenCV, RANSAC inliers, about 2px median error).
+- `walk-depth.bin`: 1/depth on a mesh grid for every walk image, from `walk_depth.py` (Depth
+  Anything V2 Base, ONNX; see its docstring). Re-run it whenever a walk image or anchor changes,
+  and paste the printed index into `DEPTH` in `js/engines.js`.
 
 The source renders (PNG, ~1.5 MB each) are not in the repo. If you regenerate an image,
 keep the framing, dusk lighting and camera height consistent, and re-measure its anchor

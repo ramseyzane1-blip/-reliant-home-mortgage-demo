@@ -353,33 +353,77 @@ function renderPros(){const p=PROS[proK];$('proPanel').innerHTML=`<div class="gr
 
 /* ---------- hero: the model home, turnable ---------- */
 const HOUSE_VIEWS=[{"f": "images/house-00.webp", "a": 0}, {"f": "images/house-01.webp", "a": 14}, {"f": "images/house-02.webp", "a": 25}, {"f": "images/house-03.webp", "a": 36}, {"f": "images/house-04.webp", "a": 90}, {"f": "images/house-05.webp", "a": 135}, {"f": "images/house-06.webp", "a": 180}, {"f": "images/house-07.webp", "a": 225}, {"f": "images/house-08.webp", "a": 270}, {"f": "images/house-09.webp", "a": 318}, {"f": "images/house-10.webp", "a": 340}, {"f": "images/house-11.webp", "a": 348}];
-(()=>{const box=$('hphoto');try{if(!Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:'images/house-flow.bin'}))box.classList.add('static');}catch(e){box.classList.add('static');}})();
+(()=>{const box=$('hphoto');try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:'images/house-flow.bin'});if(!tt)box.classList.add('static');window.__turntable=tt;}catch(e){box.classList.add('static');}})();
 
 /* ---------- knock, the door opens, walk inside ---------- */
-let actx=null,soundOn=true;
-function knock(){if(!actx||!soundOn)return;const t=actx.currentTime;
-  const o=actx.createOscillator(),g=actx.createGain(),f=actx.createBiquadFilter();o.type='sine';o.frequency.setValueAtTime(118,t);o.frequency.exponentialRampToValueAtTime(68,t+.1);
-  f.type='lowpass';f.frequency.value=700;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.14,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.2);
-  o.connect(f).connect(g).connect(actx.destination);o.start(t);o.stop(t+.24);
-  const len=Math.floor(actx.sampleRate*.05),buf=actx.createBuffer(1,len,actx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,5);
-  const n=actx.createBufferSource();n.buffer=buf;const bp=actx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=.9;const g2=actx.createGain();g2.gain.value=.05;n.connect(bp).connect(g2).connect(actx.destination);n.start(t);}
+let soundOn=true;
+/* The sound of the door, all synthesized: evening air on the porch, three knuckle raps on a solid
+   wood door, footsteps inside, the deadbolt and latch, air moving as the door swings, then the fire.
+   doorAudio(ctx) also runs in an OfflineAudioContext, so it can be rendered to a file and checked. */
+function doorAudio(ac){
+  const sr=ac.sampleRate,out=ac.createGain();out.gain.value=soundOn?1:0;
+  const comp=ac.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=4;out.connect(comp).connect(ac.destination);
+  const buf=(sec,fill)=>{const n=Math.floor(sr*sec),b=ac.createBuffer(1,n,sr);fill(b.getChannelData(0),n);return b;};
+  const white=buf(2,(d,n)=>{for(let i=0;i<n;i++)d[i]=Math.random()*2-1;});
+  // a small porch: a short cloud of soft reflections
+  const verb=ac.createConvolver();verb.buffer=(()=>{const n=Math.floor(sr*.5),b=ac.createBuffer(2,n,sr);for(let c=0;c<2;c++){const d=b.getChannelData(c);let lp=0;for(let i=0;i<n;i++){lp+=(Math.random()*2-1-lp)*.3;d[i]=lp*Math.exp(-i/sr/.07);}}return b;})();
+  const wet=ac.createGain();wet.gain.value=.5;verb.connect(wet).connect(out);
+  const bus=(level,rev,lp)=>{const g=ac.createGain();g.gain.value=level;let head=g;if(lp){head=ac.createBiquadFilter();head.type='lowpass';head.frequency.value=lp;head.connect(g);}
+    g.connect(out);if(rev){const s=ac.createGain();s.gain.value=rev;g.connect(s).connect(verb);}return head;};
+  function tone(t,f,tau,amp,dest,f2){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+tau*3);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.0012);g.gain.setTargetAtTime(0,t+.0012,tau);o.connect(g).connect(dest);o.start(t);o.stop(t+tau*8+.02);}
+  function burst(t,tau,amp,dest,type,f,q){const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=white;fl.type=type;fl.frequency.value=f;fl.Q.value=q||.7;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.0008);g.gain.setTargetAtTime(0,t+.0008,tau);s.connect(fl).connect(g).connect(dest);s.start(t,Math.random()*1.5);s.stop(t+tau*8+.02);}
+  // a solid painted door: a few low panel modes that die fast, a dull knuckle click, the weight of the hand
+  const MODES=[[98,.05,1],[174,.036,.75],[251,.028,.6],[372,.02,.42],[528,.014,.3],[742,.009,.2],[1060,.006,.12]];
+  function knock(t,i){const v=[1,.84,.92][i]||.9,d=1+(Math.random()-.5)*.05,g=bus(.34*v,.55);
+    MODES.forEach(([f,tau,a])=>tone(t,f*d,tau*(.9+Math.random()*.2),a*.42,g));
+    tone(t,130*d,.022,.8,g,62);burst(t,.0035,.9,g,'bandpass',1700*d,.9);burst(t,.012,.55,g,'lowpass',380);}
+  // footsteps on a wood floor, heard through the door: heel, then toe, getting closer
+  const inside=bus(.55,.35,420);
+  function step(t,i){const v=[.3,.5,.75][i]||.6;tone(t,72,.028,.45*v,inside,46);burst(t,.012,.8*v,inside,'lowpass',650);burst(t+.075,.009,.4*v,inside,'lowpass',950);}
+  // small brass parts: a couple of inharmonic partials over a sharp click
+  function metal(t,f,amp,dest){[[1,.018],[2.71,.01],[5.2,.006]].forEach(([m,tau])=>tone(t,f*m,tau,amp/Math.sqrt(m),dest));burst(t,.0025,amp*1.1,dest,'bandpass',f*1.4,1.5);}
+  function bolt(t){const g=bus(.2,.4,3400);burst(t,.008,.45,g,'bandpass',850,1.1);metal(t+.1,1780,.55,g);burst(t+.1,.006,.6,g,'lowpass',480);}
+  function latch(t){const g=bus(.22,.35);metal(t,2250,.45,g);metal(t+.05,2600,.3,g);burst(t,.004,.35,g,'lowpass',650);}
+  // the weatherstrip lets go, then air moves with the door (the same spring the picture uses)
+  function swing(t){tone(t,82,.03,.12,bus(1,.2));const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=white;s.loop=true;f.type='bandpass';f.Q.value=.5;
+    const dur=1.8,N=90,c=new Float32Array(N);let mx=0;for(let k=0;k<N;k++){const u=k/(N-1)*dur;c[k]=Math.exp(-3.36*u)*Math.sin(2.52*u);mx=Math.max(mx,c[k]);}for(let k=0;k<N;k++)c[k]=c[k]/mx*.06;
+    g.gain.setValueCurveAtTime(c,t,dur);f.frequency.setValueAtTime(260,t);f.frequency.linearRampToValueAtTime(620,t+.3);f.frequency.linearRampToValueAtTime(300,t+dur);
+    s.connect(f).connect(g).connect(bus(1,.3));s.start(t);s.stop(t+dur+.05);}
+  // beds: evening air outside, the fire inside (a low roar plus sparse crackles)
+  const loop=(b,type,f,level,dest)=>{const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;s.loop=true;fl.type=type;fl.frequency.value=f;g.gain.value=level;s.connect(fl).connect(g).connect(dest);s.start(0,Math.random());};
+  const air=ac.createGain(),room=ac.createGain();air.gain.value=0;room.gain.value=0;air.connect(out);room.connect(out);
+  const airBand=ac.createBiquadFilter();airBand.type='highpass';airBand.frequency.value=90;airBand.connect(air);loop(white,'lowpass',650,.1,airBand);
+  const crackle=buf(6,(d,n)=>{for(let x=.05;x<5.9;x+=-Math.log(1-Math.random())/6){const a=Math.pow(Math.random(),2.4),len=Math.floor(sr*(.002+Math.random()*.01)),s0=Math.floor(x*sr);for(let k=0;k<len&&s0+k<n;k++)d[s0+k]+=(Math.random()*2-1)*a*Math.exp(-k/(len/4));}});
+  loop(white,'lowpass',170,.45,room);loop(crackle,'highpass',700,.28,room);
+  const to=(p,v,tau)=>p.setTargetAtTime(v,ac.currentTime,tau);
+  return {
+    cue(name,i,delay){const t=ac.currentTime+(delay||0);
+      if(name==='start')to(air.gain,1,.6);
+      else if(name==='knock')knock(t,i);else if(name==='step')step(t,i);else if(name==='bolt')bolt(t);else if(name==='latch')latch(t);
+      else if(name==='swing'){swing(t);air.gain.setTargetAtTime(.5,t,.5);room.gain.setTargetAtTime(.45,t,.5);}
+      else if(name==='inside'){air.gain.setTargetAtTime(0,t,.8);room.gain.setTargetAtTime(.8,t,.8);}},
+    mute(m){to(out.gain,m?0:1,.05);},
+    stop(){to(out.gain,0,.15);if(ac.close)setTimeout(()=>ac.close().catch(()=>{}),1000);}};
+}
 function playDoor(name,done){
   if(reduced()){done();return;}
-  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();}catch(e){actx=null;}
+  let snd=null;try{const ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume();snd=doorAudio(ac);}catch(e){snd=null;}
   const ds=document.createElement('div');ds.className='ds';ds.setAttribute('role','dialog');ds.setAttribute('aria-modal','true');ds.setAttribute('aria-label','Welcome home');ds.tabIndex=-1;
   ds.innerHTML=`<div class="ds-view"></div><i class="ds-vig"></i><p class="ds-load" aria-live="polite">Opening the door…</p>
    <div class="ds-ui"><p class="ds-cap"></p><div class="ds-actions"><button class="btn btn-white btn-lg" data-ds="go">See my results →</button><p class="ds-hint">Move or drag to look around</p></div></div>
    <div class="ds-top"><button data-ds="sound">Sound on</button><button data-ds="go">Skip</button></div>`;
   document.body.appendChild(ds);requestAnimationFrame(()=>ds.classList.add('on'));ds.focus({preventScroll:true});
   const q=x=>ds.querySelector(x);let P=null,stopped=false;
-  function finish(){if(stopped)return;stopped=true;if(P)P.stop();ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
-  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';}});
+  function finish(){if(stopped)return;stopped=true;if(P)P.stop();if(snd)snd.stop();ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
+  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';if(snd)snd.mute(!soundOn);}});
   ds.addEventListener('keydown',e=>{if(e.key==='Escape')finish();});
   Promise.race([Walk.preload().then(a=>a.every(Boolean)),new Promise(r=>setTimeout(()=>r(false),7000))]).then(ok=>{
     if(stopped)return;if(!ok){finish();return;}q('.ds-load').remove();
-    P=Walk.play(q('.ds-view'),{cap:q('.ds-cap'),capA:'<small>Your results are ready</small>Knock, knock.',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,knock,
+    P=Walk.play(q('.ds-view'),{cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
       onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');if(g&&!stopped)g.focus({preventScroll:true});},60);}});
-    window.__walk=P;P.start();});
+    if(!P){finish();return;}window.__walk=P;P.start();});
 }
 
 /* ---------- pre-qualification ---------- */

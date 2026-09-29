@@ -78,24 +78,33 @@ into the next view instead of flashing. All textures load up front, one GPU uplo
 Drag, arrow keys, or idle sway around the front. Rebuild the images and flow with
 `python3 tools/house_views.py`.
 
-**Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
-camera follows the door (outside) then the fireplace (inside); each image takes over when it
-has enough resolution for the current distance. The door leaf is a CSS 3D quad hinged on the
-left, with the open-door render showing through the doorway. Two soft synthesized knocks.
-It ends in a look-around (mouse, drag or arrows) until the visitor clicks "See my results".
-Timeline constants are in `T` inside `Walk.play`.
+**Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
+a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
+`tools/walk_depth.py`), normalized so the shot's anchor (door or fireplace) is at depth 1. The camera
+follows the anchor; zooming in is turned into walking forward through the relief (`DOLLY`), and
+walking bob, breathing and the pointer move the head (real parallax). Each shot enters exactly as
+rendered. Handoffs: a shot waits until it is sharp and the camera has lined it up (the camera steers
+so both shots can put the anchor on the same pixel, which matters on tall phones), then it is
+revealed from the anchor outward while the outgoing shot keeps dollying to the depth where it best
+matches (`THRU`, fit to SIFT matches). Exposure is graded like one camera (`CORR`, `NATIVE`). The door
+leaf is a perspective quad hinged on the left, with the open-door render in the doorway. The door
+sequence: three knocks (each nudges the camera and the door), the hall light warms the door glass,
+footsteps, the lock turns, the door cracks open with a line of light, then swings wide on an
+underdamped spring. All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks,
+footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`.
+It ends in a look-around in the last room (mouse, drag or arrows turn the view and move the head)
+until the visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`.
+Without WebGL the walk is skipped.
 
 ## Known issues / next up: make the 3D smooth
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. ~~Turntable textures~~ and 2. ~~optical-flow morphing~~ are done (see above). The front
-   views (11–14° apart) morph cleanly; the sides and back are 45–54° apart and still show
-   some blending mid-turn. More renders at those angles would fix that best.
-3. **Move the walk to WebGL.** Scaling large DOM layers that contain CSS 3D children forces
-   re-rasterization every frame. Render every shot as a textured quad on one canvas, draw the
-   door leaf as a real perspective quad, and apply the same flow morphing at each handoff
-   (align the pair by their anchor rectangles first, then compute flow on the overlap).
+1. Done: the hero turntable is a real 3D model rendered from every angle (see above).
+2. Done for the walk: depth reliefs, steering, center-out handoffs and one exposure grade. What is
+   left there comes from the renders themselves (for example, the porch lantern differs between
+   approach shots); fixing that needs consistent re-renders.
+3. Done: the walk is WebGL.
 4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
 ## Supabase
