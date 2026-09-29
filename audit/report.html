@@ -201,11 +201,11 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap}
 <h3><span class="n">6</span>A moment people remember</h3>
 <p>The home page features a model home that visitors can drag to walk around. When someone sends their pre-qualification, the camera walks up to the front door and knocks three times. The hall light warms, the door swings open, and the visitor steps inside to “Welcome home” before their results appear. The sound is generated in the browser. Visitors who have turned off motion on their device skip the animation entirely. These renders appear only in the two 3D pieces, and the rest of the site is reserved for photos of the real team.</p>
 <div class="why"><p>Most sites answer a form with “Thank you for your submission.” This turns the moment into a small welcome, which suits a company whose work ends with a family getting their keys.</p></div>
-<p>Your feedback on this piece was “getting better, but clunky and not smooth,” and it is the next round of work: loading every view up front, blending between views with motion instead of cross-fades, and moving the walk-through onto a single graphics canvas. The 3D model is also why the redesign currently scores lower than the current site for desktop performance, 67 against 85.</p>
+<p>Your feedback on this piece was “getting better, but clunky and not smooth,” and it has been reworked since. Every view of the model home now loads up front, and the walk-through runs in true 3D on a single graphics canvas, with depth in each scene and one consistent exposure. A few seams remain where the renders themselves differ, such as the porch lantern between two approach shots; matching re-renders would remove them. The model home is also the redesign's biggest cost. It loads all thirteen views up front so it turns smoothly, which makes the home page about 2.5 MB and puts its Lighthouse performance score below the current site's: 52 against 67 on phones, and 69 against 85 on desktop. Its main content still appears sooner. Bringing in the side and back views after the page is ready is the obvious next step, and it is on the launch list.</p>
 
 <h3><span class="n">7</span>Phones first, and every visitor</h3>
-<p>On a phone, a bar with Call and Get pre-qualified stays at the bottom of every page. No page scrolls sideways. Automated checks found no accessibility issues across eleven pages, and the site supports keyboard use, dark mode and reduced motion. The home page loads with 19 requests instead of 94.</p>
-<div class="why"><p>Many visitors arrive on a phone, and the two actions that matter most should always be one tap away. This answers findings 5 and 6.</p></div>
+<p>On a phone, a bar with Call and Get pre-qualified stays at the bottom of every page. No page scrolls sideways. Automated checks found no accessibility issues across eleven pages, and the site supports keyboard use, dark mode and reduced motion. The home page loads with 29 requests instead of 94, and no tracking scripts.</p>
+<div class="why"><p>Many visitors arrive on a phone, and the two actions that matter most should always be one tap away. This answers finding 5.</p></div>
 
 <h2 id="compare">How the two compare</h2>
 <p>Both sites were measured the same way, on the same machine, on the same day.</p>
@@ -213,20 +213,20 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap}
 <table>
   <thead><tr><th scope="col">Measure</th><th scope="col">Current site</th><th scope="col">Redesign concept</th></tr></thead>
   <tbody>
-    <tr><td>Lighthouse performance, phone</td><td>67</td><td>75</td></tr>
+    <tr><td>Lighthouse performance, phone</td><td>67</td><td>52</td></tr>
     <tr><td>Lighthouse accessibility, phone</td><td>100</td><td>100</td></tr>
     <tr><td>Lighthouse best practices, phone</td><td>75</td><td>100</td></tr>
     <tr><td>Lighthouse SEO, phone</td><td>85</td><td>63*</td></tr>
-    <tr><td>Lighthouse performance, desktop</td><td>85</td><td>67</td></tr>
-    <tr><td>Main content visible, simulated phone</td><td>6.0 s</td><td>4.7 s</td></tr>
-    <tr><td>Requests to load the home page</td><td>94</td><td>19</td></tr>
-    <tr><td>Home page transfer size</td><td>1.1 MB</td><td>0.9 MB</td></tr>
+    <tr><td>Lighthouse performance, desktop</td><td>85</td><td>69</td></tr>
+    <tr><td>Main content visible, simulated phone</td><td>6.0 s</td><td>3.3 s</td></tr>
+    <tr><td>Requests to load the home page</td><td>94</td><td>29</td></tr>
+    <tr><td>Home page transfer size</td><td>1.1 MB</td><td>2.5 MB</td></tr>
     <tr><td>Automated WCAG 2.2 AA issues</td><td>1 to 2 per page</td><td>0 on 11 pages</td></tr>
     <tr><td>Sideways scrolling at phone width</td><td>None</td><td>None</td></tr>
   </tbody>
 </table>
 </div>
-<p class="note">Phone scores are the middle of three Lighthouse runs. The redesign's phone performance ranged from 44 to 76 across its runs, and the current site's from 60 to 70. *The demo is deliberately hidden from search engines while it is a concept. That is the only SEO check it misses, and it goes away at launch.</p>
+<p class="note">Phone scores are the middle of three Lighthouse runs. The redesign's phone performance ranged from 50 to 60 across its runs, and the current site's from 60 to 70. The redesign was re-measured the same day, after its latest 3D update. The test machine has no graphics card, so the 3D work runs in software there. *The demo is deliberately hidden from search engines while it is a concept. That is the only SEO check it misses, and it goes away at launch.</p>
 
 <h2 id="launch">What the demo still needs before launch</h2>
 <p>The redesign is a working concept. Before it could replace the current site, it needs the following.</p>
@@ -243,7 +243,8 @@ td:nth-child(2),td:nth-child(3){white-space:nowrap}
   <li>A real web address for every page. The demo runs as one page with sections reached by # links, which search engines treat as a single page. The launch version gives Buy, Refinance, each loan program, the glossary and the rest their own addresses, titles and descriptions.</li>
   <li>Redirects from every old address to its new page, so search rankings and saved links carry over.</li>
   <li>Forms connected to your inbox or lead system. Today the demo saves submissions to a demo database and shows a notice. The Apply links already go to each loan officer's Blink application. Leaving the 220 Marketing platform also means replacing the forms and staff listing it provides.</li>
-  <li>The 3D smoothing work described above.</li>
+  <li>A lighter first load for the model home: bring in its side and back views after the page is ready, so the home page is not held up by all thirteen.</li>
+  <li>Matching re-renders for the last few 3D seams described above.</li>
   <li>Search indexing turned on at launch.</li>
 </ul>
 

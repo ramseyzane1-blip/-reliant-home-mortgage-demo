@@ -245,6 +245,7 @@ p{margin:0}
 .kpi .was{font:400 44px/1 var(--serif);color:var(--was)}
 .kpi .now{font:400 60px/1 var(--serif);color:var(--forest-deep)}
 .kpi .to{font-size:24px;color:var(--sand-deep)}
+.kpi .now.worse{color:var(--flag)}
 .notes{margin-top:24px;display:grid;gap:6px;font-size:17px;line-height:1.4;color:var(--mute)}
 .check2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
 .check2 h3{font:700 17px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand-deep);margin-bottom:22px}
@@ -704,8 +705,8 @@ p{margin:0}
       <li><span class="ic go"></span><span>On the home page, visitors drag the model home to walk around it.</span></li>
     </ul>
     <ul class="items" style="gap:16px">
-      <li><span class="ic go"></span><span><b>Still being smoothed.</b> Your feedback was “getting better, but clunky and not smooth.” Next: load every view up front, blend views with motion, and move the walk to one graphics canvas.</span></li>
-      <li><span class="ic go"></span><span>Visitors who turn off motion on their device skip it entirely.</span></li>
+      <li><span class="ic go"></span><span><b>Smoothed after your feedback</b> (“getting better, but clunky and not smooth”). Every view now loads up front, and the walk-through runs in true 3D on one graphics canvas.</span></li>
+      <li><span class="ic go"></span><span>A few seams remain where the renders themselves differ; matching re-renders would remove them. Visitors who turn off motion skip it entirely.</span></li>
     </ul>
   </div>
   <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
@@ -722,7 +723,7 @@ p{margin:0}
         <li><span class="ic ok"></span><span>No sideways scrolling at phone width.</span></li>
         <li><span class="ic ok"></span><span>Call and Get pre-qualified always within thumb reach.</span></li>
         <li><span class="ic ok"></span><span>Light and dark mode, full keyboard use, and reduced motion respected.</span></li>
-        <li><span class="ic ok"></span><span><b>19 requests</b> to load the home page, down from 94.</span></li>
+        <li><span class="ic ok"></span><span><b>29 requests</b> to load the home page, down from 94, and no tracking scripts.</span></li>
       </ul>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,330px);gap:40px;justify-content:end">
@@ -749,18 +750,18 @@ p{margin:0}
           <span style="display:flex;gap:8px;align-items:center"><svg width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#1c4f33"/></svg>Redesign</span>
         </div>
       </div>
-      <svg id="dumbbell" viewBox="0 0 828 360" style="width:100%;height:auto" role="img" aria-label="Lighthouse phone scores. Performance: current 67, redesign 75. Accessibility: both 100. Best practices: current 75, redesign 100. SEO: current 85, redesign 63 while the demo is hidden from search."></svg>
+      <svg id="dumbbell" viewBox="0 0 828 360" style="width:100%;height:auto" role="img" aria-label="Lighthouse phone scores. Performance: current 67, redesign 52. Accessibility: both 100. Best practices: current 75, redesign 100. SEO: current 85, redesign 63 while the demo is hidden from search."></svg>
     </div>
     <div class="kpis">
-      <div class="kpi"><div class="lbl">Main content on a phone</div><div class="vals"><span class="was">6.0s</span><span class="to">→</span><span class="now">4.7s</span></div></div>
-      <div class="kpi"><div class="lbl">Requests to load home</div><div class="vals"><span class="was">94</span><span class="to">→</span><span class="now">19</span></div></div>
-      <div class="kpi"><div class="lbl">Home page weight, MB</div><div class="vals"><span class="was">1.1</span><span class="to">→</span><span class="now">0.9</span></div></div>
+      <div class="kpi"><div class="lbl">Main content on a phone</div><div class="vals"><span class="was">6.0s</span><span class="to">→</span><span class="now">3.3s</span></div></div>
+      <div class="kpi"><div class="lbl">Requests to load home</div><div class="vals"><span class="was">94</span><span class="to">→</span><span class="now">29</span></div></div>
+      <div class="kpi"><div class="lbl">Home page weight, MB</div><div class="vals"><span class="was">1.1</span><span class="to">→</span><span class="now worse">2.5</span></div><div class="lbl" style="font-weight:500;font-size:16px;margin-top:6px">the 3D model home</div></div>
       <div class="kpi"><div class="lbl">Automated WCAG issues</div><div class="vals"><span class="was">1–2</span><span class="to">→</span><span class="now">0</span></div><div class="lbl" style="font-weight:500;font-size:16px;margin-top:6px">per page</div></div>
     </div>
   </div>
   <div class="notes">
     <span>* The demo is deliberately hidden from search engines while it is a concept. That is the only SEO check it misses, and it goes away at launch.</span>
-    <span>On desktop the redesign currently scores lower on performance (67 vs 85) because of the 3D model home. That is part of the smoothing work. Redesign phone runs ranged 44 to 76; the middle run is shown.</span>
+    <span>The redesign is heavier today because the 3D model home loads all 13 views up front so it turns smoothly. That lowers its performance score (phone 52, desktop 69, against 67 and 85), though its main content appears sooner. Loading the side and back views later is on the launch list. Redesign phone runs ranged 50 to 60; the middle run is shown.</span>
   </div>
   <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
 </section>
@@ -788,7 +789,7 @@ p{margin:0}
         <li><span class="ic box"></span><span>A real web address for every page, each with its own title and description</span></li>
         <li><span class="ic box"></span><span>Redirects from every old address, so search rankings and saved links carry over</span></li>
         <li><span class="ic box"></span><span>Forms connected to your inbox or lead system (Apply links already go to Blink)</span></li>
-        <li><span class="ic box"></span><span>The 3D smoothing work</span></li>
+        <li><span class="ic box"></span><span>A lighter first load for the 3D house, and matching re-renders for its last seams</span></li>
         <li><span class="ic box"></span><span>Search indexing turned on at launch</span></li>
       </ul>
     </div>
@@ -870,7 +871,7 @@ p{margin:0}
   /* Dumbbell chart (slide 20): one 0-100 scale, hollow gray = current, filled forest = redesign, values labeled */
   const db = document.getElementById('dumbbell');
   if (db) {
-    const rows = [['Performance', 67, 75], ['Accessibility', 100, 100], ['Best practices', 75, 100], ['SEO*', 85, 63]];
+    const rows = [['Performance', 67, 52], ['Accessibility', 100, 100], ['Best practices', 75, 100], ['SEO*', 85, 63]];
     const x0 = 200, x1 = 740, X = v => x0 + (x1 - x0) * v / 100, rowH = 78, top = 40;
     let s = '';
     [0, 25, 50, 75, 100].forEach(t => { s += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 10}" y2="${top + rowH * 4 - 30}" stroke="#e3e8e5" stroke-width="1.5"/><text x="${X(t)}" y="${top + rowH * 4 - 2}" text-anchor="middle" font-size="17" fill="#66716b" font-family="Public Sans, sans-serif">${t}</text>`; });

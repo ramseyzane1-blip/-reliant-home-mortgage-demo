@@ -21,7 +21,7 @@ What's holding it back: the home page offers six different ways to get started w
 
 One item is worth correcting soon, whatever you decide about the redesign. The FHA Loans page says a 500 credit score qualifies with 3.5% down. Under HUD's rules, 3.5% down needs a score of 580 or higher, and scores from 500 to 579 need 10% down. The report lists a few other quick fixes like this for the current site.
 
-The report is also specific about what the redesign still needs before it could go live, including your real photos and bios, a proper web address for every page, and the smoothing work on the 3D house you mentioned.
+The report is also specific about what the redesign still needs before it could go live, including your real photos and bios and a proper web address for every page. The 3D house and the walk-through have been rebuilt since your last feedback, so please take another look at those too.
 
 Could we find 30 minutes next week to walk through it together? You're welcome to try the demo on your own first at https://reliant-home-mortgage.greaterpurposeweb.com, including the two-minute pre-qualification from start to finish.
 

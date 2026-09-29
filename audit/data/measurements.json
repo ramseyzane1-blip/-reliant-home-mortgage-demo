@@ -413,7 +413,7 @@
    },
    "lighthouseVersion": "12.8.2"
   },
-  "new": {
+  "new_before_3d_update": {
    "url": "https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/",
    "mobileRuns": [
     {
@@ -447,6 +447,47 @@
    "requests": 19,
    "desktop": {
     "performance": 67,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "lighthouseVersion": "12.8.2"
+  },
+  "new": {
+   "url": "https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/",
+   "note": "Re-measured 2026-09-29 ~06:40 UTC after main commit 93e8adb (3D production pass)",
+   "mobileRuns": [
+    {
+     "performance": 52,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    },
+    {
+     "performance": 60,
+     "accessibility": 100,
+     "best-practices": 96,
+     "seo": 63
+    },
+    {
+     "performance": 50,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    }
+   ],
+   "mobileMedian": {
+    "performance": 52,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "mobileMedianLCPs": 3.3,
+   "mobileMedianFCPs": 2.6,
+   "mobileMedianBytesKB": 2573,
+   "requests": 29,
+   "desktop": {
+    "performance": 69,
     "accessibility": 100,
     "best-practices": 100,
     "seo": 63
