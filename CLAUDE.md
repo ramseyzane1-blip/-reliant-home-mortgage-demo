@@ -32,10 +32,12 @@ demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
 demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
-demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+demo/site/images/           3D renders only (see tools/README.md) + logo.webp, logo-dark.webp (from tools/make_logo.py)
+                            team/<name>.webp (160px face) and <name>-lg.webp (480px): the real staff
+                            headshots from relianthomemtg.com/staff (the original site's own photos)
                             turn/turn-NNN.webp (Blender 360° turn) + turn/depth-*.bin for the hero
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
-demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
+demo/site/brand/            favicon (32 + 192px PNG, the duck), apple-touch-icon, share.png (1200×630 link preview, no renders); all from tools/make_logo.py
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
@@ -58,7 +60,8 @@ audit/                      client audit: slide deck (index.html), written repor
 - **Financing, not real estate:** communicate it through what the site shows (loan steps,
   payments, rates), not with "we don't sell homes" disclaimers.
 - **Photos only in the 3D pieces.** The AI renders appear in the hero turntable and the
-  walk-through, nowhere else.
+  walk-through, nowhere else. The one other kind of photo is the team's real headshots
+  (`images/team/`), which carry the family feel.
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
@@ -78,30 +81,52 @@ pieces.
 
 Everything factual comes from relianthomemtg.com: licenses (NMLS #2292251, OH RM.804827.000,
 KY MB855092, IN 2292251), loan officer NMLS numbers, office address and phone, the 20 loan
-programs, Google reviews, glossary terms. Bios for Christina, Chase and Blaine are
-placeholders here, and staff headshots and the team photo are placeholders. The original site does
-have real headshots, a team photo and full bios for all five loan officers (at /staff/<name>,
-inside an embedded listing), so replace the placeholders with those. See `audit/` for the
+programs, Google reviews, glossary terms. The five loan officers' headshots, titles and bios come
+from their pages on the original site (/staff/<name>, inside an embedded listing); the bios are
+shortened into plain third person but every detail (years in lending, family, pets, specialties)
+is theirs. Chase Barker's relationship to Kevin and Jennifer isn't stated on the original site, so
+the demo doesn't state one. See `audit/` for the
 September 2026 audit of the original site.
 
 ## How the site leads to the pre-qualification
 
-- **Home, top to bottom:** hero (one button, a real Google review under it, the office phone
-  under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
+- **Home, top to bottom:** hero (headline "Home loans, from our family to yours.", a lede that says
+  a husband and wife have run it since 1996, one button, "About 2 minutes. No credit check.", the
+  five real faces with "Five loan officers, one family-owned office on Breiel Boulevard.", then a
+  real Google review and the office phone) → "What brings you here?" → **Try your numbers**
   (price and down payment sliders; the estimate uses the same math as the results page, and
-  its button carries both numbers into the pre-qualification) → how it works → the team →
-  reviews → closing band. At 1440×900 the top of the "at a glance" strip shows on the first screen,
-  so the page never looks finished there.
+  its button carries both numbers into the pre-qualification) → how it works (no button of its own) →
+  the team (Kevin and Jennifer's photos, family details from their bios, all five faces) with three
+  Google reviews in the same section → closing band. Kept deliberately calm:
+  research on visual complexity (Tuch et al. 2012) and NN/g's homepage guidelines say busy pages and
+  repeated elements lower trust, so decoration isn't repeated; real faces (content, not decoration) appear in
+  the hero and the team section, not the footer.
+- **Color:** green is for actions (buttons, sliders, progress). Cards and placeholders are neutral
+  (white or warm sand in light mode, warm charcoal `#151412`-`#2a2823` in dark mode, never green-tinted).
+  The light closing band is the one green block.
 - **Closing band:** its headline fits the page and its button presets the pre-qualification
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
-- **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
-  moves faster early and never starts empty, number answers you can type ("250k" works),
+- **Pre-qualification:** named stages ("Your plans · Question 1 of 11"), a progress bar that
+  moves faster early and never starts empty (fast-to-slow bars cut drop-off in a 32-experiment
+  meta-analysis; constant ones don't), number answers you can type ("250k" works),
   "your best guess is fine" help, a note that phone or email is enough, and the license
   line above "See my results". The header button and the phone quick bar hide on this page.
+  Buyers are asked household income and monthly debts, so the results can lead with "What you may
+  be able to afford" (the Learn calculator's math: housing up to 43% of gross income, less debts).
+  Answers that depend on each other are kept possible (down payment at most the price, balance at
+  most the home's value). The down payment help says many loans need far less than 20% down (Fannie
+  Mae: 90% of people overstate or don't know the minimum). "What happens next" says the loan officer
+  calls the phone or emails the address the visitor gave, and that mortgage credit checks within 45
+  days count as one (CFPB). Answers and results survive a reload in the same tab (sessionStorage).
+- **Reviews:** every star rating is offered the Google review link; 1 to 3 stars also get "Tell us
+  what happened". Asking only happy clients for public reviews ("review gating") breaks Google's
+  review policy.
+- **Other forms** (Question, Reliant Letter) check required fields before saving, with the message
+  under the field, and use autocomplete.
 - **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
 - NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
 
-## The two 3D pieces (`js/engines.js`)
+## The hero turntable and the walk-through (`js/engines.js`)
 
 **Turntable** (hero): a real 3D model of the house, built in code in Blender
 (`tools/blender/house_scene.py`) and rendered as a 360° turn: 55 frames, every 10° around the front
@@ -150,8 +175,7 @@ morph (up to four 51k-triangle mesh passes a frame), easy for any GPU, slow in s
 About a second after the hero is well out of view (scrolled away, another page, or
 the walk-through, which also puts it to sleep directly) it releases every texture and its
 drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
-(ready in about 0.2 s). At the walk's peak the hero holds nothing on the GPU. Failed
-frames retry with backoff. Drag, arrow
+(ready in about 0.2 s). Failed frames retry with backoff. Drag, arrow
 keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
 without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
 drops the drag and keyboard hints.
@@ -166,59 +190,33 @@ with `depth 960 /tmp/depth <all 55 rotations>` (about 40 s each) and `ringdepth 
 /tmp/depth/ring.exr`, then run `python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth`
 (needs `pip install OpenEXR`). See `tools/README.md`.
 
-**Walk** (after the pre-qualification is submitted): WebGL (WebGL2 where available), one canvas.
-Each render is a 3D relief: a mesh with per-vertex depth from Depth Anything V2
-(`images/walk-depth.bin`, made by `tools/walk_depth.py`), normalized so the shot's anchor (door or
-fireplace) is at depth 1. The camera follows the anchor; zooming in is turned into walking forward
-through the relief (`DOLLY`), and walking bob, breathing and the pointer move the head (real
-parallax). Shots: `approach-2…4`, `door` (wide screens), `door-open`, `inside-1…4`. Each shot enters
-exactly as rendered, once it is sharp and the camera has lined it up (on tall screens the camera
-steers, on a critically damped spring, so both shots can put the anchor on the same pixel), and is
-revealed from the anchor outward while the outgoing shot dollies to the depth where it best matches
-(`THRU`). One fade at a time: approach .55s, door to open door .75s, rooms .85s. Exposure is graded
-like one camera (`CORR`, `NATIVE`, from `tools/walk_grade.py`). The vignette, caption scrim, warm
-spill and the fade in from black are applied inside the shaders, so nothing in the page blends over
-the canvas (the page beneath is hidden while the overlay is opaque).
+**Walk** (after the pre-qualification is submitted; client pick, September 2026, replacing the longer
+WebGL walk with the knock): about 4 seconds. A slow push into the front door (`images/door.jpg`), the
+door brightening into warm light as it dissolves (from 1.05s) into the living room with the fireplace
+(`images/inside-2.jpg`, still easing in), then "Welcome home, [name]" with a house outline drawing
+itself and a soft sweep of light, and "See my results" (focused) at 3.5s. Two photos, CSS transforms
+and opacity only, run by the Web Animations API on the compositor, so it stays smooth on any phone.
+Each photo covers the screen with its anchor (the door, the fireplace) as near the center as covering
+allows, and scales about the anchor. Timeline: `T` in `Walk` in `js/engines.js`. Sound is synthesized
+in `doorAudio()` in `app.js` (porch air, the latch and the door swing during the push, the fire inside);
+`Walk` hands it timed cues through `opts.cue`. The Sound and Skip buttons, Escape, a route change
+(Back, a link) and "See my results" end it and show the results; with `prefers-reduced-motion` it is
+skipped. Test hooks on `window.__walk`: `seek(t)` (show the frame at t seconds), `render(t)`, `time()`,
+`stop()`. Checks: `tools/walk_checks.py` (reduced motion, focus, Escape, route change, sound toggle
+and audio context lifecycle, keyboard focus ring and Enter, 390/1280 light/dark screenshots).
 
-On tall screens (height > 1.1 × width) the approach ends on the porch shot `approach-4` and the door
-opens there (the close-up would fill the width); you knock from a step back, then step up while the
-footsteps come. The door rig (leaf as a perspective quad hinged on the left, the open-door render in
-the doorway, the crack of light, spill, hall-light glow on the glass) scales to whichever shot ends
-the approach. The door sequence: three knocks (each nudges the camera and the door), the hall light
-warms the door glass, footsteps, the lock turns, the door cracks open, then swings wide on an
-underdamped spring. All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks,
-footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`,
-scheduled against the audio clock (measured within ~15ms of the visual beat). It ends in a
-look-around in the last room (mouse, drag or arrow keys turn the view and move the head) until the
-visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`. Without WebGL, or
-with `prefers-reduced-motion`, the walk is skipped. If the WebGL context is lost, the route changes (Back, a link) or
-Escape is pressed, the walk ends and the results show. Turning the phone before the threshold rebuilds
-the walk at the same moment (`startAt`): shots that are already sharp show at once, and cues that
-already sounded stay done.
-
-Performance and memory: a software renderer (SwiftShader, llvmpipe) is detected and drawn at .3
-scale with a coarse mesh and mipmaps; a GPU draws at full resolution (device pixel ratio capped at
-2). There is no frame-time governor: a rAF-capped 60Hz loop can't tell spare headroom, and iOS Low
-Power Mode caps rAF at 30fps, which would read as a slow GPU. Low-end phone GPUs are untested. Every shot is drawn once behind
-the loading overlay (warm-up), and the walk starts once the overlay has faded in. Textures: the approach, door and doorway view upload at start; the
-rooms stream in during the knock (four bands, one per frame, decoded off the main thread); each
-shot is freed once passed. Test hooks on `window.__walk`: `render(t)`, `stop()`, `time()`,
-`scale(v)`, `mem()`, `look()`, `probe()`, `shots()`.
-
-Tools: `tools/walk_perf.py` (frame pacing unthrottled and at 4× CPU throttle, audio sync, texture
-memory, a 30fps scrub for pops and stray blends) and `tools/walk_checks.py` (reduced motion, sound
-toggle and audio context lifecycle, keyboard look-around, focus ring, 390/1280 light/dark).
+The earlier versions are in git history: the WebGL walk with depth reliefs and a synthesized knock
+(before this change on `main`), and an AI video knock (Seedance 2.0, branch `claude/knock-ai-video`
+at c03840c), which the client dropped as too costly for what it added.
 
 ## Known issues / next up: make the 3D smooth
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
 1. Done: the hero turntable is a real 3D model rendered from every angle (see above).
-2. Done for the walk: depth reliefs, steering, center-out handoffs, one exposure grade and a
-   consistent approach (the far shot `approach-1`, a different porch design, was dropped; the
-   porch pendant was added to `approach-2`).
-3. Done: the walk is WebGL.
-4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
+2. Done: the walk-through is a short CSS animation (a push into the door, a dissolve to the room,
+   the welcome), smooth on any device.
+3. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
 ## Supabase
 
@@ -244,7 +242,7 @@ the project; greaterpurposeweb.com is the account's existing domain.
 pre-qualification including an Edit from the review step, renders walk-through frames and
 takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
 hermetic). Run it before pushing visual changes, with `pip install playwright==1.56.0` (matches the
-pre-installed Chromium). For the walk also run `tools/walk_perf.py` and `tools/walk_checks.py`.
+pre-installed Chromium). For the walk-through also run `tools/walk_checks.py`.
 
 ## Accessibility & quality bar
 

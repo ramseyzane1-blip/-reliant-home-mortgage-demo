@@ -8,8 +8,8 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1512" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="brand/favicon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
 <!-- link previews: crawlers don't run the router, so one card for the whole site -->
 <meta property="og:type" content="website">
@@ -42,7 +42,7 @@
 
 <header>
   <div class="wrap hdr">
-    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo logo-l" src="images/logo.png" alt="Reliant Home Mortgage" width="180" height="44"><img class="logo logo-d" src="images/logo-dark.png" alt="" width="180" height="44"></a>
+    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo logo-l" src="images/logo.webp" alt="Reliant Home Mortgage" width="161" height="44"><img class="logo logo-d" src="images/logo-dark.webp" alt="" width="161" height="44"></a>
     <nav class="mainnav" aria-label="Main">
       <a href="#buy" data-nav="buy">Buy a home</a>
       <a href="#refinance" data-nav="refinance">Refinance</a>
@@ -68,10 +68,11 @@
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Family-owned mortgage broker · Middletown, Ohio</p>
-        <h1>Home loans, handled like <em>family.</em></h1>
-        <p class="lede">Find out what you can afford in about two minutes. Then a real person from our Middletown office walks you through the rest.</p>
+        <h1>Home loans, from our family to <em>yours.</em></h1>
+        <p class="lede">We're a family-owned team in Middletown, led by a husband and wife who've done home loans since 1996. See what you can afford in about two minutes, and one of us will walk you through the rest.</p>
         <div class="btn-row"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a><a class="linkish" href="#home" data-scroll="how">See how it works</a></div>
-        <div class="assure"><span>About 2 minutes</span><span>No Social Security number</span><span>No credit check</span></div>
+        <p class="assure">About 2 minutes. No credit check.</p>
+        <div class="hero-fam"><div class="faces" data-faces></div><p>Five loan officers, one family-owned office on Breiel Boulevard.</p></div>
       </div>
       <div class="hphoto" id="hphoto" tabindex="0" role="img" aria-label="Model of a family home. Drag, or use the arrow keys, to turn it all the way around.">
         <!-- sizes makes the browser load the same copy the canvas will use (768px on phones) -->
@@ -83,21 +84,11 @@
       <div class="hero-trust">
         <figure class="hq"><span class="stars" role="img" aria-label="5 stars">★★★★★</span><blockquote>“I appreciated how she was transparent and was quick to give me the breakdown of all of the costs involved (closing, appraisal, title, etc.)”</blockquote><figcaption>Boris Chen · Google review · <a class="linkish" href="#reviews">More reviews</a></figcaption></figure>
         <div class="trust">
-          <div class="faces" data-faces></div>
           <p>Rather talk it through?<br><button class="num" data-demo="call">Call our Middletown office at <span class="nw">(513) 783-4018</span></button></p>
         </div>
       </div>
     </div>
   </div>
-
-  <section class="glance" aria-label="Reliant at a glance">
-    <div class="wrap glance-grid">
-      <div><b>20 loan programs</b><span>FHA, VA, USDA, conventional, jumbo and more</span></div>
-      <div><b>Lenders nationwide</b><span>We shop for your most competitive rate</span></div>
-      <div><b>One loan officer</b><span>From your first question to closing day</span></div>
-      <div><b class="num">OH · KY · IN</b><span>Licensed in three states, NMLS #2292251</span></div>
-    </div>
-  </section>
 
   <section class="band">
     <div class="wrap">
@@ -125,7 +116,7 @@
         <div class="tz-bar" aria-hidden="true"><i id="tz-bpi"></i><i></i></div>
         <div class="tz-legend num"><span><i></i>Principal &amp; interest <b id="tz-pi"></b></span><span><i></i>Taxes &amp; insurance <b id="tz-ti"></b></span></div>
         <p>Your pre-qualification adds the loans you fit and a real rate from your loan officer.</p>
-        <div><a class="btn btn-white btn-lg btn-go" href="#start" data-goal="buy" data-carry>Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
+        <div><a class="btn btn-primary btn-lg btn-go" href="#start" data-goal="buy" data-carry>Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
         <p class="tz-fine">Example 6.5% 30-year fixed rate with property taxes and homeowners insurance. Mortgage insurance, if any, is extra.</p>
       </div>
     </div>
@@ -139,30 +130,25 @@
         <div class="st"><span class="n">2</span><h3>Talk with your loan officer</h3><p>We compare your options and quote today's rates for your situation.</p></div>
         <div class="st"><span class="n">3</span><h3>Apply and close</h3><p>Apply online, and we keep you and your agent updated until closing day.</p></div>
       </div>
-      <div class="btn-row" style="justify-content:center;margin-top:44px"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
-      <p class="fine" style="text-align:center;margin-top:12px">About 2 minutes. No credit check.</p>
     </div>
   </section>
 
   <section class="band alt">
     <div class="wrap family">
-      <div class="photo-slot"><b>Reliant</b><span>Team photo</span></div>
+      <figure class="couple"><img src="images/team/kevin-lg.webp" alt="Kevin Barker" width="480" height="480" loading="lazy" decoding="async"><img src="images/team/jennifer-lg.webp" alt="Jennifer Barker" width="480" height="480" loading="lazy" decoding="async"><figcaption>Kevin and Jennifer Barker, owners and loan officers</figcaption></figure>
       <div class="txt">
         <p class="eyebrow">Family-owned in Middletown</p>
         <h2>A local team that knows you by name</h2>
-        <p>Reliant is a family-owned mortgage broker on Breiel Boulevard in Middletown. You'll work with the same licensed loan officer from your first question to the day you get your keys.</p>
-        <p class="muted">We help families across Ohio, Kentucky and Indiana buy their first home, move up, or refinance, and we shop lenders across the nation for the most competitive rate.</p>
+        <p>Reliant is run by a husband and wife who have done home loans across the Tri-State since 1996. You'll work with the same licensed loan officer from your first question to the day you get your keys.</p>
+        <p class="muted">Between us we have kids, grandkids, a very spoiled Vizsla and a couple of goldendoodles. We help families across Ohio, Kentucky and Indiana buy their first home, move up or refinance, and we shop lenders across the nation for the most competitive rate.</p>
         <div class="people" data-people></div>
         <a class="linkish" href="#about">Meet the team →</a>
       </div>
     </div>
-  </section>
-
-  <section class="band">
-    <div class="wrap">
-      <div class="sec-head center"><p class="eyebrow">From our clients</p><h2>Neighbors recommend us</h2></div>
+    <div class="wrap fam-reviews">
+      <h3>What our neighbors say on Google</h3>
       <div class="reviews" data-reviews="3"></div>
-      <p style="text-align:center;margin-top:24px"><a class="linkish" href="#reviews">Read more reviews →</a></p>
+      <p><a class="linkish" href="#reviews">Read more reviews →</a></p>
     </div>
   </section>
 </section>
@@ -201,7 +187,7 @@
       <div class="card" id="finderQs"></div>
       <div>
         <div class="match" id="matches"></div>
-        <details class="more"><summary id="otherSum">Other loans for buyers</summary><div class="lrows" id="otherBuy" style="margin-top:12px"></div></details>
+        <details class="more"><summary class="disc"><span id="otherSum">Other loans for buyers</span><span class="disc-h" aria-hidden="true"><span class="h-show">Show</span><span class="h-hide">Hide</span><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span></summary><div class="lrows" id="otherBuy" style="margin-top:12px"></div></details>
       </div>
     </div>
   </div></section>
@@ -438,8 +424,8 @@
   </div></section>
   <section class="band" id="letter"><div class="wrap grid2" style="align-items:start">
     <div class="sec-head" style="margin:0"><p class="eyebrow">The Reliant Letter</p><h2>One email a month from our team</h2><p>Rate news, local market notes and plain-English homebuying tips. Our monthly newsletter and blog, in one place.</p>
-      <form class="card" data-form="Reliant Letter signup" style="margin-top:12px">
-        <div class="row2"><div class="field"><label for="nl-name">First name</label><input class="in" id="nl-name"></div><div class="field"><label for="nl-email">Email</label><input class="in" id="nl-email" type="email"></div></div>
+      <form class="card" data-form="Reliant Letter signup" style="margin-top:12px" novalidate>
+        <div class="row2"><div class="field"><label for="nl-name">First name</label><input class="in" id="nl-name" autocomplete="given-name"></div><div class="field"><label for="nl-email">Email</label><input class="in" id="nl-email" type="email" autocomplete="email" spellcheck="false" data-req aria-describedby="nl-email-err"><p class="err" id="nl-email-err" hidden></p></div></div>
         <button class="btn btn-primary" type="submit">Subscribe</button><p class="fine" style="margin-top:10px">Unsubscribe anytime.</p></form></div>
     <div><p class="flabel" style="margin-bottom:12px">Recent letters</p><div class="letter-list" id="posts"></div><p class="fine" style="margin-top:14px">Demo: suggested starter topics. The current blog has one welcome post.</p></div>
   </div></section>
@@ -458,8 +444,9 @@
     <p class="lede">Call, stop by, or send a question. A licensed loan officer will get back to you.</p>
   </div></div>
   <section class="band" style="padding-top:36px"><div class="wrap grid2">
-    <form class="card" data-form="Question">
-      <div class="row2"><div class="field"><label for="c-name">Name</label><input class="in" id="c-name"></div><div class="field"><label for="c-phone">Phone or email</label><input class="in" id="c-phone"></div></div>
+    <form class="card" data-form="Question" novalidate>
+      <div class="row2"><div class="field"><label for="c-name">Name</label><input class="in" id="c-name" autocomplete="name" data-req aria-describedby="c-name-err"><p class="err" id="c-name-err" hidden></p></div><div class="field"><label for="c-phone">Phone or email</label><input class="in" id="c-phone" spellcheck="false" data-req aria-describedby="c-phone-err c-phone-why"><p class="err" id="c-phone-err" hidden></p></div></div>
+      <p class="fine" id="c-phone-why" style="margin:-6px 0 14px">We only use it to answer your question.</p>
       <div class="field"><label for="c-who">Who would you like to hear from?</label><select class="in" id="c-who"></select></div>
       <div class="field"><label for="c-msg">Your question</label><textarea class="in" id="c-msg" rows="4"></textarea></div>
       <button class="btn btn-primary" type="submit">Send my question</button>
@@ -498,7 +485,6 @@
 
 <footer><div class="wrap">
   <div class="fhello">
-    <div class="faces" data-faces></div>
     <p>Reliant Home Mortgage is a family-owned team at 1422 S Breiel Blvd in Middletown. Stop by, call <button class="linkish num" data-demo="call">(513) 783-4018</button>, or send us a question.</p>
     <a class="btn btn-line" href="#contact">Ask a question</a>
   </div>

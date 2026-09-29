@@ -52,7 +52,8 @@ async def main():
         await pg.screenshot(path=f'{OUT}/home.png')
         # pre-qualification: buying path
         await pg.evaluate("location.hash='#start'"); await pg.wait_for_timeout(400)
-        for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
+        # goal, stage, first home; price, down payment; area, credit, military, income type; income, debts
+        for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4 + ['[data-w=next]'] * 2:
             await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(260)
         # an incomplete phone number keeps the visitor on the contact step with a message
         await pg.fill('#pq-name', 'Test'); await pg.fill('#pq-phone', '555-01')
@@ -65,9 +66,10 @@ async def main():
         assert 'Check your answers' in await pg.evaluate("document.querySelector('#wiz .wiz-q').textContent")
         await pg.screenshot(path=f'{OUT}/review.png', full_page=True)
         await pg.click('#wiz [data-w=submit]'); await pg.wait_for_timeout(2500)
+        if 'Up to' not in await pg.evaluate("document.getElementById('results').textContent"): errs.append('results show no affordability estimate')
         if await pg.evaluate('!!window.__walk'):
             await pg.evaluate('__walk.stop()')
-            for t in [1.0, 4.5, 7.3, 9.8, 10.6, 13.6, 18.0]:
+            for t in [.5, 1.4, 2.4, 3.9]:
                 await pg.evaluate(f'__walk.render({t})'); await pg.wait_for_timeout(250)
                 await pg.screenshot(path=f'{OUT}/walk_{t}.png')
         await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1800)
@@ -86,6 +88,17 @@ async def main():
         down = await t.evaluate("document.querySelector('#wiz .wiz-val').value")
         if (price, down) != ('$400,000', '$40,000'): errs.append(f'teaser carry-over gave {price}, {down}')
         print('teaser carry-over:', price, down)
+        # a down payment can't be more than the price: typing $900k on a $400k home is brought back to $400k
+        await t.fill('#wiz .wiz-val', '900k'); await t.press('#wiz .wiz-val', 'Tab'); await t.wait_for_timeout(100)
+        if await t.evaluate("document.querySelector('#wiz .wiz-val').value") != '$400,000': errs.append('down payment above the price was accepted')
+        # every rating offers the Google review link (no review gating)
+        await t.goto(URL + '#reviews'); await t.wait_for_timeout(500)
+        await t.click('#starpick [data-n="2"]')
+        if not await t.evaluate("[...document.querySelectorAll('#starBtns a')].some(a=>a.href.includes('google'))"): errs.append('2-star rating hides the Google review link')
+        # the question form needs a name and a way to reach you
+        await t.goto(URL + '#contact'); await t.wait_for_timeout(500)
+        await t.click('form[data-form=Question] [type=submit]'); await t.wait_for_timeout(200)
+        if await t.evaluate("document.getElementById('c-name-err').hidden"): errs.append('empty question form was sent')
         # phone width: no page may scroll sideways
         m = await b.new_page(viewport={'width': 390, 'height': 844})
         m.on('pageerror', lambda e: errs.append('mobile: ' + str(e)))

@@ -1,17 +1,17 @@
 /* Content from relianthomemtg.com: team, reviews, loan programs, glossary, blog topics, legal */
 const TEAM=[
- {n:"Kevin Barker",i:"KB",nmls:"293704",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/kevinbarker",
-  bio:"Kevin and Jennifer Barker run Reliant as a family business out of the Middletown office. Kevin works with first-time buyers, move-up buyers and homeowners refinancing, and his Google reviews point again and again to a quick, smooth process where clients felt their interests came first.",
+ {n:"Kevin Barker",i:"KB",ph:"kevin",r:"President · Senior Loan Officer",nmls:"293704",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/kevinbarker",
+  bio:"Kevin has done purchase and refinance loans across the Tri-State since 1996, and he runs Reliant with his wife, Jennifer. Most of his clients come from referrals by past clients and local agents. At home there are four kids, a granddaughter, a very spoiled Vizsla named Bodhi and two cats. Off the clock he fishes, hunts, golfs and takes on renovation projects.",
   tags:["Purchase loans","Refinancing","Realtor partner"],quote:"Kevin and his team made this home buying process very smooth and easy.",qby:"Cole Dickenson"},
- {n:"Jennifer Barker",i:"JB",nmls:"436409",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/jenniferbarker",
-  bio:"Jennifer leads Reliant with Kevin and is often the first voice clients hear. Reviewers describe her as knowledgeable and thorough, the kind of loan officer who explains every cost up front, from closing and appraisal to title.",
+ {n:"Jennifer Barker",i:"JB",ph:"jennifer",r:"Senior Loan Officer",nmls:"436409",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/jenniferbarker",
+  bio:"Jennifer has done home loans since 1997 and works side by side with her husband, Kevin. Her strengths are detail, organization and listening, and reviewers say she explains every cost up front, from closing and appraisal to title. Outside work you'll find her golfing, boating, hiking or out on the water fishing.",
   tags:["First-time buyers","Refinancing","Cost breakdowns"],quote:"Jennifer at Reliant Home Mortgage was fantastic! She is so knowledgeable and trustworthy.",qby:"Dani Dean"},
- {n:"Christina Wheeler-Wellman",i:"CW",nmls:"217225",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/christinawellman",
-  bio:"Christina is a licensed loan officer on the Reliant team, helping Ohio, Kentucky and Indiana homebuyers and homeowners with purchase and refinance loans.",tags:["Purchase loans","Refinancing"],slot:1},
- {n:"Chase Barker",i:"CB",nmls:"2723763",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/52SG33AT",
-  bio:"Chase is a licensed loan officer on the Reliant team, helping Tri-State homebuyers find the right program and rate.",tags:["Purchase loans","First-time buyers"],slot:1},
- {n:"Blaine Ramsay",i:"BR",nmls:"1917539",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/MXXA8C45",
-  bio:"Blaine is a licensed loan officer on the Reliant team, helping clients across Ohio, Kentucky and Indiana buy and refinance homes.",tags:["Purchase loans","Refinancing"],slot:1}];
+ {n:"Christina Wheeler-Wellman",i:"CW",ph:"christina",r:"Senior Loan Officer",nmls:"217225",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/christinawellman",
+  bio:"Christina has worked in mortgages since 1995. As a past military wife, she especially likes helping veterans with VA loans, and she knows renovation, 203(k) and new construction loans well. She and her husband, Jason, have been married 30 years, and their grandson and granddaughter are a big part of their life.",tags:["VA loans","Renovation and 203(k)","New construction"]},
+ {n:"Chase Barker",i:"CB",ph:"chase",nmls:"2723763",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/52SG33AT",
+  bio:"Chase is newly licensed and learning alongside mentors with more than 60 years of mortgage experience between them. Selling insurance and RVs taught him to stay easy to reach and explain things plainly. Outside work, he and his wife spend as much time as they can with family, friends and their Vizsla.",tags:["Purchase loans","First-time buyers"]},
+ {n:"Blaine Ramsay",i:"BR",ph:"blaine",nmls:"1917539",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/MXXA8C45",
+  bio:"Blaine is a military veteran who specializes in VA loans, and he came to Reliant from retail banking. He's a husband, a dad and the owner of a couple of goldendoodles. When he isn't helping someone buy a home, he's watching the Bengals or playing a round of golf.",tags:["VA loans","Purchase loans","Refinancing"]}];
 /* Google reviews, word for word from the testimonial slider on relianthomemtg.com (author, month and text
    checked against the page on 2026-09-29). Rating-only reviews and one that names someone outside the team are left out. */
 const REVIEWS=[
