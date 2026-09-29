@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reliant Website Audit</title>
+<meta name="description" content="An audit of relianthomemtg.com and the reasoning behind the Reliant Home Mortgage redesign concept.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: fixed 1920x1080 slides scaled to the window (present) or to a grid cell (overview); one slide per page in print.
+   Palette and type come from the redesign itself (CLAUDE.md): forest from the logo wordmark, sand from the swoosh, cool grays. */
+:root{
+  --forest:#1c4f33; --forest-deep:#10301f; --forest-night:#0a2015; --forest-soft:#e6efe9;
+  --sand:#c3b69c; --sand-deep:#7d6a45; --sand-soft:#f4f0e7;
+  --ink:#15201a; --body:#39443e; --mute:#66716b; --line:#dbe2de; --mist:#f1f4f2; --paper:#ffffff;
+  --flag:#a8412a; --flag-soft:#f8e8e3; --amber:#9a6a12; --amber-soft:#f6ecd8;
+  --was:#7d8882;
+  --serif:"DM Serif Display", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --hud:56px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--forest-night);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+[hidden]{display:none!important}
+
+/* ---------- frames and modes ---------- */
+.deck{position:relative}
+.frame{position:relative;overflow:hidden;background:var(--paper)}
+.frame>.slide{position:absolute;left:0;top:0;transform-origin:0 0;transform:scale(var(--s,.5))}
+body.present{overflow:hidden}
+body.present .frame{position:fixed;left:50%;top:calc(50% - var(--hud)/2);width:calc(1920px * var(--s));height:calc(1080px * var(--s));
+  transform:translate(-50%,-50%);visibility:hidden;opacity:0;transition:opacity .35s ease,visibility 0s linear .35s;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+body.present .frame.on{visibility:visible;opacity:1;transition:opacity .35s ease}
+body.grid .deck{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:22px;padding:28px 16px calc(var(--hud) + 36px);max-width:1680px;margin:0 auto}
+body.grid .frame{aspect-ratio:16/9;width:100%;border-radius:10px;cursor:pointer;outline:0 solid var(--sand);transition:outline-width .15s}
+body.grid .frame:hover,body.grid .frame:focus-visible{outline-width:4px}
+.gridhead{display:none}
+body.grid .gridhead{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline;justify-content:space-between;max-width:1680px;margin:0 auto;padding:28px 16px 0;color:#fff}
+.gridhead h1{font:400 clamp(26px,4vw,40px)/1.1 var(--serif);margin:0}
+.gridhead p{margin:0;color:var(--sand);font-size:15px}
+
+.hud{position:fixed;left:0;right:0;bottom:0;height:calc(var(--hud) + env(safe-area-inset-bottom,0px));padding:0 16px env(safe-area-inset-bottom,0px);display:flex;align-items:center;justify-content:center;gap:10px;
+  background:rgba(8,26,17,.92);color:#fff;font:600 14px/1 var(--sans);z-index:10;backdrop-filter:blur(8px)}
+.hud button{font:inherit;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.22);border-radius:999px;height:36px;min-width:36px;padding:0 14px;cursor:pointer}
+.hud button:hover{background:rgba(255,255,255,.08)}
+.hud button:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+.hud .count{min-width:74px;text-align:center;font-variant-numeric:tabular-nums;color:var(--sand)}
+.hud .bar{position:absolute;left:0;top:0;height:3px;background:var(--sand);width:0;transition:width .35s}
+body.grid .hud .p-only{display:none}
+body.present .hud .g-only{display:none}
+@media (prefers-reduced-motion:reduce){body.present .frame,body.present .frame.on,.hud .bar{transition:none}}
+
+/* ---------- slide base ---------- */
+.slide{width:1920px;height:1080px;overflow:hidden;background:var(--paper);color:var(--ink);font-size:28px;line-height:1.45;padding:92px 120px 120px}
+.slide.mist{background:var(--mist)}
+.slide.dark{background:radial-gradient(1200px 900px at 78% 40%,#18452c 0%,var(--forest-deep) 55%,var(--forest-night) 100%);color:#fff}
+.eyebrow{margin:0;font:700 19px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand-deep)}
+.dark .eyebrow{color:var(--sand)}
+h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0;text-wrap:balance}
+h2{font-size:68px;line-height:1.04;color:var(--forest-deep);margin-top:16px;letter-spacing:-.005em;max-width:1500px}
+.dark h2{color:#fff}
+h3{font-size:36px;line-height:1.12;color:var(--forest-deep)}
+p{margin:0}
+.lede{font-size:30px;line-height:1.45;color:var(--body);max-width:1180px}
+.dark .lede{color:#d8e4dc}
+.muted{color:var(--mute)}
+.small{font-size:21px;line-height:1.45}
+.num{font-variant-numeric:tabular-nums}
+.foot{position:absolute;left:120px;right:120px;bottom:40px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:16px;font-size:17px;color:var(--mute);letter-spacing:.01em}
+.dark .foot{border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.55)}
+.foot b{font-weight:600;color:var(--forest)}
+.dark .foot b{color:var(--sand)}
+.head{margin-bottom:44px}
+
+/* ---------- components ---------- */
+.browser{margin:0;position:relative;border-radius:14px;background:#fff;box-shadow:0 2px 0 rgba(0,0,0,.02),0 24px 60px rgba(16,48,31,.18),0 0 0 1px rgba(16,48,31,.10)}
+.browser .bar{height:40px;display:flex;align-items:center;gap:8px;padding:0 16px;background:#eef1ef;border-bottom:1px solid #dfe5e1;border-radius:14px 14px 0 0}
+.browser .bar i{width:12px;height:12px;border-radius:50%;background:#c9d0cc}
+.browser .url{margin-left:14px;flex:1;max-width:560px;height:26px;border-radius:13px;background:#fff;border:1px solid #dfe5e1;font:500 15px/24px var(--sans);color:#56615b;padding:0 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.browser .shot{position:relative;overflow:hidden;border-radius:0 0 14px 14px}
+.browser .shot img{width:100%}
+.pin{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--flag);color:#fff;font:700 22px/46px var(--sans);text-align:center;box-shadow:0 0 0 5px rgba(255,255,255,.9),0 6px 16px rgba(0,0,0,.25)}
+.hl{position:absolute;background:rgba(214,170,72,.34);border-bottom:4px solid var(--flag);border-radius:4px;mix-blend-mode:multiply}
+.phone{margin:0;position:relative;width:330px;border-radius:52px;padding:13px;background:#131915;box-shadow:0 30px 70px rgba(16,48,31,.28),inset 0 0 0 2px #2c332e}
+.phone .screen{border-radius:40px;overflow:hidden;aspect-ratio:390/844;background:#fff}
+.phone .screen img{width:100%;height:100%;object-fit:cover;object-position:top}
+.tag{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px;font:700 16px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;background:var(--mist);color:var(--mute)}
+.tag.new{background:var(--forest);color:#fff}
+.tag.was{background:#e8ebe9;color:#4d5852}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:30px 32px}
+.mist .card{border-color:#dde4e0}
+.ic{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;margin-top:2px}
+.ic::before{content:"";width:20px;height:20px;background:#fff;-webkit-mask:var(--g) center/contain no-repeat;mask:var(--g) center/contain no-repeat}
+.ic.ok{background:var(--forest);--g:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4.5 12.5l5 5L19.5 7' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/></svg>")}
+.ic.no{background:var(--flag);--g:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 5v9' stroke='black' stroke-width='3.4' stroke-linecap='round'/><circle cx='12' cy='19' r='2' fill='black'/></svg>")}
+.ic.go{background:var(--sand-deep);--g:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 12h14M13 6l6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>")}
+.ic.box{background:transparent;border:3px solid var(--forest);border-radius:9px;width:34px;height:34px}
+.ic.box::before{display:none}
+.items{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.items li{display:flex;gap:18px;align-items:flex-start;font-size:26px;line-height:1.4;color:var(--body)}
+.items li b{color:var(--ink);font-weight:600}
+.dark .items li{color:#dbe6df}
+.dark .items li b{color:#fff}
+.numlist{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.numlist li{display:grid;grid-template-columns:46px 1fr;gap:20px;align-items:start;font-size:25px;line-height:1.42;color:var(--body)}
+.numlist .n{width:46px;height:46px;border-radius:50%;background:var(--flag);color:#fff;font:700 21px/46px var(--sans);text-align:center}
+.numlist .n.ok{background:var(--forest)}
+.why{margin-top:30px;padding:24px 28px;border-radius:16px;background:var(--sand-soft);font-size:23px;line-height:1.45;color:#4a4232}
+.why b{display:block;font:700 15px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand-deep);margin-bottom:10px}
+.why.fix{background:var(--forest-soft);color:#24402f}
+.why.fix b{color:var(--forest)}
+.split{display:grid;grid-template-columns:1040px 1fr;gap:72px;align-items:center;height:100%}
+.split h2{font-size:58px}
+.stat{font:400 76px/1 var(--serif);color:var(--forest-deep)}
+.stat small{font:600 26px/1 var(--sans);color:var(--mute);margin-left:6px}
+
+/* ---------- cover ---------- */
+.cover{padding:0}
+.cover .arc{position:absolute;right:-240px;top:-150px;width:1320px;height:1320px;fill:none;stroke:var(--sand);stroke-width:3;opacity:.55}
+.cover .arc2{position:absolute;right:-160px;top:-70px;width:1160px;height:1160px;fill:none;stroke:var(--sand);stroke-width:1.2;opacity:.25}
+.cover-text{position:absolute;left:120px;top:150px;width:800px}
+.cover h1{font-size:104px;line-height:1.0;margin-top:26px;color:#fff;letter-spacing:-.01em}
+.cover h1 em{font-style:italic;color:var(--sand)}
+.cover .lede{margin-top:36px;font-size:30px;max-width:720px}
+.cover-stack{position:absolute;left:930px;top:170px;width:960px;height:720px;perspective:2200px}
+.cover-stack .browser{position:absolute;width:760px;box-shadow:0 40px 90px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06)}
+.cover-stack .b-old{left:0;top:0;transform:rotateY(16deg) rotateX(4deg) scale(.9);transform-origin:left center;filter:saturate(.85) brightness(.9)}
+.cover-stack .b-new{left:190px;top:210px;transform:rotateY(-10deg) rotateX(3deg);transform-origin:right center}
+.cover-stack .tag{position:absolute;z-index:2}
+.cover-stack .t-old{left:30px;top:-20px}
+.cover-stack .t-new{left:220px;top:190px}
+.cover-foot{position:absolute;left:120px;right:120px;bottom:64px;display:flex;gap:120px;padding-top:28px;border-top:1px solid rgba(255,255,255,.14)}
+.cover-foot div{display:grid;gap:4px;font-size:22px;color:#cfdcd4}
+.cover-foot small{font:700 15px/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand)}
+.cover-foot b{font:400 34px/1.15 var(--serif);color:#fff}
+
+/* ---------- section dividers ---------- */
+.divider .big{position:absolute;right:110px;top:40px;font:400 560px/1 var(--serif);color:transparent;-webkit-text-stroke:2px rgba(195,182,156,.5)}
+.divider .inner{position:absolute;left:120px;top:200px;width:1100px}
+.divider h2{font-size:120px;line-height:1;margin-top:26px}
+.divider .toc{margin-top:64px;display:grid;grid-template-columns:1fr 1fr;gap:18px 64px;list-style:none;padding:0;counter-reset:t}
+.divider .toc li{counter-increment:t;display:flex;gap:18px;align-items:baseline;font-size:27px;color:#dbe6df;border-top:1px solid rgba(255,255,255,.14);padding-top:16px}
+.divider .toc li::before{content:counter(t);font:400 30px/1 var(--serif);color:var(--sand);min-width:28px}
+
+/* ---------- specific slides ---------- */
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.cols3 .card{padding:34px 34px 30px}
+.cols3 .card h3{font-size:34px;display:flex;align-items:center;gap:16px;margin-bottom:26px}
+.cols3 .items li{font-size:24px}
+.cols3 .items{gap:18px}
+.tiles6{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.tiles6 .card{padding:32px 34px}
+.tiles6 .stat{font-size:70px}
+.tiles6 h3{font:600 25px/1.3 var(--sans);color:var(--ink);margin-top:14px}
+.tiles6 p{font-size:21px;line-height:1.45;color:var(--mute);margin-top:6px}
+.strengths{display:grid;grid-template-columns:1fr 640px;gap:64px;align-items:start}
+.strengths .list{display:grid;grid-template-columns:1fr 1fr;gap:34px 40px}
+.strengths .list>div{display:flex;gap:18px}
+.strengths h3{font:600 25px/1.3 var(--sans);color:var(--ink)}
+.strengths p{font-size:21px;line-height:1.45;color:var(--mute);margin-top:6px}
+.cap{margin-top:16px;font-size:19px;line-height:1.4;color:var(--mute)}
+.dark .cap{color:rgba(255,255,255,.62)}
+.quote{margin-top:26px;padding:22px 28px;border-left:5px solid var(--sand);background:var(--sand-soft);border-radius:0 14px 14px 0;font:400 25px/1.4 var(--serif);color:#3b3526}
+.quote cite{display:block;margin-top:8px;font:600 17px/1.3 var(--sans);font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:var(--sand-deep)}
+.grid2x2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.pcard{display:grid;grid-template-columns:480px 1fr;gap:28px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
+.pcard .imgbox{height:250px;padding:10px;border-radius:12px;background:var(--mist);display:grid;place-items:center;overflow:hidden;border:1px solid #e3e8e5}
+.pcard .imgbox img{max-height:100%;width:auto;max-width:100%;object-fit:contain}
+.pcard h3{font:600 24px/1.3 var(--sans);color:var(--ink)}
+.pcard p{font-size:21px;line-height:1.45;color:var(--body);margin-top:8px}
+.qlist{display:grid;gap:18px}
+.q{font:400 30px/1.25 var(--serif);color:var(--forest-deep);padding:18px 24px;border-radius:14px;background:var(--mist)}
+.q small{display:block;margin-top:6px;font:600 16px/1.3 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.errcard{border:2px solid var(--flag);border-radius:20px;padding:30px 34px;background:#fff}
+.errcard .eyebrow{color:var(--flag)}
+.errcard .shotwrap{position:relative;margin:20px 0 22px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.phones{display:grid;grid-template-columns:330px 1fr 330px;gap:70px;align-items:center;height:100%}
+.phones .col{display:grid;gap:18px;justify-items:center}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.gauge{display:flex;gap:22px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+.gauge svg{width:132px;height:132px;flex:none}
+.gauge .lbl{font:600 24px/1.25 var(--sans);color:var(--ink)}
+.gauge .st{display:inline-block;margin-top:8px;font:700 15px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;padding:7px 10px;border-radius:999px}
+.st.good{background:var(--forest-soft);color:var(--forest)}
+.st.mid{background:var(--amber-soft);color:var(--amber)}
+.facts{display:grid;gap:18px}
+.facts li{font-size:23px}
+.flow{display:grid;gap:26px}
+.band{display:grid;grid-template-columns:1fr;gap:18px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px 30px}
+.band .tag{justify-self:start}
+.pills{display:flex;flex-wrap:wrap;gap:12px}
+.pill{height:50px;display:inline-flex;align-items:center;padding:0 20px;border-radius:12px;border:2px solid #cfd6d2;font:600 20px/1 var(--sans);color:#4d5852;background:#fff}
+.conv{display:grid;grid-template-columns:180px 70px 1fr;align-items:center}
+.conv .srcs{display:grid;gap:8px}
+.conv .srcs span{height:38px;display:flex;align-items:center;padding:0 14px;border-radius:10px;background:var(--mist);font:600 17px/1 var(--sans);color:var(--body)}
+.conv svg{width:70px;height:230px}
+.steps{display:flex;align-items:center;gap:14px}
+.step{flex:1;border-radius:14px;padding:16px 20px;font:600 20px/1.25 var(--sans);background:var(--forest-soft);color:var(--forest-deep)}
+.step.main{flex:1.2;background:var(--forest);color:#fff;font-size:24px;padding:22px 26px;white-space:nowrap}
+.step small{display:block;font-weight:500;font-size:16px;opacity:.8;margin-top:4px}
+.arrow{width:30px;height:3px;background:var(--sand-deep);position:relative;flex:none}
+.arrow::after{content:"";position:absolute;right:-2px;top:-6px;border:7.5px solid transparent;border-left:11px solid var(--sand-deep);border-right:0}
+.navmock{display:flex;align-items:center;gap:30px;height:74px;padding:0 30px;border-radius:14px;background:#fff;border:1px solid var(--line);font:500 21px/1 var(--sans);color:#4d5852}
+.navmock .lab{width:150px}
+.navmock .old{letter-spacing:.02em}
+.navmock .btn{margin-left:auto;background:var(--forest);color:#fff;border-radius:10px;padding:14px 20px;font-weight:600}
+.navmock .gold{margin-left:auto;background:#fbb64b;color:#111;border-radius:6px;padding:10px 12px;font-weight:700}
+.navmock .dd{color:#8a948f;font-size:15px;margin-left:-22px}
+.map{display:grid;grid-template-columns:1fr 1fr;gap:0 56px;margin-top:30px}
+.map div{display:grid;grid-template-columns:330px 1fr;gap:18px;padding:13px 0;border-top:1px solid var(--line);font-size:20px;line-height:1.35}
+.map div b{font-weight:600;color:var(--mute)}
+.map div span{color:var(--ink)}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.tool{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.tool .im{height:196px;overflow:hidden;border-bottom:1px solid var(--line);background:var(--mist)}
+.tool .im img{width:100%;height:100%;object-fit:cover;object-position:top}
+.tool .tx{padding:16px 26px 18px}
+.tool h3{font:600 23px/1.3 var(--sans);color:var(--ink)}
+.tool h3 em{font-style:normal;color:var(--sand-deep);font-weight:600;font-size:17px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px}
+.tool p{font-size:20px;line-height:1.42;color:var(--body);margin-top:4px}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.sw{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.sw .c{height:300px}
+.sw .t{padding:18px 20px 20px}
+.sw b{display:block;font:600 22px/1.2 var(--sans)}
+.sw code{font:500 17px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mute)}
+.sw p{font-size:18px;line-height:1.4;color:var(--mute);margin-top:8px}
+.film{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.film figure{margin:0}
+.film img{border-radius:14px;aspect-ratio:1/1;object-fit:cover;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.film figcaption{margin-top:14px;font-size:19px;color:#cfdcd4;display:flex;gap:10px;align-items:baseline}
+.film figcaption b{font:400 26px/1 var(--serif);color:var(--sand)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+.kpi .lbl{font:600 19px/1.3 var(--sans);color:var(--mute)}
+.kpi .vals{display:flex;align-items:baseline;gap:14px;margin-top:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.kpi .was{font:400 44px/1 var(--serif);color:var(--was)}
+.kpi .now{font:400 60px/1 var(--serif);color:var(--forest-deep)}
+.kpi .to{font-size:24px;color:var(--sand-deep)}
+.notes{margin-top:24px;display:grid;gap:6px;font-size:17px;line-height:1.4;color:var(--mute)}
+.check2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.check2 h3{font:700 17px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand-deep);margin-bottom:22px}
+.check2 .items li{font-size:24px}
+.fixes{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:20px 40px;counter-reset:f}
+.fixes li{counter-increment:f;display:grid;grid-template-columns:54px 1fr;gap:18px;padding:22px 24px;background:#fff;border:1px solid var(--line);border-radius:16px;font-size:22px;line-height:1.4;color:var(--body)}
+.fixes li::before{content:counter(f);width:48px;height:48px;border-radius:12px;background:var(--forest);color:#fff;font:400 26px/48px var(--serif);text-align:center}
+.fixes li b{color:var(--ink);font-weight:600;display:block}
+.close .steps4{list-style:none;padding:0;margin:54px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;counter-reset:s}
+.close .steps4 li{counter-increment:s;border-top:2px solid var(--sand);padding-top:22px;font-size:24px;line-height:1.4;color:#dbe6df}
+.close .steps4 li::before{content:counter(s);display:block;font:400 64px/1 var(--serif);color:var(--sand);margin-bottom:14px}
+.close .steps4 b{color:#fff;font-weight:600;display:block;margin-bottom:6px}
+.contact{position:absolute;left:120px;right:120px;bottom:110px;display:flex;justify-content:space-between;align-items:flex-end;gap:40px}
+.contact .who{font:400 46px/1.1 var(--serif);color:#fff}
+.contact .who small{display:block;font:600 16px/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand);margin-bottom:10px}
+.contact .url{font:600 24px/1.3 var(--sans);color:var(--sand);text-align:right}
+.contact .url small{display:block;font-weight:500;font-size:18px;color:rgba(255,255,255,.6);margin-bottom:6px}
+
+@media print{
+  @page{size:1920px 1080px;margin:0}
+  html,body{height:auto;background:#fff;overflow:visible!important}
+  .hud,.gridhead{display:none!important}
+  .deck{display:block!important;padding:0!important;max-width:none!important}
+  .frame{position:relative!important;left:auto!important;top:auto!important;width:1920px!important;height:1080px!important;transform:none!important;visibility:visible!important;opacity:1!important;box-shadow:none!important;border-radius:0!important;outline:0!important;break-after:page;page-break-after:always}
+  .frame>.slide{transform:none!important}
+}
+</style>
+</head>
+<body>
+<header class="gridhead"><h1>Reliant Home Mortgage · Website audit</h1><p>Select a slide to present it. Arrow keys move between slides.</p></header>
+<main class="deck" id="deck">
+
+<!-- 1 · Cover -->
+<section class="slide dark cover" aria-label="Cover">
+  <svg class="arc" viewBox="0 0 1000 1000" aria-hidden="true"><circle cx="500" cy="500" r="496" stroke-dasharray="2200 1200" transform="rotate(118 500 500)"/></svg>
+  <svg class="arc2" viewBox="0 0 1000 1000" aria-hidden="true"><circle cx="500" cy="500" r="496" stroke-dasharray="1500 1700" transform="rotate(200 500 500)"/></svg>
+  <div class="cover-text">
+    <p class="eyebrow">Website audit · September 2026</p>
+    <h1>Where your website stands, and where it <em>could go</em></h1>
+    <p class="lede">An audit of relianthomemtg.com, and the reasoning behind each choice in the redesign concept.</p>
+  </div>
+  <div class="cover-stack" aria-hidden="true">
+    <span class="tag was t-old">Today</span>
+    <figure class="browser b-old"><div class="bar"><i></i><i></i><i></i><span class="url">relianthomemtg.com</span></div><div class="shot"><img src="img/o-home.jpg" alt=""></div></figure>
+    <span class="tag new t-new">Redesign concept</span>
+    <figure class="browser b-new"><div class="bar"><i></i><i></i><i></i><span class="url">reliant-home-mortgage.greaterpurposeweb.com</span></div><div class="shot"><img src="img/n-home.jpg" alt=""></div></figure>
+  </div>
+  <div class="cover-foot">
+    <div><small>Prepared for</small><b>Kevin and Jennifer Barker</b><span>Reliant Home Mortgage LLC · Middletown, Ohio</span></div>
+    <div><small>Prepared by</small><b>Zane Ramsey</b><span>Greater Purpose Web</span></div>
+  </div>
+</section>
+
+<!-- 2 · Short version -->
+<section class="slide mist" aria-label="The short version">
+  <div class="head">
+    <p class="eyebrow">The short version</p>
+    <h2>Your reputation is strong. The website makes visitors work to see it.</h2>
+  </div>
+  <div class="cols3">
+    <div class="card">
+      <h3><span class="ic ok"></span>Already working</h3>
+      <ul class="items">
+        <li>Real people in real photos, with full bios for all five loan officers</li>
+        <li>5.0 stars across 82 Google reviews</li>
+        <li>Licensing that is complete and easy to verify</li>
+        <li>20 loan programs, each with its own page</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="ic no"></span>Holding it back</h3>
+      <ul class="items">
+        <li>Six different ways to start, and no clear first step</li>
+        <li>The family story and the broker advantage are hard to find</li>
+        <li>Several pages are empty or hold placeholder text</li>
+        <li>Generic copy, and one factual error on the FHA page</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="ic go"></span>What the redesign does</h3>
+      <ul class="items">
+        <li>One next step everywhere: a two-minute pre-qualification</li>
+        <li>A menu built around what visitors came to do</li>
+        <li>Tools that answer the question behind each page</li>
+        <li>A look drawn from your logo, built for phones first</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 3 · Method -->
+<section class="slide" aria-label="How we audited">
+  <div class="head">
+    <p class="eyebrow">Method</p>
+    <h2>How we looked at the site</h2>
+  </div>
+  <div class="tiles6">
+    <div class="card"><div class="stat num">17</div><h3>Pages reviewed</h3><p>Every page in the menu and footer, plus all five loan officer profiles.</p></div>
+    <div class="card"><div class="stat">2 <small>screen sizes</small></div><h3>Desktop and phone</h3><p>A 1440px desktop window and a 390px phone, the width of a current iPhone.</p></div>
+    <div class="card"><div class="stat num">3×</div><h3>Google Lighthouse</h3><p>Google's page-quality test, run three times per site. We report the middle result.</p></div>
+    <div class="card"><div class="stat">WCAG</div><h3>Accessibility checks</h3><p>Automated checks against the WCAG 2.2 AA standard with axe-core, page by page.</p></div>
+    <div class="card"><div class="stat num">0</div><h3>Forms submitted</h3><p>We read every form and tool without sending anything to your office.</p></div>
+    <div class="card"><div class="stat">Every</div><h3>Line of copy read</h3><p>Headlines, buttons, bios, loan pages and the glossary, checked for clarity and accuracy.</p></div>
+  </div>
+  <p class="notes">Audited 29 September 2026 in Chromium. Speed figures are lab measurements from a test machine, so real visitors' numbers will vary.</p>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 4 · Strengths -->
+<section class="slide" aria-label="What's already working">
+  <div class="head">
+    <p class="eyebrow">Strengths</p>
+    <h2>What's already working, and stays</h2>
+  </div>
+  <div class="strengths">
+    <div class="list">
+      <div><span class="ic ok"></span><div><h3>A real team, shown</h3><p>A team photo on the home page, and headshots and full bios for all five loan officers. Kevin since 1996, Jennifer since 1997, Christina since 1995.</p></div></div>
+      <div><span class="ic ok"></span><div><h3>5.0 stars, 82 Google reviews</h3><p>Clients name Kevin and Jennifer again and again for clear, quick, careful work.</p></div></div>
+      <div><span class="ic ok"></span><div><h3>Licensing done right</h3><p>Company NMLS #2292251, the Ohio, Kentucky and Indiana licenses, and every loan officer's NMLS number, linked to NMLS Consumer Access.</p></div></div>
+      <div><span class="ic ok"></span><div><h3>Every loan covered</h3><p>20 programs, from FHA and VA to DSCR and doctor loans, each with its own page.</p></div></div>
+      <div><span class="ic ok"></span><div><h3>Holds up on a phone</h3><p>No page scrolls sideways at phone width, body text is 17px, and Lighthouse scores accessibility 100.</p></div></div>
+      <div><span class="ic ok"></span><div><h3>Reassuring promises</h3><p>“No SSN required” and “No credit check” already appear on the site. The redesign keeps both.</p></div></div>
+    </div>
+    <div>
+      <figure class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">relianthomemtg.com/staff</span></div><div class="shot"><img src="img/o-staff.jpg" alt="The current staff page: headshots of Kevin Barker, Jennifer B. Barker, Christina Wheeler-Wellman and Chase Barker with titles and NMLS numbers."></div></figure>
+      <p class="cap">The current staff page. These headshots and bios carry straight into the redesign.</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 5 · Divider: findings -->
+<section class="slide dark divider" aria-label="Part one: What we found">
+  <div class="big" aria-hidden="true">01</div>
+  <div class="inner">
+    <p class="eyebrow">Part one</p>
+    <h2>What we found</h2>
+    <p class="lede" style="margin-top:28px">Six findings, each with the evidence behind it.</p>
+    <ol class="toc">
+      <li>Six ways to start, and no clear first step</li>
+      <li>The family story is hard to find</li>
+      <li>Some pages promise more than they hold</li>
+      <li>Copy that could belong to any lender</li>
+      <li>On a phone, the number is out of sight</li>
+      <li>Solid on accessibility, heavy underneath</li>
+    </ol>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 6 · Finding 1 -->
+<section class="slide" aria-label="Finding 1: first impression">
+  <div class="split">
+    <figure class="browser">
+      <div class="bar"><i></i><i></i><i></i><span class="url">relianthomemtg.com</span></div>
+      <div class="shot">
+        <img src="img/o-home.jpg" alt="The current home page: a team photo with three buttons, Purchase a Home, Refinance a Loan and Apply Now, under the heading How Can We Help You. A form begins below.">
+        <span class="pin" style="left:81.2%;top:2.6%">1</span>
+        <span class="pin" style="left:30.1%;top:55.6%">2</span>
+        <span class="pin" style="left:45.1%;top:55.6%">2</span>
+        <span class="pin" style="left:59.9%;top:55.6%">2</span>
+        <span class="pin" style="left:28.6%;top:83.4%">3</span>
+      </div>
+    </figure>
+    <div>
+      <p class="eyebrow">Finding 1 · First impression</p>
+      <h2>Six ways to start, and no clear first step</h2>
+      <ol class="numlist" style="margin-top:36px">
+        <li><span class="n">1</span><span><b>Apply Now</b> asks visitors to pick one of five loan officers by name before they know anyone.</span></li>
+        <li><span class="n">2</span><span>Three buttons in three colors carry equal weight. None reads as the main one.</span></li>
+        <li><span class="n">3</span><span>A separate eight-field form. Its labels sit inside the boxes and disappear as you type.</span></li>
+      </ol>
+      <div class="why"><b>By the numbers</b>The home page has 19 buttons with 10 different labels. They lead to six separate starting points, and each asks for different details.</div>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 7 · Finding 2 -->
+<section class="slide" aria-label="Finding 2: your story">
+  <div class="split">
+    <div>
+      <figure class="browser">
+        <div class="bar"><i></i><i></i><i></i><span class="url">relianthomemtg.com</span></div>
+        <div class="shot">
+          <img src="img/o-team.jpg" alt="The home page team section: a heading, The Reliant Home Mortgage LLC Team, a paragraph calling Reliant your premier mortgage lender, and four cards with Get Started buttons.">
+          <span class="pin" style="left:26.2%;top:13.7%">1</span>
+          <span class="pin" style="left:10.9%;top:24.4%">2</span>
+          <span class="pin" style="left:13.4%;top:76%">3</span>
+        </div>
+      </figure>
+      <div class="quote">“Since 1996, I have been doing purchase and refinance home loans all over the Tri State area.”<cite>Kevin's bio · two clicks deep, under Company › Meet Our Staff</cite></div>
+    </div>
+    <div>
+      <p class="eyebrow">Finding 2 · Your story</p>
+      <h2>The family story is hard to find</h2>
+      <ol class="numlist" style="margin-top:36px">
+        <li><span class="n">1</span><span>A section titled “The Reliant Home Mortgage LLC Team” shows no one from the team.</span></li>
+        <li><span class="n">2</span><span>It calls Reliant “your premier mortgage lender.” Your license and your bios say broker, which is the stronger story: you shop many lenders for each client.</span></li>
+        <li><span class="n">3</span><span>Four identical “Get Started” buttons fill the space where the people could be.</span></li>
+      </ol>
+      <div class="why"><b>Also on the About page</b>It opens with general text, “committed to providing clients with the highest quality financial services,” and never mentions a family business, Middletown, or decades of experience.</div>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 8 · Finding 3 -->
+<section class="slide mist" aria-label="Finding 3: upkeep">
+  <div class="head">
+    <p class="eyebrow">Finding 3 · Upkeep</p>
+    <h2>Some pages promise more than they hold</h2>
+  </div>
+  <div class="grid2x2">
+    <div class="pcard"><div class="imgbox"><img src="img/o-blog.jpg" alt="The blog's only post, titled Welcome, dated January 1, 2023."></div><div><h3>Blog</h3><p>One post, dated January 1, 2023. It reads “Welcome to ! Please check back for future articles and information.”</p></div></div>
+    <div class="pcard"><div class="imgbox"><img src="img/o-recpros.jpg" alt="Recommended Professionals: seven categories, each showing a count of zero."></div><div><h3>Recommended Professionals</h3><p>Seven categories, from contractors to insurance agents. Every one shows 0 entries.</p></div></div>
+    <div class="pcard"><div class="imgbox"><img src="img/o-local.jpg" alt="Local Resources: Museums, Schools and Hospitals show zero; Title Company shows one."></div><div><h3>Local Resources</h3><p>Four categories. Three are empty, and one lists a single title company.</p></div></div>
+    <div class="pcard"><div class="imgbox"><img src="img/o-rates-copy.jpg" alt="Today's Rates page copy offering rate quotes from a nationwide network of trusted lenders."></div><div><h3>Today's Rates</h3><p>No rates on the page. The copy offers “rate quotes from a nationwide network of trusted lenders,” which sounds like a lead marketplace.</p></div></div>
+  </div>
+  <div class="why" style="margin-top:26px"><b>Why it matters</b>Visitors notice empty pages. On a site that asks people to trust you with their finances, each one quietly suggests nobody is looking after it.</div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 9 · Finding 4 -->
+<section class="slide" aria-label="Finding 4: words">
+  <div class="head">
+    <p class="eyebrow">Finding 4 · Words</p>
+    <h2>Copy that could belong to any lender, and one fact to fix</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start">
+    <div class="qlist">
+      <div class="q">“What are you waiting for? Getting started is easy!”<small>Home page banner, over a stock photo</small></div>
+      <div class="q">“Zero Cost · Zero Obligation · Zero Hassle”<small>Sidebar on several pages</small></div>
+      <div class="q">“FREE advice … regarding any Mortgage and/or Real Estate related topics”<small>Ask a Professional</small></div>
+      <div style="display:grid;grid-template-columns:230px 1fr;gap:22px;align-items:center;margin-top:4px">
+        <img src="img/o-ask.jpg" alt="Three buttons: Home Search, Home Values, Find A Realtor." style="border-radius:10px;border:1px solid var(--line)">
+        <p class="small muted">Home Search, Home Values and Find A Realtor send visitors to real estate tools, which blurs what Reliant does. The same autumn-road photo heads every inner page.</p>
+      </div>
+    </div>
+    <div class="errcard">
+      <p class="eyebrow">Accuracy · FHA Loans page</p>
+      <div class="shotwrap">
+        <img src="img/o-fha.jpg" alt="FHA page text: the borrower must have a credit score of at least 500 and put down a minimum of 3.5% of the home's purchase price.">
+        <span class="hl" style="left:66%;top:26%;width:31%;height:21%"></span>
+        <span class="hl" style="left:1.6%;top:49.5%;width:27.6%;height:21%"></span>
+      </div>
+      <p class="q" style="background:var(--flag-soft);font-size:28px;line-height:1.35;margin-bottom:20px">“To be eligible for an FHA loan, the borrower must have a <mark style="background:rgba(214,170,72,.45);color:inherit;padding:0 3px;border-radius:3px">credit score of at least 500 and put down a minimum of 3.5%</mark> of the home's purchase price.”</p>
+      <p style="font-size:25px;line-height:1.45;color:var(--body)">The page says a 500 credit score qualifies with 3.5% down. Under HUD's rules, 3.5% down needs a score of 580 or higher. From 500 to 579, the minimum down payment is 10%.</p>
+      <p style="font-size:22px;line-height:1.45;color:var(--flag);margin-top:14px;font-weight:600">Worth correcting now, whatever you decide about a redesign.</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 10 · Finding 5 -->
+<section class="slide mist" aria-label="Finding 5: on a phone">
+  <div class="phones">
+    <div class="col"><span class="tag was">Today</span><figure class="phone"><div class="screen"><img src="img/o-home-phone.jpg" alt="The current home page on a phone: a large logo, the team photo and three stacked buttons. No phone number is visible."></div></figure></div>
+    <div>
+      <p class="eyebrow">Finding 5 · On a phone</p>
+      <h2 style="font-size:60px">It works on a phone, but the number is out of sight</h2>
+      <ul class="items" style="margin-top:34px;gap:18px">
+        <li><span class="ic ok"></span><span>No page scrolls sideways, and body text is a comfortable 17px.</span></li>
+        <li><span class="ic no"></span><span>The phone number is not on the first screen.</span></li>
+        <li><span class="ic no"></span><span>Three stacked buttons of equal weight open the page.</span></li>
+        <li><span class="ic no"></span><span>The home page runs about ten phone screens. The glossary runs about thirty.</span></li>
+        <li><span class="ic go"></span><span><b>Redesign:</b> a Call button and Get pre-qualified stay in reach at the bottom of every page.</span></li>
+      </ul>
+    </div>
+    <div class="col"><span class="tag new">Redesign</span><figure class="phone"><div class="screen"><img src="img/n-home-phone.jpg" alt="The redesign home page on a phone: the headline Home loans, handled like family, a Get pre-qualified button, and a bar with Call and Get pre-qualified at the bottom."></div></figure></div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 11 · Finding 6 -->
+<section class="slide" aria-label="Finding 6: under the hood">
+  <div class="head">
+    <p class="eyebrow">Finding 6 · Under the hood</p>
+    <h2>Solid on accessibility, heavier than it needs to be</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:760px 1fr;gap:64px;align-items:start">
+    <div>
+      <div class="gauges" id="gauges" data-scores="Performance:67,Accessibility:100,Best practices:75,SEO:85"></div>
+      <p class="cap">Google Lighthouse, phone test, middle of three runs.</p>
+    </div>
+    <ul class="items facts">
+      <li><span class="ic no"></span><span><b>94 requests and about 1.1 MB</b> to load the home page, including about 440 KB of scripts on every page.</span></li>
+      <li><span class="ic no"></span><span>The main content appears after about <b>6.0 seconds</b> on Lighthouse's simulated phone.</span></li>
+      <li><span class="ic no"></span><span><b>16 of 17 pages</b> have no meta description, the summary Google often shows under your link.</span></li>
+      <li><span class="ic no"></span><span>Staff listings, forms, directories and the newsletter load in embedded frames after the page. On the staff page the layout jumps as they arrive (shift score 0.45; Google rates over 0.25 as poor).</span></li>
+      <li><span class="ic no"></span><span>Lighthouse flags third-party cookies, and the newsletter page throws a script error.</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 12 · Divider: decisions -->
+<section class="slide dark divider" aria-label="Part two: What we changed, and why">
+  <div class="big" aria-hidden="true">02</div>
+  <div class="inner">
+    <p class="eyebrow">Part two</p>
+    <h2>What we changed, and why</h2>
+    <p class="lede" style="margin-top:28px">Seven decisions. Each one answers a finding.</p>
+    <ol class="toc">
+      <li>One clear next step</li>
+      <li>A menu built on visitor goals</li>
+      <li>Tools that answer real questions</li>
+      <li>Your story, told by your people</li>
+      <li>A look drawn from your logo</li>
+      <li>A moment people remember</li>
+      <li>Phones first, every visitor</li>
+    </ol>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 13 · Decision 1 -->
+<section class="slide" aria-label="Decision 1: one clear next step">
+  <div class="head" style="margin-bottom:36px">
+    <p class="eyebrow">Decision 1 · The path</p>
+    <h2>One clear next step: a two&#8209;minute pre&#8209;qualification</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:1060px 1fr;gap:56px;align-items:start">
+    <div class="flow">
+      <div class="band">
+        <span class="tag was">Today</span>
+        <div>
+          <div class="pills"><span class="pill">Home page form</span><span class="pill">Purchase Assistant</span><span class="pill">Refinance Advisor</span><span class="pill">Today's Rates</span><span class="pill">Ask a Professional</span><span class="pill">Apply Now › pick 1 of 5</span></div>
+          <p class="small muted" style="margin-top:14px">Six starting points. Each asks for different details.</p>
+        </div>
+      </div>
+      <div class="band">
+        <span class="tag new">Redesign</span>
+        <div class="conv">
+          <div class="srcs"><span>Buy a home</span><span>Refinance</span><span>Learn</span><span>Local help</span><span>About us</span></div>
+          <svg viewBox="0 0 70 230" aria-hidden="true"><g fill="none" stroke="#7d6a45" stroke-width="2.5"><path d="M0 19 C40 19 30 115 70 115"/><path d="M0 65 C40 65 30 115 70 115"/><path d="M0 115 H70"/><path d="M0 165 C40 165 30 115 70 115"/><path d="M0 211 C40 211 30 115 70 115"/></g></svg>
+          <div class="steps">
+            <div class="step main">Get pre-qualified<small>About 2 minutes</small></div><span class="arrow"></span>
+            <div class="step">Check your answers</div><span class="arrow"></span>
+            <div class="step">Results, and a call from your loan officer</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="items" style="gap:20px">
+      <li><span class="ic go"></span><span>Every page offers the same main button, so no one has to choose how to start.</span></li>
+      <li><span class="ic go"></span><span>Everyone answers the same short questions, then reviews them before sending. Your loan officer gets complete, consistent answers.</span></li>
+      <li><span class="ic go"></span><span>It keeps your promises: no Social Security number and no credit check.</span></li>
+      <li><span class="ic go"></span><span>A personal rate quote and the choice of loan officer are options inside it.</span></li>
+      <li><span class="ic go"></span><span>The second choice everywhere is a call to your Middletown office.</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 14 · Decision 2 -->
+<section class="slide mist" aria-label="Decision 2: the menu">
+  <div class="head" style="margin-bottom:34px">
+    <p class="eyebrow">Decision 2 · The menu</p>
+    <h2>A menu built around what visitors came to do</h2>
+  </div>
+  <div style="display:grid;gap:14px">
+    <div class="navmock"><span class="tag was lab">Today</span><span class="old">RATES</span><span class="old">PURCHASE</span><span class="old">REFINANCE</span><span class="old">RESOURCES</span><span class="dd">▾ 4</span><span class="old">COMPANY</span><span class="dd">▾ 7</span><span class="gold">APPLY NOW</span><span class="dd" style="margin-left:-18px">▾ 5 names</span></div>
+    <div class="navmock"><span class="tag new lab">Redesign</span><span>Buy a home</span><span>Refinance</span><span>Learn</span><span>Local help</span><span>About us</span><span class="btn">Get pre-qualified</span></div>
+  </div>
+  <div class="map">
+    <div><b>Purchase Assistant</b><span>Buy a home: loan finder and the five steps to closing</span></div>
+    <div><b>Loan Programs</b><span>All 20 loans, compare up to three side by side</span></div>
+    <div><b>Refinance Advisor</b><span>Refinance: break-even calculator and four good reasons</span></div>
+    <div><b>Local Resources, Professionals</b><span>Local help: resource finder, checklist and trusted pros</span></div>
+    <div><b>Today's Rates</b><span>Learn › How rates work, plus a quote in the pre-qualification</span></div>
+    <div><b>About, Staff, Reviews</b><span>About us: your team, reviews and a rating prompt</span></div>
+    <div><b>Calculator, Glossary</b><span>Learn › Calculators, Glossary and Homebuying 101</span></div>
+    <div><b>Blog, Monthly Newsletter</b><span>The Reliant Letter, one monthly email, on About us</span></div>
+    <div><b>Apply Now (five names)</b><span>Choose a loan officer inside the pre-qualification</span></div>
+    <div><b>Contact, Ask a Professional</b><span>Contact, linked from the footer and About us</span></div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 15 · Decision 3 -->
+<section class="slide" aria-label="Decision 3: tools">
+  <div class="head" style="margin-bottom:34px">
+    <p class="eyebrow">Decision 3 · Tools</p>
+    <h2>Tools that answer the question behind each page</h2>
+  </div>
+  <div class="tools">
+    <div class="tool"><div class="im"><img src="img/n-finder.jpg" alt="Loan finder: questions on the left, best-matching loans on the right."></div><div class="tx"><h3><em>Replaces the Purchase Assistant</em>Loan finder</h3><p>Four questions, and the best-matching loans update as you answer. No contact details needed to see them.</p></div></div>
+    <div class="tool"><div class="im"><img src="img/n-breakeven.jpg" alt="Refinance break-even calculator showing a 3.2 year break-even point."></div><div class="tx"><h3><em>Replaces the Refinance Advisor</em>Break-even calculator</h3><p>Shows how long a refinance takes to pay back its closing costs, and whether that fits how long you'll stay.</p></div></div>
+    <div class="tool"><div class="im"><img src="img/n-rates.jpg" alt="What moves your rate: choose credit, equity, property and points, and see where you would likely land."></div><div class="tx"><h3><em>Replaces Today's Rates</em>What moves your rate</h3><p>Explains how credit, equity, property type and points move a rate, then offers a personal quote.</p></div></div>
+    <div class="tool"><div class="im"><img src="img/n-course.jpg" alt="Homebuying 101: a lesson list and a lesson on how much home you can afford."></div><div class="tx"><h3><em>Builds on the Calculator and Glossary</em>Homebuying 101</h3><p>Six short lessons with a quick check each, hands-on calculators, and a searchable glossary with examples.</p></div></div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 16 · Decision 4 -->
+<section class="slide" aria-label="Decision 4: your story">
+  <div class="split">
+    <figure class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">Redesign concept · Home</span></div><div class="shot"><img src="img/n-home.jpg" alt="Redesign home page: Family-owned mortgage broker, Middletown, Ohio. Home loans, handled like family. A model home on the right."></div></figure>
+    <div>
+      <p class="eyebrow">Decision 4 · Your story</p>
+      <h2>Lead with the family, the office and the reviews</h2>
+      <ul class="items" style="margin-top:34px;gap:18px">
+        <li><span class="ic go"></span><span>The first line says who you are: a family-owned mortgage broker in Middletown.</span></li>
+        <li><span class="ic go"></span><span>Names appear where your current site uses them: bios, licenses, reviews and choosing a loan officer. Elsewhere it's “our team.”</span></li>
+        <li><span class="ic go"></span><span>Reviews can be filtered to those that mention Kevin or Jennifer, or come from agents.</span></li>
+      </ul>
+      <div class="why fix"><b>In the demo</b>Headshots and three bios are placeholders. Your current site already has the real ones, and they carry straight over.</div>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 17 · Decision 5 -->
+<section class="slide mist" aria-label="Decision 5: the look">
+  <div class="head" style="margin-bottom:40px">
+    <p class="eyebrow">Decision 5 · The look</p>
+    <h2>A look that comes from your logo</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:600px 1fr;gap:40px;align-items:stretch">
+    <div class="card" style="display:grid;align-content:space-between;gap:26px;padding:40px">
+      <img src="img/logo.png" alt="Reliant Home Mortgage logo: a mallard inside a sand-colored swoosh beside the green wordmark." style="width:420px">
+      <div>
+        <p style="font:400 64px/1.02 var(--serif);color:var(--forest-deep)">Home loans, handled like <em>family.</em></p>
+        <p class="small muted" style="margin-top:14px">DM Serif Display for headings. Public Sans for everything you read.</p>
+      </div>
+    </div>
+    <div style="display:grid;gap:26px;align-content:start">
+      <div class="swatches">
+        <div class="sw"><div class="c" style="background:#1c4f33"></div><div class="t"><b>Forest</b><code>#1c4f33</code><p>From the wordmark. Every button and link.</p></div></div>
+        <div class="sw"><div class="c" style="background:#c3b69c"></div><div class="t"><b>Sand</b><code>#c3b69c</code><p>From the swoosh. Quiet accents only.</p></div></div>
+        <div class="sw"><div class="c" style="background:#ffffff;border-bottom:1px solid var(--line)"></div><div class="t"><b>White</b><code>#ffffff</code><p>Crisp pages that feel open.</p></div></div>
+        <div class="sw"><div class="c" style="background:#eef2f0"></div><div class="t"><b>Cool gray</b><code>#eef2f0</code><p>Sections that separate topics.</p></div></div>
+      </div>
+      <div class="why fix" style="margin-top:0"><b>Why no gold buttons</b>Gold reads as money first. The green already in your logo reads as steady and local, and using it for every action makes the next step easy to spot. The whole site also works in dark mode.</div>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 18 · Decision 6 -->
+<section class="slide dark" aria-label="Decision 6: a moment people remember">
+  <div class="head" style="margin-bottom:40px">
+    <p class="eyebrow">Decision 6 · A moment people remember</p>
+    <h2>Sending the form feels like arriving home</h2>
+  </div>
+  <div class="film">
+    <figure><img src="img/n-walk-approach.jpg" alt="Walking up the path to the front door at dusk."><figcaption><b>1</b>The walk up to the door</figcaption></figure>
+    <figure><img src="img/n-walk-knock.jpg" alt="The green front door with the words Knock, knock."><figcaption><b>2</b>Three knocks, the hall light warms</figcaption></figure>
+    <figure><img src="img/n-walk-open.jpg" alt="The door swung open onto a hallway and a fireplace."><figcaption><b>3</b>The door swings open</figcaption></figure>
+    <figure><img src="img/n-walk-inside.jpg" alt="Inside by the fireplace with the words Welcome home, Taylor, and a See my results button."><figcaption><b>4</b>“Welcome home,” then results</figcaption></figure>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:44px">
+    <ul class="items" style="gap:16px">
+      <li><span class="ic go"></span><span>Most sites answer a form with “Thank you for your submission.” This turns that moment into a small welcome people remember.</span></li>
+      <li><span class="ic go"></span><span>On the home page, visitors drag the model home to walk around it.</span></li>
+    </ul>
+    <ul class="items" style="gap:16px">
+      <li><span class="ic go"></span><span><b>Still being smoothed.</b> Your feedback was “getting better, but clunky and not smooth.” Next: load every view up front, blend views with motion, and move the walk to one graphics canvas.</span></li>
+      <li><span class="ic go"></span><span>Visitors who turn off motion on their device skip it entirely.</span></li>
+    </ul>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 19 · Decision 7 -->
+<section class="slide" aria-label="Decision 7: phones first, every visitor">
+  <div style="display:grid;grid-template-columns:1fr 1110px;gap:40px;height:100%;align-items:center">
+    <div>
+      <p class="eyebrow">Decision 7 · Everyone, every screen</p>
+      <h2 style="font-size:60px">Built for phones first, and for every visitor</h2>
+      <ul class="items" style="margin-top:34px;gap:18px">
+        <li><span class="ic ok"></span><span><b>0 automated accessibility issues</b> across 11 pages (WCAG 2.2 AA, axe-core).</span></li>
+        <li><span class="ic ok"></span><span>No sideways scrolling at phone width.</span></li>
+        <li><span class="ic ok"></span><span>Call and Get pre-qualified always within thumb reach.</span></li>
+        <li><span class="ic ok"></span><span>Light and dark mode, full keyboard use, and reduced motion respected.</span></li>
+        <li><span class="ic ok"></span><span><b>19 requests</b> to load the home page, down from 94.</span></li>
+      </ul>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,330px);gap:40px;justify-content:end">
+      <figure class="phone"><div class="screen"><img src="img/n-start-phone.jpg" alt="Pre-qualification on a phone: What can we help you with? Buying a home or Refinancing."></div></figure>
+      <figure class="phone" style="transform:translateY(-40px)"><div class="screen"><img src="img/n-buy-phone.jpg" alt="Buying a home page on a phone."></div></figure>
+      <figure class="phone"><div class="screen"><img src="img/n-refi-phone.jpg" alt="Refinancing page on a phone."></div></figure>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 20 · Scorecard -->
+<section class="slide mist" aria-label="Side by side">
+  <div class="head" style="margin-bottom:36px">
+    <p class="eyebrow">Side by side</p>
+    <h2>How the two compare, measured the same way</h2>
+  </div>
+  <div style="display:grid;grid-template-columns:900px 1fr;gap:48px;align-items:start">
+    <div class="card" style="padding:30px 36px 26px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <p style="font:600 22px/1.3 var(--sans)">Google Lighthouse, phone test (0 to 100)</p>
+        <div style="display:flex;gap:22px;font:600 18px/1 var(--sans);color:var(--body)">
+          <span style="display:flex;gap:8px;align-items:center"><svg width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="#fff" stroke="#7d8882" stroke-width="3.5"/></svg>Current site</span>
+          <span style="display:flex;gap:8px;align-items:center"><svg width="20" height="20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#1c4f33"/></svg>Redesign</span>
+        </div>
+      </div>
+      <svg id="dumbbell" viewBox="0 0 828 360" style="width:100%;height:auto" role="img" aria-label="Lighthouse phone scores. Performance: current 67, redesign 75. Accessibility: both 100. Best practices: current 75, redesign 100. SEO: current 85, redesign 63 while the demo is hidden from search."></svg>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Main content on a phone</div><div class="vals"><span class="was">6.0s</span><span class="to">→</span><span class="now">4.7s</span></div></div>
+      <div class="kpi"><div class="lbl">Requests to load home</div><div class="vals"><span class="was">94</span><span class="to">→</span><span class="now">19</span></div></div>
+      <div class="kpi"><div class="lbl">Home page weight, MB</div><div class="vals"><span class="was">1.1</span><span class="to">→</span><span class="now">0.9</span></div></div>
+      <div class="kpi"><div class="lbl">Automated WCAG issues</div><div class="vals"><span class="was">1–2</span><span class="to">→</span><span class="now">0</span></div><div class="lbl" style="font-weight:500;font-size:16px;margin-top:6px">per page</div></div>
+    </div>
+  </div>
+  <div class="notes">
+    <span>* The demo is deliberately hidden from search engines while it is a concept. That is the only SEO check it misses, and it goes away at launch.</span>
+    <span>On desktop the redesign currently scores lower on performance (67 vs 85) because of the 3D model home. That is part of the smoothing work. Redesign phone runs ranged 44 to 76; the middle run is shown.</span>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 21 · Before launch -->
+<section class="slide" aria-label="Before launch">
+  <div class="head">
+    <p class="eyebrow">Honest status</p>
+    <h2>What the demo still needs before launch</h2>
+  </div>
+  <div class="check2">
+    <div class="card" style="padding:36px 40px">
+      <h3>Content</h3>
+      <ul class="items" style="gap:20px">
+        <li><span class="ic box"></span><span>Your team photo, headshots and bios from the current site</span></li>
+        <li><span class="ic box"></span><span>The full glossary from the current site, next to the new examples</span></li>
+        <li><span class="ic box"></span><span>Real letters for The Reliant Letter (starter topics today)</span></li>
+        <li><span class="ic box"></span><span>Terms, Privacy and CCPA pages carried over unchanged</span></li>
+        <li><span class="ic box"></span><span>Your review of every line for accuracy and compliance</span></li>
+      </ul>
+    </div>
+    <div class="card" style="padding:36px 40px">
+      <h3>Build</h3>
+      <ul class="items" style="gap:20px">
+        <li><span class="ic box"></span><span>A real web address for every page, each with its own title and description</span></li>
+        <li><span class="ic box"></span><span>Redirects from every old address, so search rankings and saved links carry over</span></li>
+        <li><span class="ic box"></span><span>Forms connected to your inbox or lead system (Apply links already go to Blink)</span></li>
+        <li><span class="ic box"></span><span>The 3D smoothing work</span></li>
+        <li><span class="ic box"></span><span>Search indexing turned on at launch</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 22 · Quick fixes -->
+<section class="slide mist" aria-label="Fixes worth making now">
+  <div class="head" style="margin-bottom:36px">
+    <p class="eyebrow">Worth doing now</p>
+    <h2>Fixes for the current site, with or without a redesign</h2>
+  </div>
+  <ol class="fixes">
+    <li><span><b>Correct the FHA line</b>3.5% down needs a 580 score; 500 to 579 needs 10% down.</span></li>
+    <li><span><b>Retire the placeholder blog post</b>“Welcome to !” is the only post, from January 2023.</span></li>
+    <li><span><b>Hide empty directory categories</b>Or fill them with the pros you already refer.</span></li>
+    <li><span><b>Show “5.0 from 82 Google reviews” on the home page</b>The home slider shows reviews from 2023 and early 2024; newer ones exist.</span></li>
+    <li><span><b>Put the phone number on the first phone screen</b>A tap-to-call link in the header.</span></li>
+    <li><span><b>Add meta descriptions to the main pages</b>16 of 17 pages have none.</span></li>
+    <li><span><b>Match names and licenses everywhere</b>One bio spells Blaine's name “Ramsey.” Two bios mention Florida; the footer lists Ohio, Kentucky and Indiana.</span></li>
+    <li><span><b>Fix the newsletter page</b>It throws a script error, and its articles show in a different typeface.</span></li>
+  </ol>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+<!-- 23 · Close -->
+<section class="slide dark close" aria-label="Next steps">
+  <svg class="arc" viewBox="0 0 1000 1000" aria-hidden="true" style="position:absolute;right:-420px;top:-520px;width:1300px;height:1300px;fill:none;stroke:var(--sand);stroke-width:3;opacity:.45"><circle cx="500" cy="500" r="496" stroke-dasharray="2000 1400" transform="rotate(40 500 500)"/></svg>
+  <p class="eyebrow">Next steps</p>
+  <h2 style="font-size:96px">Let's look at it together</h2>
+  <ol class="steps4">
+    <li><b>Walk through the demo</b>On your phone and your computer. Try the pre-qualification.</li>
+    <li><b>Tell us what to change</b>What to keep, what to adjust, what to drop.</li>
+    <li><b>Confirm the details</b>Photos, bios, and where new leads should go.</li>
+    <li><b>We build and launch</b>Move your content and redirects, and go live when you approve.</li>
+  </ol>
+  <div class="contact">
+    <div class="who"><small>Prepared by</small>Zane Ramsey · Greater Purpose Web</div>
+    <div class="url"><small>See the redesign concept</small>reliant-home-mortgage.greaterpurposeweb.com</div>
+  </div>
+  <div class="foot"><span><b>Reliant Home Mortgage</b> · Website audit</span><span data-num></span></div>
+</section>
+
+</main>
+
+<nav class="hud" aria-label="Slide controls">
+  <span class="bar" id="hudbar"></span>
+  <button type="button" id="bGrid" class="p-only" aria-label="Show all slides">All slides</button>
+  <button type="button" id="bPrev" class="p-only" aria-label="Previous slide">‹</button>
+  <span class="count p-only" id="count" aria-live="polite"></span>
+  <button type="button" id="bNext" class="p-only" aria-label="Next slide">›</button>
+  <button type="button" id="bPresent" class="g-only">Present from slide 1</button>
+</nav>
+
+<script>
+(() => {
+  const root = document.documentElement, body = document.body, deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll(':scope > .slide')], N = slides.length;
+  const frames = slides.map((s, i) => {
+    const f = document.createElement('div');
+    f.className = 'frame'; f.tabIndex = 0; f.setAttribute('role', 'group');
+    f.setAttribute('aria-label', `Slide ${i + 1} of ${N}: ${s.getAttribute('aria-label') || ''}`);
+    s.before(f); f.append(s);
+    s.querySelectorAll('[data-num]').forEach(n => n.textContent = `${i + 1} / ${N}`);
+    f.addEventListener('click', e => { if (body.classList.contains('grid') && !e.target.closest('a')) { show(i); setMode('present'); } });
+    f.addEventListener('keydown', e => { if (body.classList.contains('grid') && e.key === 'Enter') { show(i); setMode('present'); } });
+    return f;
+  });
+
+  /* Lighthouse gauges (slide 11) */
+  const g = document.getElementById('gauges');
+  if (g) g.innerHTML = g.dataset.scores.split(',').map(p => {
+    const [label, v] = p.split(':'), n = +v, C = 2 * Math.PI * 54, good = n >= 90;
+    const col = good ? '#1c4f33' : '#9a6a12';
+    return `<div class="gauge"><svg viewBox="0 0 132 132" role="img" aria-label="${label} ${n} out of 100"><circle cx="66" cy="66" r="54" fill="none" stroke="#e3e8e5" stroke-width="12"/><circle cx="66" cy="66" r="54" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C * n / 100} ${C}" transform="rotate(-90 66 66)"/><text x="66" y="78" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="40" fill="#15201a">${n}</text></svg><div><div class="lbl">${label}</div><span class="st ${good ? 'good' : 'mid'}">${good ? 'Good' : 'Needs work'}</span></div></div>`;
+  }).join('');
+
+  /* Dumbbell chart (slide 20): one 0-100 scale, hollow gray = current, filled forest = redesign, values labeled */
+  const db = document.getElementById('dumbbell');
+  if (db) {
+    const rows = [['Performance', 67, 75], ['Accessibility', 100, 100], ['Best practices', 75, 100], ['SEO*', 85, 63]];
+    const x0 = 200, x1 = 740, X = v => x0 + (x1 - x0) * v / 100, rowH = 78, top = 40;
+    let s = '';
+    [0, 25, 50, 75, 100].forEach(t => { s += `<line x1="${X(t)}" x2="${X(t)}" y1="${top - 10}" y2="${top + rowH * 4 - 30}" stroke="#e3e8e5" stroke-width="1.5"/><text x="${X(t)}" y="${top + rowH * 4 - 2}" text-anchor="middle" font-size="17" fill="#66716b" font-family="Public Sans, sans-serif">${t}</text>`; });
+    rows.forEach(([name, a, b], i) => {
+      const y = top + 20 + i * rowH, same = a === b;
+      s += `<text x="0" y="${y + 7}" font-size="22" font-weight="600" fill="#15201a" font-family="Public Sans, sans-serif">${name}</text>`;
+      if (!same) s += `<line x1="${X(a)}" x2="${X(b)}" y1="${y}" y2="${y}" stroke="#c9d1cc" stroke-width="5" stroke-linecap="round"/>`;
+      s += `<circle cx="${X(a)}" cy="${y}" r="13" fill="#fff" stroke="#7d8882" stroke-width="4.5"><title>${name.replace('*', '')}, current site: ${a}</title></circle>`;
+      s += `<circle cx="${X(b)}" cy="${y}" r="${same ? 7.5 : 12}" fill="#1c4f33"><title>${name.replace('*', '')}, redesign: ${b}</title></circle>`;
+      const lab = (v, col, right) => `<text x="${X(v) + (right ? 24 : -24)}" y="${y + 7}" text-anchor="${right ? 'start' : 'end'}" font-size="21" font-weight="600" fill="${col}" font-family="Public Sans, sans-serif">${v}</text>`;
+      if (same) s += `<text x="${X(a) - 26}" y="${y + 7}" text-anchor="end" font-size="21" font-weight="600" fill="#15201a" font-family="Public Sans, sans-serif">100 · both</text>`;
+      else { const up = b > a; s += lab(a, '#56615b', !up) + lab(b, '#10301f', up); }
+    });
+    db.innerHTML = s;
+  }
+
+  /* Modes, scaling and navigation */
+  let cur = 0, mode = 'present';
+  const count = document.getElementById('count'), bar = document.getElementById('hudbar');
+  function fit() {
+    const hud = parseFloat(getComputedStyle(root).getPropertyValue('--hud')) || 56;
+    const s = mode === 'present' ? Math.min(innerWidth / 1920, (innerHeight - hud) / 1080) : (frames[0].clientWidth || 380) / 1920;
+    root.style.setProperty('--s', s);
+  }
+  function show(i) {
+    cur = Math.max(0, Math.min(N - 1, i));
+    frames.forEach((f, k) => f.classList.toggle('on', k === cur));
+    count.textContent = `${cur + 1} / ${N}`;
+    bar.style.width = `${(cur + 1) / N * 100}%`;
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+  function setMode(m) {
+    mode = m; body.classList.toggle('present', m === 'present'); body.classList.toggle('grid', m === 'grid');
+    fit();
+    if (m === 'grid') { requestAnimationFrame(() => { fit(); frames[cur].scrollIntoView({ block: 'center' }); }); }
+  }
+  document.getElementById('bPrev').onclick = () => show(cur - 1);
+  document.getElementById('bNext').onclick = () => show(cur + 1);
+  document.getElementById('bGrid').onclick = () => setMode('grid');
+  document.getElementById('bPresent').onclick = () => { show(0); setMode('present'); };
+  addEventListener('keydown', e => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (mode === 'grid') { if (e.key === 'Escape') return; return; }
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(N - 1);
+    else if (e.key === 'Escape' || e.key === 'g') setMode('grid');
+  });
+  deck.addEventListener('click', e => {
+    if (mode !== 'present' || e.target.closest('a,button')) return;
+    show(cur + (e.clientX > innerWidth / 3 ? 1 : -1));
+  });
+  let tx = null;
+  deck.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  deck.addEventListener('touchend', e => { if (mode !== 'present' || tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) show(cur + (dx < 0 ? 1 : -1)); tx = null; });
+  addEventListener('resize', fit);
+  if ('ResizeObserver' in window) new ResizeObserver(() => { if (mode === 'grid') fit(); }).observe(deck);
+  const start = parseInt((location.hash || '').slice(1), 10);
+  show(Number.isFinite(start) ? start - 1 : 0);
+  setMode(innerWidth < 760 ? 'grid' : 'present');
+  addEventListener('beforeprint', () => root.style.setProperty('--s', 1));
+  addEventListener('afterprint', fit);
+})();
+</script>
+</body>
+</html>

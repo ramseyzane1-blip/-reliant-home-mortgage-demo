@@ -1,6 +1,9 @@
 # Tools
 
 - `smoke_test.py`: end-to-end browser test (see the docstring for how to run it).
+- `site_audit.js`: measures any site page by page in a real browser (weight, requests, SEO basics,
+  axe-core WCAG checks, phone-width checks, screenshots). Used for the audit in `audit/`.
+- `export_pdfs.js`: exports the audit deck and report to PDF.
 
 ## How the 3D images were prepared
 

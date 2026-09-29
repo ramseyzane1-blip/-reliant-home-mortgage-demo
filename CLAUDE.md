@@ -35,6 +35,8 @@ demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
+tools/site_audit.js         page-by-page audit of any site (used for audit/)
+audit/                      client audit: slide deck (index.html), written report, PDFs, evidence
 ```
 
 ## Decisions the client has made (don't undo these)
@@ -63,8 +65,10 @@ tools/smoke_test.py         Playwright end-to-end test
 Everything factual comes from relianthomemtg.com: licenses (NMLS #2292251, OH RM.804827.000,
 KY MB855092, IN 2292251), loan officer NMLS numbers, office address and phone, the 20 loan
 programs, Google reviews, glossary terms. Bios for Christina, Chase and Blaine are
-placeholders (the original site has no bio content). Staff headshots and the team photo are
-placeholders.
+placeholders here, and staff headshots and the team photo are placeholders. The original site does
+have real headshots, a team photo and full bios for all five loan officers (at /staff/<name>,
+inside an embedded listing), so replace the placeholders with those. See `audit/` for the
+September 2026 audit of the original site.
 
 ## The two 3D pieces (`js/engines.js`)
 
