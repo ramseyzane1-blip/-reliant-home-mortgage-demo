@@ -56,13 +56,13 @@ document.querySelectorAll('form[data-form]').forEach(f=>f.addEventListener('subm
   demo(f.dataset.form+' sent',savedNote(r),lines.join('\n')||'(No details entered)');}));
 
 /* ---------- people ---------- */
-const faceHTML=i=>`<span class="face f${i}" title="${TEAM[i].n}">${TEAM[i].i}</span>`;
-const portrait=i=>`<div class="portrait"><b>${TEAM[i].i}</b><span class="slot-tag">Headshot</span></div>`;
-document.querySelectorAll('[data-faces]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>faceHTML(i)).join(''));
+const faceHTML=i=>TEAM[i].ph?`<img class="face" src="images/team/${TEAM[i].ph}.webp" alt="" title="${TEAM[i].n}" width="44" height="44" loading="lazy" decoding="async">`:`<span class="face f${i}" title="${TEAM[i].n}">${TEAM[i].i}</span>`;
+const portrait=i=>TEAM[i].ph?`<div class="portrait"><img src="images/team/${TEAM[i].ph}-lg.webp" alt="${TEAM[i].n}" width="480" height="480" loading="lazy" decoding="async"></div>`:`<div class="portrait"><b>${TEAM[i].i}</b><span class="slot-tag">Headshot</span></div>`;
+document.querySelectorAll('[data-faces]').forEach(el=>{el.innerHTML=TEAM.map((t,i)=>faceHTML(i)).join('');el.setAttribute('role','img');el.setAttribute('aria-label','Our loan officers: '+TEAM.map(t=>t.n).join(', '));});
 document.querySelectorAll('[data-people]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>`<a href="#family" data-bio="${i}">${faceHTML(i)}<span>${t.n.replace('Wheeler-Wellman','W.-Wellman')}</span></a>`).join(''));
-document.querySelectorAll('[data-team]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>`<div class="person">${portrait(i)}<div class="pi"><b>${t.n}</b><span class="role num">Loan Officer · NMLS ${t.nmls}</span><button class="btn btn-primary" data-apply="${i}">Apply with ${t.n.split(' ')[0]}</button></div></div>`).join(''));
+document.querySelectorAll('[data-team]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>`<div class="person">${portrait(i)}<div class="pi"><b>${t.n}</b><span class="role num">${t.r||'Loan Officer'} · NMLS ${t.nmls}</span><button class="btn btn-primary" data-apply="${i}">Apply with ${t.n.split(' ')[0]}</button></div></div>`).join(''));
 $('biosList').innerHTML=TEAM.map((t,i)=>`<article class="bio" id="bio-${i}">${portrait(i)}<div class="bt">
-  <div><h3>${t.n}</h3><p class="muted num">Loan Officer · NMLS ${t.nmls}</p></div><p>${esc(t.bio)}</p>
+  <div><h3>${t.n}</h3><p class="muted num">${t.r||'Loan Officer'} · NMLS ${t.nmls}</p></div><p>${esc(t.bio)}</p>
   <div class="meta">${t.tags.map(x=>`<span>${x}</span>`).join('')}</div>
   ${t.quote?`<blockquote>"${esc(t.quote)}"<span class="fine qby">${t.qby}, Google review</span></blockquote>`:''}
   ${t.slot?`<p class="fine">Bio slot: add ${t.n.split(' ')[0]}'s years in lending, specialties and hometown.</p>`:''}
