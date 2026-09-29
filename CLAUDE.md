@@ -129,8 +129,8 @@ September 2026 audit of the original site.
 ## The hero turntable and the walk-through (`js/engines.js`)
 
 **Turntable** (hero): a real 3D model of the house, built in code in Blender
-(`tools/blender/house_scene.py`) and rendered as a 360° turn: 55 frames, every 10° around the front
-and every 5° on the sides and back (where 10° steps ghosted mid-morph), with a transparent background so the house, plinth and ring float on the page with no card (client
+(`tools/blender/house_scene.py`) and rendered as a 360° turn: 144 frames, one every 2.5° (with 10°
+steps the lighting and shadows, which do not turn with the house, jumped visibly between frames), with a transparent background so the house, plinth and ring float on the page with no card (client
 request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
 model has lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed
 green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
@@ -140,19 +140,22 @@ Files (`images/turn/`, all with a `?v=` content version so caches never mix rend
 `fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
 of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
 each; `sm/`, 768px copies for phones, about 64 KB each; each frame's depth from Blender on a
-161×161 mesh in two files, `depth-front.bin` (the 9 views within ±40° of the front: 233 KB, 60 KB
-as served, brotli) and `depth-rest.bin` (the other 46: 1.2 MB, 307 KB as served).
+121×121 mesh in two files, `depth-front.bin` (the 33 views within ±40° of the front: 483 KB, 112 KB
+as served, brotli) and `depth-rest.bin` (the other 111: 1.6 MB, 382 KB as served).
 `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
 
 In the browser each frame is a relief: a mesh with its real depth, turned in 3D about the house's
 axis to the exact angle (the camera matches `house_scene.py`), so things move with their real
 parallax (a trunk in front of a wall) and nothing shows twice. This replaced an optical-flow morph
 whose blends doubled trunks and columns and went soft between frames, which read as flicker when
-spinning (frame-to-frame sharpness change in a fast spin: 4.5%, was 12%; slow: 3.5%, was 5.5%).
-Next to a depth jump the mesh stretches across what the turn uncovers; there (marked in the
-stencil) the other frame is drawn over it, fading in over the first 2° of turning. Between two
-frames, each frame's turned picture is drawn offscreen and the two are mixed across the middle
-half of the step (they line up, so the mix does not ghost); nearer a frame, that frame alone. The
+spinning (frame-to-frame sharpness change in a fast spin: 3.0%, was 12%; slow: 3.4%, was 5.5%).
+Frames are sampled with a 9-tap Catmull-Rom (bicubic) filter, so a slightly turned frame is about
+as crisp as one shown exactly (with linear filtering the picture sharpened each time the turn
+passed a frame). Next to a depth jump the mesh stretches across what the turn uncovers; there
+(marked in the stencil) the other frame is drawn over it, fading in over the first 0.5° of
+turning. Between two frames, each frame's turned picture is drawn offscreen and the two are mixed
+across the middle 30% of the step (they line up, so the mix does not ghost); nearer a frame, that
+frame alone. The
 ring does not turn: its pixels are found with a render of the ring alone and kept still. The house
 never turns faster than 110°/s however hard it is flicked. The fixed layer goes on top, still
 (drawn only over the tiles where it has content). The front frame and the fixed layer
@@ -160,18 +163,20 @@ are preloaded with the page as two stacked `<img>`s (the Largest Contentful Pain
 on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile, was 3.8 s), with
 `sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
 hero is about to scroll into view: then the front depth and the two frames next to the front
-(the hero is ready once those are in), then the rest of the 9 frames the idle sway uses (front
+(the hero is ready once those are in), then the rest of the 33 frames the idle sway uses (front
 ±40°), then the rest of the depth and the frames once those are in or the visitor starts turning.
 Until a frame is in, the nearest frame that is in is turned to the angle instead. A depth that
 lands while its frame is on screen waits until the turn moves on, so nothing pops. On a
-throttled phone profile the hero is interactive after about 580 KB at 3.9 s.
+throttled phone profile the hero is interactive after about 630 KB at 4.2 s.
 Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
-the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
-on screen is missing; the decoded copy is released after upload. Every frame stays on the GPU
-(a spin that has to wait for an evicted frame shows as a jump; a 16-frame cap made 19% of a fast
-phone spin jump). Phones decode at most 672px (all 55: about 97 MB), devices reporting under 4 GB
-(`navigator.deviceMemory`, Chromium only) 512px (about 55 MB). The drawing is heavier than the old
-morph (up to four 51k-triangle mesh passes a frame), easy for any GPU, slow in software rendering.
+the canvas grows a lot) and upload one per animation frame, during a drag only frames within 6°;
+the decoded copy is released after upload. The GPU keeps as many of the nearest frames as fit a
+budget (160 MB desktop, about 43 frames at 960px; 90 MB on phones, which decode at most 672px;
+50 MB and 512px on devices reporting under 4 GB, `navigator.deviceMemory`, Chromium only); the
+others are fetched into the HTTP cache, and a frame not in yet is covered by the nearest one
+turned in 3D, so a spin never holds or jumps (0% of frames in a fast phone spin). The drawing is
+heavier than the old morph (up to four 29k-triangle mesh passes a frame, bicubic sampling), easy
+for any GPU, slow in software rendering.
 About a second after the hero is well out of view (scrolled away, another page, or
 the walk-through, which also puts it to sleep directly) it releases every texture and its
 drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
@@ -184,9 +189,9 @@ To change the house: edit `house_scene.py`, preview with
 `python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
 and `python3 tools/blender/fetch_assets.py` once), render with
 `python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU
-cores) plus the 5° in-betweens with `angles 960 /tmp/mid/b 64 <Blender rotations>` (the current set:
-45 55 65 75 85 95 105 115 125 135 195 225 235 265 275 285 295 305 315), the depth of every frame
-with `depth 960 /tmp/depth <all 55 rotations>` (about 40 s each) and `ringdepth 960
+cores) plus every other 2.5° step with `angles 960 /tmp/mid/b 64 <Blender rotations>` (the 108
+rotations that are multiples of 2.5° but not of 10°, about 2.3 min each), the depth of every frame
+with `depth 960 /tmp/depth <all 144 rotations>` (about 15 s each) and `ringdepth 960
 /tmp/depth/ring.exr`, then run `python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth`
 (needs `pip install OpenEXR`). See `tools/README.md`.
 

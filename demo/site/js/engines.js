@@ -18,9 +18,22 @@ const FS=`precision mediump float;uniform sampler2D tex;uniform float w;varying 
 const VR=`attribute vec2 uv;attribute vec2 zc;uniform mat3 R;uniform vec3 T;uniform float asp;varying vec2 vu;varying float c;
 void main(){vu=uv;float st=step(1.5,zc.y);c=zc.y-2.*st;float z=zc.x;vec3 q=vec3((uv.x*2.-1.)*.225*z,(1.-uv.y*2.)*.225*z,-z),p=mix(R*q+T,q,st);
 vec2 n=p.xy/(-p.z*.225);if(asp>=1.)n.x/=asp;else n.y*=asp;gl_Position=vec4(n,clamp((-p.z-30.)/60.,0.,1.)*2.-1.,1.);}`;
-/* cf 1: only the stretched parts (next to a depth jump), for marking them in the stencil */
-const FR=`precision mediump float;uniform sampler2D tex;uniform float w,cf;varying vec2 vu;varying float c;
-void main(){if(cf>.5&&c>.5)discard;gl_FragColor=texture2D(tex,vu)*w;}`;
+/* cf 1: only the stretched parts (next to a depth jump), for marking them in the stencil. The
+   frame is sampled with a Catmull-Rom (bicubic) filter in 9 taps: a turned frame lands between
+   texels, and plain linear filtering would make it softer than the same frame shown exactly, so
+   the picture would sharpen each time the turn passes a frame (a pulse every 2.5 degrees). */
+const FR=`#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform sampler2D tex;uniform float w,cf,ts;varying vec2 vu;varying float c;
+vec4 t(float x,float y){return texture2D(tex,vec2(x,y));}
+void main(){if(cf>.5&&c>.5)discard;
+vec2 sp=vu*ts,tp=floor(sp-.5)+.5,f=sp-tp,w0=f*(-.5+f*(1.-.5*f)),w1=1.+f*f*(-2.5+1.5*f),w2=f*(.5+f*(2.-1.5*f)),w3=f*f*(-.5+.5*f),w12=w1+w2;
+vec2 a=(tp-1.)/ts,b=(tp+w2/w12)/ts,d=(tp+2.)/ts;
+vec4 r=(t(a.x,a.y)*w0.x+t(b.x,a.y)*w12.x+t(d.x,a.y)*w3.x)*w0.y+(t(a.x,b.y)*w0.x+t(b.x,b.y)*w12.x+t(d.x,b.y)*w3.x)*w12.y+(t(a.x,d.y)*w0.x+t(b.x,d.y)*w12.x+t(d.x,d.y)*w3.x)*w3.y;
+r.a=clamp(r.a,0.,1.);r.rgb=clamp(r.rgb,0.,r.a);gl_FragColor=r*w;}`;
 /* views: [{f: 960px url, s: 768px url, a: degrees}]; opt: {reduced(), depth: {front, rest} urls, fixed: {f, s} (the
    parts that never move: most of the ring, the front of the plinth), front: the fallback <img> (its
    choice of copy is reused), lost(): WebGL went away} */
@@ -32,7 +45,7 @@ function create(box,canvas,views,opt){
  const U={};['k','asp','tex','w'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
  const p3=gl.createProgram();gl.attachShader(p3,sh(gl.VERTEX_SHADER,VR));gl.attachShader(p3,sh(gl.FRAGMENT_SHADER,FR));gl.bindAttribLocation(p3,0,'uv');gl.bindAttribLocation(p3,1,'zc');gl.linkProgram(p3);
  if(!gl.getProgramParameter(p3,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p3));
- const U3={};['R','T','asp','tex','w','cf'].forEach(k=>U3[k]=gl.getUniformLocation(p3,k));
+ const U3={};['R','T','asp','tex','w','cf','ts'].forEach(k=>U3[k]=gl.getUniformLocation(p3,k));
  const buf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
  /* the relief mesh: a G x G grid over the frame, built at the depth file's grid size */
  const n=views.length;let bU,bI,NI=0;
@@ -109,7 +122,7 @@ function create(box,canvas,views,opt){
     sleeps: every texture and its drawing buffer are released and the still <img>s show again; it
     wakes and re-uploads from the HTTP cache as it comes back. */
  const N=n,all=views;
- const tex=all.map(()=>null),gen=all.map(()=>0),dec=all.map(()=>null),busy=all.map(()=>false),fails=all.map(()=>0),retry=all.map(()=>0);
+ const tex=all.map(()=>null),tsz=all.map(()=>0),gen=all.map(()=>0),dec=all.map(()=>null),busy=all.map(()=>false),fails=all.map(()=>0),retry=all.map(()=>0);
  let dirty=true,cur=0,texSize=0,texGen=1,started=false,allFetched=false,lost=false,asleep=false,sleepT=0;
  /* every frame stays on the GPU (a spin that has to wait for a frame shows as a jump); phones decode
     them a little smaller so all of them fit: 672px x 55 frames = 95 MB, 512px = 55 MB on devices
@@ -160,7 +173,7 @@ function create(box,canvas,views,opt){
   const w=im.width||im.naturalWidth,h=im.height||im.naturalHeight,pot=!(w&(w-1))&&!(h&(h-1));if(pot)gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,pot?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  if(im.close)im.close();dec[best]=null;tex[best]=t;gen[best]=texGen;dirty=true;}
+  tsz[best]=w;if(im.close)im.close();dec[best]=null;tex[best]=t;gen[best]=texGen;dirty=true;}
  function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,(t-a0)/(a1-a0)];}return [0,1,0];}
  const bind=(u,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,u);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);};
  const still=(t,w)=>{bind(qU,qI);gl.bindTexture(gl.TEXTURE_2D,t);gl.bindBuffer(gl.ARRAY_BUFFER,qZ);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.uniform1f(U.k,0);gl.uniform1f(U.w,w);gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);};
@@ -181,13 +194,13 @@ function create(box,canvas,views,opt){
   const rel=deps[k]&&deps[j],sm=f*f*(3-2*f);let exact=false;
   /* One frame turned to th: in full, then, where its visible picture sits next to a depth jump
      (its mesh stretches there, smearing the edge across what the turn uncovers), the other
-     frame over it. That fill fades in over the first 2 degrees of turning (at its own angle a
+     frame over it. That fill fades in over the first half degree of turning (at its own angle a
      frame is exact). Stencil marks the stretched parts that are in view. */
   const relief=(top,bot)=>{gl.useProgram(p3);gl.uniform1f(U3.asp,canvas.width/canvas.height);gl.uniform1i(U3.tex,0);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
    gl.enable(gl.DEPTH_TEST);bind(bU,bI);gl.clearStencil(0);gl.clear(gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);
-   const go=(i,w,cf)=>{const [R,T]=turn(i,th);gl.uniformMatrix3fv(U3.R,false,R);gl.uniform3fv(U3.T,T);gl.uniform1f(U3.w,w);gl.uniform1f(U3.cf,cf);
+   const go=(i,w,cf)=>{const [R,T]=turn(i,th);gl.uniformMatrix3fv(U3.R,false,R);gl.uniform3fv(U3.T,T);gl.uniform1f(U3.w,w);gl.uniform1f(U3.cf,cf);gl.uniform1f(U3.ts,tsz[i]||texSize||960);
     gl.bindTexture(gl.TEXTURE_2D,tex[i]);gl.bindBuffer(gl.ARRAY_BUFFER,deps[i]);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.drawElements(gl.TRIANGLES,NI,gl.UNSIGNED_SHORT,0);};
-   const fw=bot>=0?Math.min(1,adist(top,th)/2):0;gl.depthFunc(gl.LESS);go(top,1,0);
+   const fw=bot>=0?Math.min(1,adist(top,th)/.5):0;gl.depthFunc(gl.LESS);go(top,1,0);
    if(fw>0){gl.enable(gl.STENCIL_TEST);gl.colorMask(false,false,false,false);gl.depthFunc(gl.LEQUAL);gl.stencilFunc(gl.ALWAYS,1,255);gl.stencilOp(gl.KEEP,gl.KEEP,gl.REPLACE);go(top,1,1);
     gl.colorMask(true,true,true,true);gl.clear(gl.DEPTH_BUFFER_BIT);gl.depthFunc(gl.LESS);gl.stencilFunc(gl.EQUAL,1,255);gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);go(bot,fw,0);
     gl.disable(gl.STENCIL_TEST);}
@@ -198,8 +211,8 @@ function create(box,canvas,views,opt){
    gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,canvas.width,canvas.height);gl.blendFunc(gl.ONE,gl.ONE);gl.uniform1f(U.asp,1);
    for(const [x,w] of [[F.a,1-t],[F.b,t]]){bind(qU,qI);gl.bindTexture(gl.TEXTURE_2D,x.t);gl.bindBuffer(gl.ARRAY_BUFFER,qF);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.uniform1f(U.k,1);gl.uniform1f(U.w,w);gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);}
    gl.uniform1f(U.asp,canvas.width/canvas.height);};
-  /* mixed across the middle half of the step (smoothly, so nothing pops); nearer an end, the nearer frame alone (half the drawing) */
-  if(ta&&tb&&rel){const m=Math.max(0,Math.min(1,(f-.25)*2)),ms=m*m*(3-2*m);if(ms<=0)relief(k,j);else if(ms>=1)relief(j,k);else mix2(k,j,ms);exact=true;}
+  /* mixed across the middle 30% of the step (smoothly, so nothing pops); nearer an end, the nearer frame alone (half the drawing) */
+  if(ta&&tb&&rel){const m=Math.max(0,Math.min(1,(f-.35)/.3)),ms=m*m*(3-2*m);if(ms<=0)relief(k,j);else if(ms>=1)relief(j,k);else mix2(k,j,ms);exact=true;}
   else if(near>=0&&ok(near))relief(near,n2);
   else if(near>=0)still(tex[near],1);
   else if(ta&&tb&&sm>0&&sm<1){still(ta,1-sm);still(tb,sm);exact=true;}
