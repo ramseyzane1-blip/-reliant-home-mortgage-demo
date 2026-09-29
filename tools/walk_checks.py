@@ -50,12 +50,31 @@ async def main():
         await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
         await pg.click('#wiz [data-w=submit]')
         await pg.wait_for_function('window.__walk && __walk.time() > 8.3', timeout=120000)
+        await pg.evaluate('window.__w0 = __walk'); await pg.set_viewport_size({'width': 400, 'height': 800}); await pg.wait_for_timeout(300)
+        res['resize_same_shape_keeps_walk'] = await pg.evaluate('window.__walk === window.__w0')   # e.g. a phone's address bar showing or hiding
         t0 = await pg.evaluate('__walk.time()'); tall0 = await pg.evaluate('__walk.tall')
         await pg.set_viewport_size({'width': 844, 'height': 390}); await pg.wait_for_timeout(1200)
         tall1 = await pg.evaluate('__walk.tall'); t1 = await pg.evaluate('__walk.time()'); nc = await pg.evaluate("document.querySelectorAll('.wk-canvas').length")
-        res['rotate_rebuilds'] = f'tall {tall0} -> {tall1}, walk time {t0:.1f} -> {t1:.1f}, canvases {nc}'
+        top = await pg.evaluate('__walk.shots()')
+        res['rotate_rebuilds'] = f'tall {tall0} -> {tall1}, walk time {t0:.1f} -> {t1:.1f}, canvases {nc}, showing {top}'
+        res['rotate_keeps_the_door'] = top.startswith('door:')   # not the approach replayed from the far shot
         await pg.wait_for_function('__walk.time() > 12.5', timeout=120000)
         res['knocks_heard_once'] = (await pg.evaluate('__cues')).count('knock') == 3
+        await ctx.close()
+        # Back or a link mid-walk ends it, and the results still show
+        ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await wp.start_walk(pg); await pg.wait_for_timeout(2500)
+        await pg.evaluate("location.hash = '#about'"); await pg.wait_for_timeout(1500)
+        res['route_change_ends_walk'] = await pg.evaluate("!document.querySelector('.ds') && location.hash === '#start' && !document.getElementById('pqResults').hidden && !document.querySelector('.page[data-page=start]').hidden")
+        await ctx.close()
+        # a lost WebGL context ends the walk instead of leaving a black screen
+        ctx = await b.new_context(viewport={'width': 390, 'height': 844})
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await wp.start_walk(pg); await pg.wait_for_function('__walk.time() > 3', timeout=120000)
+        await pg.evaluate("(() => { const c = document.querySelector('.wk-canvas'); const g = c.getContext('webgl2') || c.getContext('webgl'); g.getExtension('WEBGL_lose_context').loseContext(); })()")
+        await pg.wait_for_timeout(1500)
+        res['context_loss_ends_walk'] = await pg.evaluate("!document.querySelector('.ds') && !window.__walk && !document.getElementById('pqResults').hidden && !document.body.classList.contains('ds-covered')")
         await ctx.close()
         # a mute carries over to the next walk, and the button says so
         ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
@@ -68,7 +87,7 @@ async def main():
             await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
         await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
         await pg.click('#wiz [data-w=submit]'); await pg.wait_for_function('!!window.__walk', timeout=20000)
-        res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent + ' / aria-pressed=' + document.querySelector('.ds [data-ds=sound]').getAttribute('aria-pressed')")
+        res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent")
         await ctx.close()
         for w, h in [(390, 844), (1280, 800)]:
             for scheme in ['light', 'dark']:

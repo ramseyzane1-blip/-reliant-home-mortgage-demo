@@ -78,7 +78,7 @@ Each render is a 3D relief: a mesh with per-vertex depth from Depth Anything V2
 (`images/walk-depth.bin`, made by `tools/walk_depth.py`), normalized so the shot's anchor (door or
 fireplace) is at depth 1. The camera follows the anchor; zooming in is turned into walking forward
 through the relief (`DOLLY`), and walking bob, breathing and the pointer move the head (real
-parallax). Shots: `approach-2…4`, `door` (desktop only), `door-open`, `inside-1…4`. Each shot enters
+parallax). Shots: `approach-2…4`, `door` (wide screens), `door-open`, `inside-1…4`. Each shot enters
 exactly as rendered, once it is sharp and the camera has lined it up (on tall screens the camera
 steers, on a critically damped spring, so both shots can put the anchor on the same pixel), and is
 revealed from the anchor outward while the outgoing shot dollies to the depth where it best matches
@@ -98,12 +98,16 @@ footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues
 scheduled against the audio clock (measured within ~15ms of the visual beat). It ends in a
 look-around in the last room (mouse, drag or arrow keys turn the view and move the head) until the
 visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`. Without WebGL, or
-with `prefers-reduced-motion`, the walk is skipped.
+with `prefers-reduced-motion`, the walk is skipped. If the WebGL context is lost, the route changes (Back, a link) or
+Escape is pressed, the walk ends and the results show. Turning the phone before the threshold rebuilds
+the walk at the same moment (`startAt`): shots that are already sharp show at once, and cues that
+already sounded stay done.
 
 Performance and memory: a software renderer (SwiftShader, llvmpipe) is detected and drawn at .3
-scale with a coarse mesh and mipmaps; a governor steps the scale with frame time; a GPU draws at
-full resolution. Every shot is drawn once behind the loading overlay (warm-up), and the walk starts
-once the overlay has faded in. Textures: the approach, door and doorway view upload at start; the
+scale with a coarse mesh and mipmaps; a GPU draws at full resolution (device pixel ratio capped at
+2). There is no frame-time governor: a rAF-capped 60Hz loop can't tell spare headroom, and iOS Low
+Power Mode caps rAF at 30fps, which would read as a slow GPU. Low-end phone GPUs are untested. Every shot is drawn once behind
+the loading overlay (warm-up), and the walk starts once the overlay has faded in. Textures: the approach, door and doorway view upload at start; the
 rooms stream in during the knock (four bands, one per frame, decoded off the main thread); each
 shot is freed once passed. Test hooks on `window.__walk`: `render(t)`, `stop()`, `time()`,
 `scale(v)`, `mem()`, `look()`, `probe()`, `shots()`.

@@ -268,7 +268,7 @@ function play(root,opts){
   /* Steer: on narrow screens the next shot may not be able to put its anchor where the camera
      wants it without showing its edge. Ease the camera to where it can, before it appears, so
      both shots agree during the handoff. */
-  const A=list[top],B=list[top+1],st=list.steer||(list.steer={x:0,y:0,t});let tx=0,ty=0;st.gap=0;
+  const A=list[top],B=list[top+1],st=list.steer||(list.steer={x:0,y:0,t:resume?t-2:t});let tx=0,ty=0;st.gap=0;
   if(B){ // where each shot can put its anchor at this zoom; aim for where both can
    const rng=(L,v,i)=>{const sc=W/rw(L.s.a),c=i?cy(L.s.a):cx(L.s.a);return [v-sc*(L.s.wh[i]-c),sc*c];};
    const fit=(v,i,size)=>{const a=rng(A,size,i),b=rng(B,size,i),lo=Math.max(a[0],b[0]),hi=Math.min(a[1],b[1]);st.gap=Math.max(st.gap,lo-hi);
@@ -289,7 +289,7 @@ function play(root,opts){
     finished, and the camera has lined it up (or the current shot is getting soft, or 1.2s have
     passed); then it fades in over a fixed time. */
  function gate(list,H,fade,t,soft=.22){return (i,a,over)=>{let h=H[i];if(h&&t<h.r-1){H.length=i;h=undefined;} // time went backwards (tests)
-  if(!h){if(over<0||(i>1&&!(H[i-1]&&H[i-1].s!==undefined)))return 0;h=H[i]={r:t,s:undefined};}
+  if(!h){if(over<0||(i>1&&!(H[i-1]&&H[i-1].s!==undefined)))return 0;h=H[i]={r:t,s:resume?-1e9:undefined};} // resumed: what is already sharp is already shown
   if(h.s===undefined){const ok=list.steer&&list.steer.err<=5&&list.steer.gap<=2;if(t>=(i>1?H[i-1].s+fade:-1e9)&&(ok||over>soft||t>h.r+1.2))h.s=t;else return 0;}
   return ss(seg(t,h.s,h.s+fade));};}
 
@@ -298,7 +298,8 @@ function play(root,opts){
     a beat, then someone swings it wide */
  const T={app0:1.1,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:17.4,cap:16.8,done:17.8};
  const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
- cues.forEach((c,i)=>{if(c[0]<(opts.startAt||0)-.06)fired.add(i);}); // resuming: what already sounded stays done
+ const resumeAt=opts.startAt||0;let resume=resumeAt>0; // rebuilt mid-walk (the phone turned)
+ cues.forEach((c,i)=>{if(resume&&c[0]-.06<=resumeAt)fired.add(i);}); // what already sounded stays done (render fires a cue from c[0]-.06)
  const OPEN=72,CRACK=6,FADE=.85,DOLLY=.55,PUSH=Math.log(1.1); // DOLLY: how much of each zoom-in becomes walking forward (the rest stays a zoom)
  function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
   // a hand on the door: speeds up, then eases out with a slight settle (an underdamped spring from rest)
@@ -398,22 +399,24 @@ function play(root,opts){
    opts.cap.querySelectorAll('.kk').forEach((w,i)=>{const v=ss(seg(t,T.knock[i]-.02,T.knock[i]+.22));w.style.opacity=v.toFixed(3);w.style.transform=`translateY(${((1-v)*6).toFixed(2)}px)`;});}
   else{setCap('b',opts.capB);opts.cap.style.opacity=seg(t,T.cap,T.cap+.9).toFixed(3);}
   if(t>=T.done&&!render.shown){render.shown=1;opts.onDone&&opts.onDone();}
+  if(t>=resumeAt)resume=false;
  }
  function setCap(k,h){if(capState!==k){capState=k;opts.cap.innerHTML=h;}}
  let clock=opts.startAt||0,lastTs=0,started=false;
- function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(clock>2)decode();if(clock>T.app1&&clock<T.crack)stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
+ function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(clock>2)decode();if(clock>T.app1&&(clock<T.crack||resumeAt>=T.crack))stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
  const onMove=e=>{if(!explore)return;lastMove=performance.now();if(drag){pt=cl(drag.p-(e.clientX-drag.x)/vw*2.2,-1,1);pty=cl(drag.py-(e.clientY-drag.y)/vh*1.2,-.4,.4);}else if(e.pointerType==='mouse'){pt=cl((e.clientX/vw-.5)*2.2,-1,1);pty=cl((e.clientY/vh-.5)*.8,-.4,.4);}};
  const onDown=e=>{if(!explore||e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,p:pt,py:pty};root.classList.add('drag');lastMove=performance.now();};
  const up=()=>{drag=null;root.classList.remove('drag');};
  const keyEl=root.closest('[role=dialog]')||root,onKey=e=>{if(!explore)return;const k={ArrowLeft:[-.2,0],ArrowRight:[.2,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[e.key];if(k){pt=cl(pt+k[0],-1,1);pty=cl(pty+k[1],-.4,.4);lastMove=performance.now();e.preventDefault();}};
- const on=[[root,'pointermove',onMove],[root,'pointerdown',onDown],[root,'pointerup',up],[root,'pointercancel',up],[keyEl,'keydown',onKey]];
+ const onLost=e=>{e.preventDefault();if(!stopped&&opts.onLost)opts.onLost();}; // the GPU dropped the context (a phone in the background, memory pressure): end the walk
+ const on=[[canvas,'webglcontextlost',onLost],[root,'pointermove',onMove],[root,'pointerdown',onDown],[root,'pointerup',up],[root,'pointercancel',up],[keyEl,'keydown',onKey]];
  on.forEach(([el,ev,f])=>el.addEventListener(ev,f));
  /* Warm up behind the loading overlay: draw every shot and every door piece once (textures, mipmaps
     and shader paths get their first use now, not in the middle of the walk), then reset. */
  (function prewarm(){const d={...D};Object.assign(D,{th:30,open:true,lit:1,gap:.5,spill:.5,shade:.3,warm:.2});
   layers.forEach(L=>{Object.assign(L.st,{ox:0,oy:0,sc:cover(L.s)*1.01,a:TX[L.s.f]?.01:0});L.wipe=L!==app[0];});draw(1);V.gl.finish();
   Object.assign(D,d);layers.forEach(L=>{L.st.a=0;L.sc0=0;L.t0=null;L.wipe=false;});})();
- render(0); // first frame now, so there is no blank canvas before the loop starts
+ render(resumeAt); // first frame now, so there is no blank canvas before the loop starts
  return {tall,get started(){return started;},start(){started=true;requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);on.forEach(([el,ev,f])=>el.removeEventListener(ev,f));Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));Object.keys(TX).forEach(drop);const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
   mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>clock,scale:v=>{if(v){rs=v;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
   shots:()=>layers.filter(L=>L.st.a>0).map(L=>L.key+':'+L.st.a.toFixed(2)+'@'+(L.sc0?(1-L.sc0/L.st.sc).toFixed(2):'-')).join(' ')};

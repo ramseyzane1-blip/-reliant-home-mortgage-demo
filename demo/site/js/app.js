@@ -413,22 +413,23 @@ function playDoor(name,done){
   const ds=document.createElement('div');ds.className='ds';ds.setAttribute('role','dialog');ds.setAttribute('aria-modal','true');ds.setAttribute('aria-label','Welcome home');ds.tabIndex=-1;
   ds.innerHTML=`<div class="ds-view"></div><p class="ds-load" aria-live="polite">Opening the door…</p>
    <div class="ds-ui"><p class="ds-cap"></p><div class="ds-actions"><button class="btn btn-white btn-lg" data-ds="go">See my results →</button><p class="ds-hint">Move or drag to look around</p></div></div>
-   <div class="ds-top"><button data-ds="sound" aria-pressed="${!soundOn}">${soundOn?'Sound on':'Sound off'}</button><button data-ds="go">Skip</button></div>`;
+   <div class="ds-top"><button data-ds="sound">${soundOn?'Sound on':'Sound off'}</button><button data-ds="go">Skip</button></div>`;
   document.body.appendChild(ds);const shown=performance.now();requestAnimationFrame(()=>ds.classList.add('on'));
   ds.focus({preventScroll:true});
   // once the overlay is opaque, stop painting the page beneath it (restored before it fades out)
   ds.addEventListener('transitionend',e=>{if(e.target===ds&&ds.classList.contains('on')&&!ds.classList.contains('out'))document.body.classList.add('ds-covered');});
   const q=x=>ds.querySelector(x);let P=null,stopped=false;
-  function finish(){if(stopped)return;stopped=true;removeEventListener('resize',turned);if(P)P.stop();P=null;if(window.__walk)window.__walk=null;if(snd)snd.stop();document.body.classList.remove('ds-covered');ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
+  function finish(){if(stopped)return;stopped=true;removeEventListener('resize',turned);removeEventListener('hashchange',finish);if(P)P.stop();P=null;if(window.__walk)window.__walk=null;if(snd)snd.stop();document.body.classList.remove('ds-covered');ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
   // turning the phone mid-walk flips which shot the door opens on: rebuild the walk at the same moment
-  let wopts=null;const turned=()=>{if(stopped||!P||!P.started)return;const tall=innerHeight>innerWidth*1.1;if(tall===P.tall)return;
+  // (past the threshold nothing depends on the shape of the screen)
+  let wopts=null;const turned=()=>{if(stopped||!P||!P.started||P.time()>=P.T.xf1)return;const tall=innerHeight>innerWidth*1.1;if(tall===P.tall)return;
     const t=P.time();P.stop();const v=q('.ds-view');v.querySelector('canvas')?.remove();P=Walk.play(v,{...wopts,startAt:t});if(!P){finish();return;}window.__walk=P;P.start();};
-  addEventListener('resize',turned);
-  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';b.setAttribute('aria-pressed',!soundOn);if(snd)snd.mute(!soundOn);}});
+  addEventListener('resize',turned);addEventListener('hashchange',finish); // Back or a link mid-walk ends it
+  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';if(snd)snd.mute(!soundOn);}});
   ds.addEventListener('keydown',e=>{if(e.key==='Escape')finish();});
   Promise.race([Walk.preload().then(a=>a.every(Boolean)),new Promise(r=>setTimeout(()=>r(false),7000))]).then(ok=>{
     if(stopped)return;if(!ok){finish();return;}q('.ds-load').remove();
-    wopts={cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
+    wopts={cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,onLost:finish,
       onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');const f=document.activeElement;if(g&&!stopped&&(f===ds||!ds.contains(f)))g.focus({preventScroll:true});},60);}};
     P=Walk.play(q('.ds-view'),wopts);
     if(!P){finish();return;}window.__walk=P;
@@ -505,7 +506,8 @@ function submitPQ(){
   renderResults();
   const byId=Object.fromEntries(vis().map(s=>[s.id,s])),answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
   pqSave=DB.insert('reliant_prequal',{goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote});
-  playDoor(ans.name,()=>{$('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;window.scrollTo(0,0);
+  playDoor(ans.name,()=>{if(curPage!=='start'){history.replaceState(null,'','#start');route();} // left mid-walk: the results are still where this ends
+    $('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;window.scrollTo(0,0);
     const h=$('results').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}
     setTimeout(async()=>{const r=await pqSave;demo('Pre-qualification sent',r&&r.ok?'This is a demo. Your answers were saved to the demo database. On the live site, your loan officer receives:':'This is a demo. On the live site, your loan officer receives:',summaryLines().join('\n'));},1300);});}
 function showErr(m){const e=$('pqErr');e.textContent=m;e.hidden=false;}
