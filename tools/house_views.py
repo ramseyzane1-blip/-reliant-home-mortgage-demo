@@ -12,8 +12,10 @@ One step, into demo/site/images/turn/:
   round plinth). The page draws it on top, still, so the morph never drags it along.
 - turn-NNN.webp: the frames with those fixed pixels cut out, one per 360/N degrees, 960px, plus
   sm/ copies at 768px for phones (the browser resizes either to the canvas).
-- flow.bin: dense optical flow between each pair of neighboring frames (computed on the moving
-  parts only), which the turntable uses to morph one frame into the next.
+- flow-front.bin, flow-rest.bin: dense optical flow between each pair of neighboring frames
+  (computed on the moving parts only), which the turntable uses to morph one frame into the next.
+  The front file holds the pairs within FRONT degrees of the front (the idle sway and a first
+  drag) and loads with the front frames; the rest loads once the hero is ready.
 Then it stamps a content version (?v=) on every turn/ URL in index.html and js/app.js, so browsers
 never mix cached frames from an older render, and sets HOUSE_VIEWS to the frame count.
 """
@@ -28,8 +30,10 @@ SMALL = 768  # phone copies in turn/sm/
 FIXED_TOL = 6 / 255  # a pixel is fixed if it never differs from the median frame by more than this
 GRID = int(os.environ.get('GRID', 33))  # stored on a GRID x GRID vertex grid (in the file header). 49 and 65 morph a
 # little better (ghosting 12.8 and 12.0 vs 14.1; a plain cross-fade is ~22) but the extra triangles cost frame time
-# flow.bin: b'FLW1', uint16 field count, uint16 GRID, one float32 scale per field, then int8 values:
-# displacement in texture units = value * scale. Fields: for each k, k->k+1 then k+1->k.
+FRONT = 40  # degrees: pairs with both frames this close to the front go in flow-front.bin
+# flow-*.bin: b'FLW2', uint16 pair count, uint16 GRID, uint16 pair index k per pair (frames k and k+1),
+# one float32 scale per field, then int8 values: displacement in texture units = value * scale.
+# Fields: for each pair, k->k+1 then k+1->k.
 
 
 def _dis(A, B):
@@ -83,14 +87,25 @@ def flows(views, fixed=None):
     return np.stack(out)
 
 
-def write_flow(fields, path):
+def write_flow(fields, pairs, path):
+    """fields: for each k, k->k+1 then k+1->k (all pairs); writes the given pairs only."""
+    fields = np.concatenate([fields[2 * k:2 * k + 2] for k in pairs])
     scales = np.maximum(np.abs(fields).reshape(len(fields), -1).max(1), 1e-6) / 127
     q = np.round(fields / scales[:, None, None, None]).clip(-127, 127).astype(np.int8)
     with open(path, 'wb') as f:
-        f.write(b'FLW1'); f.write(np.array([len(fields), GRID], '<u2').tobytes())
+        f.write(b'FLW2'); f.write(np.array([len(pairs), GRID], '<u2').tobytes()); f.write(np.array(pairs, '<u2').tobytes())
         f.write(scales.astype('<f4').tobytes()); f.write(q.tobytes())
     err = np.abs(q * scales[:, None, None, None] - fields).max() * 960
-    print('flow.bin: %d fields, grid %d, %d bytes, max rounding error %.2f px at 960' % (len(fields), GRID, os.path.getsize(path), err))
+    print('%s: %d pairs, grid %d, %d bytes, max rounding error %.2f px at 960' % (os.path.basename(path), len(pairs), GRID, os.path.getsize(path), err))
+
+
+def write_flows(fields, angles):
+    near = lambda a: abs((a + 180) % 360 - 180) <= FRONT
+    n = len(angles); front = [k for k in range(n) if near(angles[k]) and near(angles[(k + 1) % n])]
+    write_flow(fields, front, os.path.join(OUT, 'turn', 'flow-front.bin'))
+    write_flow(fields, [k for k in range(n) if k not in front], os.path.join(OUT, 'turn', 'flow-rest.bin'))
+    old = os.path.join(OUT, 'turn', 'flow.bin')
+    if os.path.exists(old): os.remove(old)
 
 
 def save(im, name, alpha=(80, 70)):
@@ -133,8 +148,12 @@ def main(src, extra=None):
     for old in glob.glob(os.path.join(OUT, 'turn', 'turn-*.webp')) + glob.glob(os.path.join(OUT, 'turn', 'sm', 'turn-*.webp')):   # stale frames from a longer set
         if int(re.findall(r'(\d+)\.webp$', old)[0]) >= len(files): os.remove(old)
     print('wrote', len(files), 'frames')
-    write_flow(flows(views, fixed), os.path.join(OUT, 'turn', 'flow.bin'))
-    # content version for cache busting
+    write_flows(flows(views, fixed), angles)
+    stamp(angles)
+
+
+def stamp(angles):
+    """Content version (?v=) on every turn/ URL for cache busting, and HOUSE_VIEWS in app.js."""
     h = hashlib.sha1()
     for f in sorted(glob.glob(os.path.join(OUT, 'turn', '**', '*.*'), recursive=True)):
         h.update(open(f, 'rb').read())
@@ -149,7 +168,7 @@ def main(src, extra=None):
         text = text if text is not None else open(path, encoding='utf-8').read()
         text = re.sub(r"(images/turn/[^\"'`?\s,]+?\.(?:webp|bin))(\?v=[0-9a-f]+)?", lambda m: m.group(1) + '?v=' + ver, text)
         open(path, 'w', encoding='utf-8').write(text)
-    print('set HOUSE_VIEWS to', len(files), 'views; version', ver)
+    print('set HOUSE_VIEWS to', len(angles), 'views; version', ver)
 
 
 if __name__ == '__main__':

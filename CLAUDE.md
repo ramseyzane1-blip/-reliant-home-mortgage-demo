@@ -33,11 +33,11 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png
-                            turn/turn-NNN.webp (Blender 360° turn) + turn/flow.bin for the hero
+                            turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
-tools/house_views.py        turns the Blender frames into turn/*.webp + turn/flow.bin
+tools/house_views.py        turns the Blender frames into turn/*.webp + turn/flow-*.bin
 ```
 
 ## Decisions the client has made (don't undo these)
@@ -89,8 +89,9 @@ gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass a
 Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
 `fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
 of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
-each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 234 KB (104 KB as served,
-brotli). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
+each; `sm/`, 768px copies for phones, about 64 KB each; the optical flow in two files,
+`flow-front.bin` (the 8 pairs within ±40° of the front: 35 KB, 18 KB as served, brotli) and
+`flow-rest.bin` (the other 47: 205 KB, 90 KB as served). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
 
 In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along
 precomputed optical flow while they blend; the fixed layer goes on top, still (drawn only over
@@ -98,14 +99,23 @@ the tiles where it has content), so the ring never ghosts. The front frame and t
 are preloaded with the page as two stacked `<img>`s (the Largest Contentful Paint on desktop and
 on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile, was 3.8 s), with
 `sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
-hero is about to scroll into view: then the flow and the 9 frames the idle sway uses (front
-±40°), and the rest once the hero is ready or the visitor starts turning. On a throttled phone
-profile the hero is interactive after about 650 KB at 4.6 s (the old set: 2.4 MB at 13.9 s).
+hero is about to scroll into view: then the front flow and the two frames next to the front
+(the hero is ready once those are in), then the rest of the 9 frames the idle sway uses (front
+±40°), then the rest of the flow and the frames once those are in or the visitor starts turning.
+A pair whose flow has not arrived yet simply crossfades; a flow that lands while its pair is on
+screen waits until the turn moves on, so nothing pops. On a throttled phone profile the hero is
+interactive after about 430 KB at 3.2 s (one flow file: 650 KB at 4.6 to 5.2 s).
 Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
 the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
-on screen is missing; the decoded copy is released after upload. Touch devices keep at most 36 on the GPU (about 74 MB) and re-fetch the rest from the
-HTTP cache. Devices reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the
-16 nearest and re-fetch others from the HTTP cache. Failed frames retry with backoff. Drag, arrow
+on screen is missing; the decoded copy is released after upload. Touch devices and devices
+reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the 16 nearest on the GPU
+(about 29 MB on a 390px phone); the others are fetched into the HTTP cache and decoded again
+when needed. About a second after the hero is well out of view (scrolled away, another page, or
+the walk-through, which also puts it to sleep directly) it releases every texture and its
+drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
+(ready in about 0.2 s). At the walk's peak on a 390px phone that leaves only the walk's textures
+on the GPU (73 MB with drawing buffers; was 139 MB with the hero's 63 MB still held). Failed
+frames retry with backoff. Drag, arrow
 keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
 without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
 drops the drag and keyboard hints.

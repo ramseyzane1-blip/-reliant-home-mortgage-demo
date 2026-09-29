@@ -20,9 +20,11 @@ python3 tools/house_views.py /tmp/turn /tmp/mid                        # in-betw
 `house_views.py` writes into `demo/site/images/turn/`: `fixed.webp` (everything that looks the same
 in every frame, drawn still on top), `turn-NNN.webp` (the frames with those parts cut out,
 keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
-(768×768 for phones, about 64 KB), `flow.bin` (optical flow between neighboring frames on a
-33×33 grid, forward-backward checked, smoothed where the match is poor and held at zero on the
-fixed parts; int8 with one scale per field: 234 KB, 104 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
+(768×768 for phones, about 64 KB), `flow-front.bin` and `flow-rest.bin` (optical flow between
+neighboring frames on a 33×33 grid, forward-backward checked, smoothed where the match is poor
+and held at zero on the fixed parts; int8 with one scale per field. The front file holds the
+pairs within `FRONT` = 40° of the front and loads with the front frames, 35 KB, 18 KB brotli;
+the rest loads later, 205 KB, 90 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
 `js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
 but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
@@ -34,7 +36,7 @@ supplied by the client; the hero turntable is rendered from a 3D model of that h
 Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
 Don't use them anywhere else on the site.
 
-- `turn/turn-NNN.webp` (36 frames) and `turn/flow.bin`: the hero turntable, rendered from the
+- `turn/turn-NNN.webp` (55 frames) and `turn/flow-*.bin`: the hero turntable, rendered from the
   3D model in `tools/blender/house_scene.py` (Blender, Cycles) and converted by
   `tools/house_views.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
   siding, roof, stone and grass textures, a patio set); `tools/blender/fetch_assets.py`
