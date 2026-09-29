@@ -17,9 +17,10 @@ python3 tools/house_views.py /tmp/turn
 ```
 
 `house_views.py` writes `demo/site/images/turn/turn-NNN.webp` (transparent, 960×960, about 90 KB
-each; the browser resizes them to the canvas), `turn/flow.bin` (optical flow between neighboring
-frames on a 33×33 grid, forward-backward checked and smoothed where the match is poor), and sets
-`HOUSE_VIEWS` in `js/app.js` to the frame count. The house turns; the camera, lights and ring stay
+each), `turn/sm/turn-NNN.webp` (768×768 for phones, about 57 KB), `turn/flow.bin` (optical flow
+between neighboring frames on a 33×33 grid, forward-backward checked and smoothed where the match
+is poor, int8 with a scale per pair: 157 KB, 73 KB brotli), and sets `HOUSE_VIEWS` in `js/app.js`
+to the frame count. `GRID=49` or `65` morphs a little better but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
 
 ## How the 3D images were prepared

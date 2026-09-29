@@ -75,23 +75,30 @@ placeholders.
 (`tools/blender/house_scene.py`) and rendered as a 360° turn: 36 frames, one every 10°, with a
 transparent background so the house, plinth and ring float on the page with no card (client
 request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
-model has lap-board siding, real window openings with lit rooms, curtains and lamps, a shingle
-roof with gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and
-shrubs. In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced
-along precomputed optical flow (`images/turn/flow.bin`) while they blend, so the turn is
-continuous at any speed. The 9 frames the idle sway uses (front ±40°) load first and the rest
-after page load. Each frame is decoded off the main thread at the canvas's pixel size (no shimmer,
-about 75 MB of GPU memory on phones) and uploaded one per animation frame after the first paint;
-uploads pause during a drag unless the frame on screen is missing. Devices reporting under 4 GB
-of memory keep only the 16 nearest frames on the GPU. Drag, arrow keys (with a focus ring), or
+model has lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed
+green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
+gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and shrubs.
+
+Files (`images/turn/`): `turn-NNN.webp` 960px, about 90 KB each (3.2 MB for all 36);
+`sm/turn-NNN.webp` 768px for phones, about 57 KB each (2.1 MB); `flow.bin` 157 KB (73 KB as
+served, brotli). `HOUSE_VIEWS` in `js/app.js` lists them; `tools/house_views.py` writes all of it.
+
+In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along
+precomputed optical flow while they blend, so the turn is continuous at any angle. Nothing
+downloads until the hero is about to scroll into view; then the flow and the 9 frames the idle
+sway uses (front ±40°), and the rest once the hero is ready or the visitor starts turning. On a
+throttled phone the hero is interactive after about 480 KB (the old set needed 2.4 MB first).
+Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size and upload one
+per animation frame, never during a drag unless the frame on screen is missing. Devices reporting
+under 4 GB keep only the 16 nearest frames on the GPU. Drag, arrow keys (with a focus ring), or
 idle sway around the front; reduced motion turns the sway off; without WebGL the front frame
-shows as a still image.
+shows as a still image and the drag hint is hidden.
 
 To change the house: edit `house_scene.py`, preview with
-`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 15 150` (needs `pip install bpy` and
-`python3 tools/blender/fetch_assets.py` once), then render
-`python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU cores)
-and run `python3 tools/house_views.py /tmp/turn`.
+`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
+and `python3 tools/blender/fetch_assets.py` once), render with
+`python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU
+cores), then run `python3 tools/house_views.py /tmp/turn`. See `tools/README.md`.
 
 **Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
 a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by

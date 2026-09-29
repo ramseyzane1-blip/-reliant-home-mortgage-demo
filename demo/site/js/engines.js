@@ -4,7 +4,6 @@
    neighboring frames, each is drawn on a mesh displaced along precomputed optical flow
    (images/turn/flow.bin) while they blend, so the turn is continuous at any angle. */
 const Turntable=(()=>{
-const G=33,FS_=16384,POOL=16; /* flow grid and fixed-point scale must match tools/house_views.py */
 const VS=`attribute vec2 uv;attribute vec2 fl;uniform float k,asp;varying vec2 vu;
 void main(){vu=uv;vec2 q=uv+fl*k;vec2 n=vec2(q.x*2.-1.,1.-q.y*2.);if(asp>=1.)n.x/=asp;else n.y*=asp;gl_Position=vec4(n,0.,1.);}`;
 const FS=`precision mediump float;uniform sampler2D tex;uniform float w;varying vec2 vu;void main(){gl_FragColor=texture2D(tex,vu)*w;}`;
@@ -15,15 +14,23 @@ function create(box,canvas,views,opt){
  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
  const U={};['k','asp','tex','w'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
  const buf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
- const UV=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++)UV.push(i/(G-1),j/(G-1));
- const I=[];for(let j=0;j<G-1;j++)for(let i=0;i<G-1;i++){const a=j*G+i,b=a+1,c=a+G,d=c+1;I.push(a,c,b,b,c,d);}
- const bU=buf(new Float32Array(UV)),bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER),NI=I.length,n=views.length;
- /* flow: for each k, k→k+1 then k+1→k. Until it arrives (or if it fails) the views simply blend. */
- const zero=buf(new Float32Array(G*G*2));let flows=null,flowDone=!opt.flow;
- if(opt.flow)fetch(opt.flow).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>{const a=new Int16Array(ab),sz=G*G*2;if(a.length!==n*2*sz)return;
-  flows=[];for(let m=0;m<n*2;m++){const f=new Float32Array(sz);for(let q=0;q<sz;q++)f[q]=a[m*sz+q]/FS_;flows.push(buf(f));}}).catch(()=>{}).finally(()=>{flowDone=true;dirty=true;});
- /* frames: the ones the idle sway uses (front +-40 degrees) download first, the rest once the page
-    has loaded or the visitor starts turning. Each is decoded off the main thread at the canvas's
+ /* a G x G grid mesh over the frame; rebuilt at the flow file's grid size when that arrives */
+ const n=views.length;let bU,bI,NI,zero;
+ function mesh(G){const UV=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++)UV.push(i/(G-1),j/(G-1));
+  const I=[];for(let j=0;j<G-1;j++)for(let i=0;i<G-1;i++){const a=j*G+i,b=a+1,c=a+G,d=c+1;I.push(a,c,b,b,c,d);}
+  bU=buf(new Float32Array(UV));bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER);NI=I.length;zero=buf(new Float32Array(G*G*2));}
+ mesh(2);
+ /* flow (tools/house_views.py): 'FLW1', uint16 fields, uint16 grid, float32 scale per field, int8
+    values; fields k→k+1 then k+1→k. Until it arrives (or if it fails) the frames simply blend. */
+ let flows=null,flowDone=!opt.flow;
+ const fetchFlow=()=>fetch(opt.flow).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>{const dv=new DataView(ab);
+  if(ab.byteLength<8||dv.getUint32(0)!==0x464c5731)return;const nf=dv.getUint16(4,true),G=dv.getUint16(6,true),sz=G*G*2;
+  if(nf!==n*2||ab.byteLength!==8+nf*4+nf*sz)return;const q=new Int8Array(ab,8+nf*4);
+  const out=[];for(let m=0;m<nf;m++){const k=dv.getFloat32(8+m*4,true),f=new Float32Array(sz);for(let i=0;i<sz;i++)f[i]=q[m*sz+i]*k;out.push(f);}
+  mesh(G);flows=out.map(f=>buf(f));}).catch(()=>{}).finally(()=>{flowDone=true;dirty=true;});
+ /* frames: nothing downloads until the hero is about to scroll into view. Then the front frames
+    the idle sway uses (+-40 degrees) and the flow; the rest once the hero is ready or the visitor
+    starts turning. Each is decoded off the main thread at the canvas's
     own pixel size (no shimmer from minifying, less GPU memory on phones) and uploaded one per
     animation frame after the first paint. Uploads wait while a drag is in progress unless the
     frame on screen is missing. Devices reporting under 4 GB keep only the POOL nearest frames. */
@@ -31,14 +38,14 @@ function create(box,canvas,views,opt){
  const POOL=(navigator.deviceMemory&&navigator.deviceMemory<4)?16:views.length;
  const A=views.map(v=>v.a),adist=(i,th)=>Math.abs(((A[i]-th)%360+540)%360-180);
  const order=views.map((v,i)=>i).sort((a,b)=>adist(a,0)-adist(b,0));
- const viaImg=i=>new Promise((ok,no)=>{const im=new Image();im.decoding='async';im.onload=()=>ok(im);im.onerror=no;im.src=views[i].f;});
+ const viaImg=i=>new Promise((ok,no)=>{const im=new Image();im.decoding='async';im.onload=()=>ok(im);im.onerror=no;im.src=url(i);});
+ const url=i=>texSize<=768&&views[i].s?views[i].s:views[i].f;   /* phones get the 768px copies */
  const fetchImg=i=>{if(imgs[i]!==null)return;imgs[i]=false;
   const S=texSize||960;
-  (window.createImageBitmap?fetch(views[i].f).then(r=>r.ok?r.blob():Promise.reject()).then(b=>createImageBitmap(b,{premultiplyAlpha:'premultiply',resizeWidth:S,resizeHeight:S,resizeQuality:'high'})).catch(()=>viaImg(i)):viaImg(i))
+  (window.createImageBitmap?fetch(url(i)).then(r=>r.ok?r.blob():Promise.reject()).then(b=>createImageBitmap(b,{premultiplyAlpha:'premultiply',resizeWidth:S,resizeHeight:S,resizeQuality:'high'})).catch(()=>viaImg(i)):viaImg(i))
    .then(im=>{imgs[i]=im;dirty=true;}).catch(()=>{imgs[i]=null;});};
  let allFetched=false;const fetchRest=()=>{if(allFetched)return;allFetched=true;order.forEach(fetchImg);};
- function startFetch(){order.filter(i=>adist(i,0)<=40).forEach(fetchImg);
-  if(document.readyState==='complete')setTimeout(fetchRest,800);else addEventListener('load',()=>setTimeout(fetchRest,800),{once:true});}
+ let started=false;function startFetch(){if(started||!texSize)return;started=true;if(opt.flow)fetchFlow();order.filter(i=>adist(i,0)<=40).forEach(fetchImg);}
  function upload(needed){
   let best=-1;for(let i=0;i<n;i++)if(imgs[i]&&!tex[i]&&(best<0||adist(i,cur)<adist(best,cur)))best=i;
   if(best<0)return;if(drag&&needed.indexOf(best)<0)return;
@@ -72,12 +79,12 @@ function create(box,canvas,views,opt){
  /* interaction */
  let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,vis=true,last=0,ready=false,t0=0;
  function size(){const dpr=Math.min(window.devicePixelRatio||1,2),r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));dirty=true;
-  if(!texSize&&r.width>0){texSize=Math.max(256,Math.min(960,canvas.width));startFetch();}}
+  if(!texSize&&r.width>0)texSize=Math.max(256,Math.min(960,canvas.width));}
  function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);upload([pr_[0],pr_[1]]);
   if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=.94;}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
   /* follow the pointer closely; drift back into the idle sway gently */
   const prev=th;let step=(target-th)*Math.min(1,dt*(idle?1.6:7));if(idle)step=Math.max(-50*dt,Math.min(50*dt,step));th+=step;if(Math.abs(th-prev)>.001)dirty=true;
-  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&flowDone){ready=true;t0=ts;box.classList.add('ready');}}
+  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&flowDone){ready=true;t0=ts;box.classList.add('ready');setTimeout(fetchRest,300);}}
   raf=vis?requestAnimationFrame(frame):0;}
  box.addEventListener('pointerdown',e=>{fetchRest();drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
  box.addEventListener('pointermove',e=>{if(!drag)return;const w=box.clientWidth||400;target=drag.t-(e.clientX-drag.x)/w*200;const now=performance.now();vel=-(e.clientX-drag.px)/w*200/Math.max(1,(now-drag.pt)/16.7);drag.px=e.clientX;drag.pt=now;});
@@ -88,6 +95,7 @@ function create(box,canvas,views,opt){
  box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;fetchRest();e.preventDefault();idle=false;box.classList.add('used');target+=k;rest();});
  new ResizeObserver(size).observe(box);size();
  new IntersectionObserver(es=>{vis=es[0].isIntersecting&&!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}}).observe(box);
+ new IntersectionObserver(es=>{if(es[0].isIntersecting){size();startFetch();}},{rootMargin:'400px 0px'}).observe(box);
  document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}});
  raf=requestAnimationFrame(frame);
  return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw,ready:()=>ready&&!!flows};
