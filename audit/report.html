@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reliant Audit Report</title>
+<meta name="description" content="A written audit of relianthomemtg.com and the reasoning behind the Reliant Home Mortgage redesign concept.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a single reading column (about 68 characters) with a quiet header block; prints to Letter.
+   Palette and type follow the redesign: forest from the logo wordmark, sand from the swoosh, cool grays. */
+:root{
+  --bg:#ffffff; --panel:#f3f6f4; --ink:#16211b; --body:#34403a; --mute:#65716a; --line:#dbe2de;
+  --accent:#1c4f33; --accent-ink:#10301f; --sand:#c3b69c; --sand-ink:#7d6a45; --flag:#a8412a; --flag-bg:#fbeee9;
+  --serif:"DM Serif Display", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1712; --panel:#17221b; --ink:#eef3ef; --body:#cdd8d1; --mute:#96a39b; --line:#2a372f;
+  --accent:#7cc39a; --accent-ink:#cfe3d6; --sand:#bfae8a; --sand-ink:#cdb98f; --flag:#e58a6f; --flag-bg:#2a1a15; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1712; --panel:#17221b; --ink:#eef3ef; --body:#cdd8d1; --mute:#96a39b; --line:#2a372f;
+  --accent:#7cc39a; --accent-ink:#cfe3d6; --sand:#bfae8a; --sand-ink:#cdb98f; --flag:#e58a6f; --flag-bg:#2a1a15; color-scheme:dark }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--body);font:400 17.5px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+.page{max-width:44rem;margin:0 auto;padding:56px 20px 96px}
+h1,h2,h3{font-family:var(--serif);font-weight:400;color:var(--accent-ink);text-wrap:balance;margin:0}
+h1{font-size:clamp(2.3rem,6vw,3.3rem);line-height:1.04;letter-spacing:-.005em}
+h2{font-size:clamp(1.7rem,4vw,2.15rem);line-height:1.12;margin:3.2rem 0 1rem;padding-top:1.6rem;border-top:1px solid var(--line)}
+h3{font-size:1.4rem;line-height:1.2;margin:2.2rem 0 .6rem}
+h3 .n{color:var(--sand-ink);margin-right:.35em}
+p{margin:0 0 1.05rem}
+strong{color:var(--ink);font-weight:600}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:2px}
+.eyebrow{font:700 .78rem/1.3 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--sand-ink);margin:0 0 1rem}
+.meta{display:flex;flex-wrap:wrap;gap:.4rem 2rem;margin:1.6rem 0 0;padding:1.1rem 0 0;border-top:3px solid var(--sand);font-size:.95rem;color:var(--mute)}
+.meta b{display:block;font-weight:600;color:var(--ink)}
+.lead{font-size:1.2rem;line-height:1.6;color:var(--ink)}
+ul,ol{margin:0 0 1.1rem;padding-left:1.3rem}
+li{margin:.35rem 0}
+li::marker{color:var(--sand-ink)}
+.why{margin:.2rem 0 1.2rem;padding:.9rem 1.1rem;border-left:3px solid var(--accent);background:var(--panel);border-radius:0 8px 8px 0}
+.why p:last-child{margin:0}
+.flag{margin:1.2rem 0;padding:1rem 1.15rem;border:1px solid var(--flag);background:var(--flag-bg);border-radius:10px}
+.flag p:last-child{margin:0}
+blockquote{margin:1rem 0 1.2rem;padding:.2rem 0 .2rem 1.1rem;border-left:3px solid var(--sand);font:400 1.18rem/1.45 var(--serif);color:var(--ink)}
+.tablewrap{overflow-x:auto;margin:1rem 0 1rem;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:34rem;font-size:.95rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-weight:600;color:var(--ink);background:var(--panel)}
+tbody tr:last-child td{border-bottom:0}
+td:nth-child(2),td:nth-child(3){white-space:nowrap}
+.note{font-size:.9rem;color:var(--mute)}
+.toc{margin:2rem 0 0;padding:1.1rem 1.3rem;background:var(--panel);border-radius:10px;font-size:.98rem}
+.toc ol{margin:0;padding-left:1.2rem;columns:2 15rem;column-gap:2rem}
+.toc li{margin:.2rem 0;break-inside:avoid}
+.toc a{color:var(--body);text-decoration:none}
+.toc a:hover{color:var(--accent);text-decoration:underline}
+.sig{margin-top:2.4rem;font-size:1rem}
+.sig b{display:block;font:400 1.35rem/1.2 var(--serif);color:var(--accent-ink)}
+@media print{
+  @page{size:Letter;margin:.75in .8in}
+  :root{--bg:#fff;--panel:#f3f6f4;--ink:#16211b;--body:#34403a;--mute:#65716a;--line:#dbe2de;--accent:#1c4f33;--accent-ink:#10301f;--sand-ink:#7d6a45;--flag:#a8412a;--flag-bg:#fbeee9;color-scheme:light}
+  body{font-size:11pt;line-height:1.55}
+  .page{max-width:none;padding:0}
+  h2{border-top:1px solid var(--line);padding-top:1.1rem;margin-top:1.8rem}
+  #summary{border-top:0}
+  #findings,#redesign,#appendix{break-before:page;border-top:0;padding-top:0;margin-top:0}
+  h2,h3,.sub{break-after:avoid}
+  .why,.flag,blockquote,table,tr,li{break-inside:avoid}
+  .toc a{text-decoration:none}
+  a[href^="http"]::after{content:""}
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+<p class="eyebrow">Website audit · September 2026</p>
+<h1>relianthomemtg.com: what works, what holds it back, and why the redesign changes it</h1>
+<div class="meta">
+  <div><b>Prepared for</b>Kevin and Jennifer Barker, Reliant Home Mortgage LLC</div>
+  <div><b>Prepared by</b>Zane Ramsey, Greater Purpose Web</div>
+  <div><b>Audited</b>29 September 2026</div>
+</div>
+
+<nav class="toc" aria-label="Contents"><ol>
+  <li><a href="#summary">Summary</a></li>
+  <li><a href="#method">How the audit was done</a></li>
+  <li><a href="#strengths">What the current site does well</a></li>
+  <li><a href="#findings">Findings</a></li>
+  <li><a href="#redesign">The redesign, and why</a></li>
+  <li><a href="#compare">How the two compare</a></li>
+  <li><a href="#launch">Before launch</a></li>
+  <li><a href="#quickfixes">Fixes worth making now</a></li>
+  <li><a href="#next">Next steps</a></li>
+  <li><a href="#appendix">Appendix</a></li>
+</ol></nav>
+
+<h2 id="summary" class="keep">Summary</h2>
+<p class="lead">Reliant Home Mortgage has what most small mortgage businesses want: a licensed team with decades of experience, a 5.0 rating across 82 Google reviews, and a clear local identity in Middletown.</p>
+<p>The current website shows much of this to a visitor who goes looking. The team photo leads the home page, every loan officer has a headshot and a full bio, licensing is complete and verifiable, and all twenty loan programs have their own pages. The site works on phones, and Google's Lighthouse test scores its home page 100 for accessibility.</p>
+<p>What holds the site back is clarity, story and upkeep. The home page offers nineteen buttons with ten different labels, which lead into six separate ways to start. The most persuasive material, the family business and the loan officers' long experience, sits two clicks deep. Several pages are empty or hold placeholder text, much of the copy is generic template language, and the FHA page states an eligibility rule incorrectly. Underneath, each page loads around ninety requests, and key content arrives late inside embedded frames.</p>
+<p>The redesign concept keeps every one of those strengths and answers each finding. Every page has one main action, a two-minute pre-qualification, with a call to the Middletown office as the alternative. The menu is organized around what visitors came to do, the tools answer real questions, the family and the reviews come first, and the look is drawn from the Reliant logo. The concept is a working demo, and this report is specific about what it still needs before it could replace the current site.</p>
+
+<h2 id="method">How the audit was done</h2>
+<p>We loaded seventeen pages of relianthomemtg.com, every page in the main menu and footer, in a real Chromium browser at two sizes: a 1440-pixel desktop window and a 390-pixel phone screen, the width of a current iPhone. We also opened all five loan officer profiles. For each page we recorded what loaded and how much, checked it against the WCAG 2.2 AA accessibility standard with axe-core, measured how it behaves at phone width, and took screenshots. We ran Google Lighthouse three times on each site's home page in its phone mode and report the middle result, plus one desktop run. Then we read every headline, button, bio and loan page.</p>
+<p>We did not submit any form. Nothing in this audit reached your office or your lead system.</p>
+<p class="note">Speed figures come from a test machine in a data center. They are reliable for comparing the two sites under identical conditions. Your visitors' real-world numbers will differ.</p>
+
+<h2 id="strengths">What the current site does well</h2>
+<p><strong>A real team, shown.</strong> The home page opens with a photo of the team outside the office, and the staff page gives each loan officer a headshot, title, NMLS number, email link and full bio. The bios carry real substance. Kevin has been doing purchase and refinance loans since 1996, Jennifer since 1997 and Christina since 1995. Blaine is a military veteran who focuses on VA loans, and Chase brings a background in relationship sales.</p>
+<p><strong>A strong reputation.</strong> The reviews page shows a 5.0 average across 82 Google reviews. The quotes are specific: clients describe Kevin and Jennifer as prompt, thorough, transparent about costs and quick to close.</p>
+<p><strong>Licensing done right.</strong> Every page's footer lists the company NMLS number (#2292251), the Ohio, Kentucky and Indiana licenses, and each loan officer's NMLS number, with a link to NMLS Consumer Access and the Equal Housing logo.</p>
+<p><strong>Broad coverage.</strong> Twenty loan programs are listed, from conventional, FHA, VA and USDA loans to DSCR, construction, land and doctor loans, and each has its own page.</p>
+<p><strong>It holds up on a phone.</strong> No page scrolls sideways at phone width, body text is a comfortable 17 pixels, and buttons are large. Lighthouse scores the home page 100 for accessibility in its phone test and 96 on desktop.</p>
+<p><strong>Reassuring promises.</strong> The site already tells visitors that no Social Security number and no credit check are needed. These are good messages, and the redesign keeps both.</p>
+
+<h2 id="findings">Findings</h2>
+
+<h3><span class="n">1</span>Six ways to start, and no clear first step</h3>
+<p>The first screen of the home page shows three buttons of equal weight in three different colors, Purchase a Home, Refinance a Loan and Apply Now, under the heading “How Can We Help You?” A gold Apply Now button sits in the menu as well. Directly below is an eight-field “How much do you qualify for?” form. Its labels are placeholder text inside the boxes, so they disappear as someone types.</p>
+<p>Across the whole home page there are nineteen buttons with ten different labels, counting the menu’s Apply Now and the form’s Submit, and including “Get Started” four times and “Learn More” six times. They lead into six separate starting points: the home page form, the Purchase Assistant, the Refinance Advisor, Today's Rates, Ask a Professional, and Apply Now, which asks a visitor to choose one of five loan officers by name before they know anything about them. Each path asks for different information.</p>
+<div class="why"><p>When every option carries the same weight, a visitor has to work out how to begin before they know what they need. For the office, it means leads arrive through six different doors with six different sets of details.</p></div>
+
+<h3><span class="n">2</span>The family story is hard to find</h3>
+<p>The home page section titled “The Reliant Home Mortgage LLC Team” does not show anyone from the team. It holds one paragraph, which begins “Your premier mortgage lender,” and four cards with identical Get Started buttons. The About page opens with general text that could describe any mortgage company:</p>
+<blockquote>“The Reliant Home Mortgage LLC team is committed to providing clients with the highest quality financial services combined with competitive rates available in your area.”</blockquote>
+<p>It does not mention that Reliant is family-owned, that Kevin and Jennifer run it together, or that the loan officers have been doing this since the mid-1990s. That story is on the site, in the bios, but a visitor reaches it only through Company, then Meet Our Staff, then View Full Profile.</p>
+<p>The word “lender” deserves a note too. Reliant is licensed as a broker, and the bios say so: “As a mortgage broker, I can offer every kind of home loan.” Being a broker is a real advantage for a borrower, because it means shopping many lenders for each client, and the site could explain it plainly.</p>
+
+<h3><span class="n">3</span>Some pages promise more than they hold</h3>
+<ul>
+  <li><strong>Blog.</strong> One post, dated January 1, 2023, which reads “Welcome to ! Please check back for future articles and information.” The name that should follow “Welcome to” is missing.</li>
+  <li><strong>Recommended Professionals.</strong> Seven categories, from home improvement contractors and plumbers to builders and insurance agents. Each shows 0 entries.</li>
+  <li><strong>Local Resources.</strong> Four categories. Museums, schools and hospitals are empty, and the fourth lists one title company.</li>
+  <li><strong>Today's Rates.</strong> No rates appear. The copy offers “FREE and accurate rate quotes from a nationwide network of trusted lenders,” which sounds like a lead marketplace more than a family office in Middletown.</li>
+  <li><strong>Monthly Newsletter.</strong> Syndicated articles in an embedded frame, set in a different typeface from the rest of the site. The page also logs a script error.</li>
+</ul>
+<div class="why"><p>Visitors notice empty and placeholder pages. On a site that asks people to trust a company with their finances, each one quietly suggests that nobody is looking after it.</p></div>
+
+<h3><span class="n">4</span>Copy that could belong to any lender, and one fact to fix</h3>
+<p>Much of the copy is standard template language. “What are you waiting for? Getting started is easy!” sits over a stock photo of a family moving in. The sidebar promises “Zero Cost, Zero Obligation, Zero Hassle.” Ask a Professional offers “FREE advice from an experienced professional regarding any Mortgage and/or Real Estate related topics,” and its sidebar links to Home Search, Home Values and Find A Realtor, which point visitors toward real estate tools and blur what Reliant does. Every inner page uses the same autumn-road banner photo.</p>
+<div class="flag">
+  <p><strong>One statement is inaccurate.</strong> The FHA Loans page says: “To be eligible for an FHA loan, the borrower must have a credit score of at least 500 and put down a minimum of 3.5% of the home's purchase price.”</p>
+  <p>Under HUD's rules, the 3.5% minimum applies to borrowers with a credit score of 580 or higher. Borrowers with scores from 500 to 579 need at least 10% down. On a licensed mortgage company's site, this is worth correcting now, whatever you decide about a redesign.</p>
+</div>
+
+<h3><span class="n">5</span>On a phone, the number is out of sight</h3>
+<p>The site works on phones: no page scrolls sideways, text is readable and buttons are large. On the first phone screen, though, the logo, the team photo and three stacked buttons fill the space, and the office phone number is not visible. A visitor has to open the menu or scroll to the footer to find it. The home page runs about 8,500 pixels on a phone, roughly ten screens, and the glossary runs about 25,700 pixels, roughly thirty.</p>
+
+<h3><span class="n">6</span>Solid on accessibility, heavier than it needs to be</h3>
+<p>Automated accessibility checks found only one or two issues per page, mostly small tap targets and one embedded frame without a title. Lighthouse gives the home page 100 for accessibility in its phone test. That is a good result.</p>
+<p>Weight is where the site falls short. The home page makes 94 requests and transfers about 1.1 MB, including about 440 KB of scripts that load on every page, from seven to fourteen outside services, depending on the page. On Lighthouse's simulated mid-range phone, the main content appears after about 6.0 seconds, where Google treats anything over 4 seconds as poor, and the phone performance score is 67. Best practices scores 75, with flags for third-party cookies, low-resolution images and issues logged in the browser console.</p>
+<p>The site runs on 220 Marketing's mortgage website platform, built on WordPress. The staff listing, lead forms, directories and newsletter load inside embedded frames from that platform, so they arrive after the rest of the page. On the staff page this makes the layout jump as the listing loads, with a layout shift score of 0.45. Google rates anything over 0.25 as poor.</p>
+<p>For search, the home page has a good title and description, but 16 of the 17 pages we reviewed have no meta description, the summary Google often shows under a link. Lighthouse also flags the many “Learn More” and “Get Started” links as non-descriptive. The SEO score is 85.</p>
+
+<h2 id="redesign">The redesign, and why each choice was made</h2>
+<p>The redesign concept is live at <a href="https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/">reliant-home-mortgage.greaterpurposeweb.com</a>. Each decision below answers one or more of the findings.</p>
+
+<h3><span class="n">1</span>One clear next step</h3>
+<p>Every page has one main button, “Get pre-qualified,” and one alternative, “Call our Middletown office.” The pre-qualification takes about two minutes. It asks everyone the same short set of questions, adapting to buying or refinancing, and ends with a review step where the visitor can check and edit every answer before sending. It keeps the promises the current site already makes: no Social Security number and no credit check. The separate rate quote form becomes a checkbox inside it, and the Apply Now menu of names becomes a choice of loan officer inside it.</p>
+<div class="why"><p>One obvious next step removes the decision about how to begin, and every lead arrives with the same complete information. This answers finding 1.</p></div>
+
+<h3><span class="n">2</span>A menu built around what visitors came to do</h3>
+<p>The menu has five items, Buy a home, Refinance, Learn, Local help and About us, plus the Get pre-qualified button. Each item is a different reason someone visits, and everything on the current site has a place:</p>
+<ul>
+  <li>The Purchase Assistant becomes the Buy page, with a loan finder and the steps from pre-qualification to closing.</li>
+  <li>The Refinance Advisor becomes the Refinance page, with a break-even calculator and four common reasons to refinance.</li>
+  <li>Today's Rates becomes “How rates work” inside Learn, alongside the calculators, the glossary and a short course.</li>
+  <li>Local Resources and Recommended Professionals become Local help.</li>
+  <li>About, staff, reviews, the blog and the newsletter come together under About us. The blog and newsletter merge into one monthly email called The Reliant Letter.</li>
+  <li>All twenty loans stay, on one page where visitors can filter them and compare up to three side by side.</li>
+</ul>
+<div class="why"><p>People arrive with a task, so the menu names the tasks. This answers findings 1 and 3.</p></div>
+
+<h3><span class="n">3</span>Tools that answer the question behind each page</h3>
+<ul>
+  <li><strong>Loan finder</strong> on the Buy page. Four questions about military service, down payment, credit and circumstances such as a first home or self-employment. The best-matching loans update as the visitor answers, with no contact details required.</li>
+  <li><strong>Break-even calculator</strong> on the Refinance page. It shows how long a refinance takes to pay back its closing costs, and whether that fits how long the owner plans to stay.</li>
+  <li><strong>What moves your rate</strong> in Learn. It shows how credit, equity, property type and discount points push a rate up or down, then offers a personal quote. It explains that there is no single rate for everyone, which is why the site doesn't post one.</li>
+  <li><strong>Homebuying 101</strong> in Learn. Six short lessons, each with a quick check and a hands-on calculator, plus payment and affordability calculators that include taxes and insurance, and a searchable glossary where each term has an example, why it matters and related terms.</li>
+  <li><strong>Local help.</strong> A resource finder for Ohio, Kentucky, Indiana and national programs, filtered by need, with a personal checklist. It also explains which local professionals a buyer will need and when, with a button to ask for an introduction.</li>
+</ul>
+<div class="why"><p>A visitor who gets a real answer trusts the people who gave it, and is more likely to take the next step. This answers findings 3 and 4.</p></div>
+
+<h3><span class="n">4</span>Your story, told by your people</h3>
+<p>The first line of the home page says who Reliant is: a family-owned mortgage broker in Middletown, Ohio. The headline is “Home loans, handled like family.” The home page introduces the team and explains the process in three steps, and the About page gives each loan officer a bio and specialties, with a review quote for Kevin and Jennifer. Names appear where the current site uses them, in bios, license lines, reviews and the choice of loan officer. Elsewhere the copy says “our team” or “our Middletown office.” Reviews can be filtered to those that mention Kevin or Jennifer, or that come from real estate agents, and a rating prompt invites new ones.</p>
+<div class="why"><p>The family business, the broker advantage and the reviews are what set Reliant apart, so they come first. This answers finding 2.</p></div>
+
+<h3><span class="n">5</span>A look drawn from your logo</h3>
+<p>The palette comes from the Reliant logo. Forest green (#1c4f33) from the wordmark is the color of every button and link, and sand (#c3b69c) from the swoosh is a quiet accent, on crisp white with cool gray sections. Headings use DM Serif Display and body text uses Public Sans. The redesign avoids gold buttons, because gold reads as money first, and it uses one action color so the next step is always easy to spot. The site works in light and dark mode.</p>
+<div class="why"><p>A consistent look drawn from the logo feels established and trustworthy, and a single action color makes the main button obvious on every page. This answers findings 1 and 4.</p></div>
+
+<h3><span class="n">6</span>A moment people remember</h3>
+<p>The home page features a model home that visitors can drag to walk around. When someone sends their pre-qualification, the camera walks up to the front door and knocks three times. The hall light warms, the door swings open, and the visitor steps inside to “Welcome home” before their results appear. The sound is generated in the browser. Visitors who have turned off motion on their device skip the animation entirely. These renders appear only in the two 3D pieces, and the rest of the site is reserved for photos of the real team.</p>
+<div class="why"><p>Most sites answer a form with “Thank you for your submission.” This turns the moment into a small welcome, which suits a company whose work ends with a family getting their keys.</p></div>
+<p>Your feedback on this piece was “getting better, but clunky and not smooth,” and it has been reworked since. Every view of the model home now loads up front, and the walk-through runs in true 3D on a single graphics canvas, with depth in each scene and one consistent exposure. A few seams remain where the renders themselves differ, such as the porch lantern between two approach shots; matching re-renders would remove them. The model home is also the redesign's biggest cost. It loads all thirteen views up front so it turns smoothly, which makes the home page about 2.5 MB and puts its Lighthouse performance score below the current site's: 52 against 67 on phones, and 69 against 85 on desktop. Its main content still appears sooner. Bringing in the side and back views after the page is ready is the obvious next step, and it is on the launch list.</p>
+
+<h3><span class="n">7</span>Phones first, and every visitor</h3>
+<p>On a phone, a bar with Call and Get pre-qualified stays at the bottom of every page. No page scrolls sideways. Automated checks found no accessibility issues across eleven pages, and the site supports keyboard use, dark mode and reduced motion. The home page loads with 29 requests instead of 94, and no tracking scripts.</p>
+<div class="why"><p>Many visitors arrive on a phone, and the two actions that matter most should always be one tap away. This answers finding 5.</p></div>
+
+<h2 id="compare">How the two compare</h2>
+<p>Both sites were measured the same way, on the same machine, on the same day.</p>
+<div class="tablewrap" role="region" aria-label="Comparison table" tabindex="0">
+<table>
+  <thead><tr><th scope="col">Measure</th><th scope="col">Current site</th><th scope="col">Redesign concept</th></tr></thead>
+  <tbody>
+    <tr><td>Lighthouse performance, phone</td><td>67</td><td>52</td></tr>
+    <tr><td>Lighthouse accessibility, phone</td><td>100</td><td>100</td></tr>
+    <tr><td>Lighthouse best practices, phone</td><td>75</td><td>100</td></tr>
+    <tr><td>Lighthouse SEO, phone</td><td>85</td><td>63*</td></tr>
+    <tr><td>Lighthouse performance, desktop</td><td>85</td><td>69</td></tr>
+    <tr><td>Main content visible, simulated phone</td><td>6.0 s</td><td>3.3 s</td></tr>
+    <tr><td>Requests to load the home page</td><td>94</td><td>29</td></tr>
+    <tr><td>Home page transfer size</td><td>1.1 MB</td><td>2.5 MB</td></tr>
+    <tr><td>Automated WCAG 2.2 AA issues</td><td>1 to 2 per page</td><td>0 on 11 pages</td></tr>
+    <tr><td>Sideways scrolling at phone width</td><td>None</td><td>None</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="note">Phone scores are the middle of three Lighthouse runs. The redesign's phone performance ranged from 50 to 60 across its runs, and the current site's from 60 to 70. The redesign was re-measured the same day, after its latest 3D update. The test machine has no graphics card, so the 3D work runs in software there. *The demo is deliberately hidden from search engines while it is a concept. That is the only SEO check it misses, and it goes away at launch.</p>
+
+<h2 id="launch">What the demo still needs before launch</h2>
+<p>The redesign is a working concept. Before it could replace the current site, it needs the following.</p>
+<p class="sub"><strong>Content</strong></p>
+<ul>
+  <li>Your team photo, headshots and bios from the current site, in place of the demo's placeholders.</li>
+  <li>The full glossary from the current site, alongside the new examples. The demo's glossary has 40 core terms today.</li>
+  <li>Real letters for The Reliant Letter. The demo shows starter topics.</li>
+  <li>The Terms of Use, Privacy Policy and CCPA pages, carried over unchanged.</li>
+  <li>Your review of every line of copy for accuracy and compliance.</li>
+</ul>
+<p class="sub"><strong>Build</strong></p>
+<ul>
+  <li>A real web address for every page. The demo runs as one page with sections reached by # links, which search engines treat as a single page. The launch version gives Buy, Refinance, each loan program, the glossary and the rest their own addresses, titles and descriptions.</li>
+  <li>Redirects from every old address to its new page, so search rankings and saved links carry over.</li>
+  <li>Forms connected to your inbox or lead system. Today the demo saves submissions to a demo database and shows a notice. The Apply links already go to each loan officer's Blink application. Leaving the 220 Marketing platform also means replacing the forms and staff listing it provides.</li>
+  <li>A lighter first load for the model home: bring in its side and back views after the page is ready, so the home page is not held up by all thirteen.</li>
+  <li>Matching re-renders for the last few 3D seams described above.</li>
+  <li>Search indexing turned on at launch.</li>
+</ul>
+
+<h2 id="quickfixes">Fixes worth making now</h2>
+<p>These improve the current site whether or not you move ahead with a redesign.</p>
+<ol>
+  <li>Correct the FHA eligibility line: 3.5% down needs a 580 credit score, and scores from 500 to 579 need 10% down.</li>
+  <li>Remove or replace the placeholder blog post, “Welcome to !” from January 2023.</li>
+  <li>Hide the empty directory categories, or fill them with the professionals you already refer.</li>
+  <li>Show “5.0 from 82 Google reviews” on the home page. The home page slider shows reviews from 2023 and early 2024, while newer ones from 2026 appear on the Reviews page.</li>
+  <li>Put a tap-to-call phone number in the header on phones.</li>
+  <li>Add meta descriptions to the main pages. Sixteen of seventeen have none.</li>
+  <li>Match names and licenses everywhere. One bio spells Blaine's name “Ramsey,” and two bios mention Florida while the licensing footer lists Ohio, Kentucky and Indiana. Confirm which licenses are current so the site matches NMLS.</li>
+  <li>Use company email addresses throughout. One loan officer's Email link on the staff page opens a personal Gmail address, while the others use relianthomemtg.com.</li>
+  <li>Fix the script error on the newsletter page.</li>
+</ol>
+
+<h2 id="next">Next steps</h2>
+<ol>
+  <li><strong>Walk through the demo</strong> on your phone and your computer, and try the pre-qualification from start to finish.</li>
+  <li><strong>Tell us what to change:</strong> what to keep, what to adjust and what to drop.</li>
+  <li><strong>Confirm the details:</strong> the photos and bios to use, and where new leads should go.</li>
+  <li><strong>We build and launch:</strong> move your content, set up the redirects, and go live when you approve it.</li>
+</ol>
+<p>A slide version of this report accompanies it.</p>
+<div class="sig"><b>Zane Ramsey</b>Greater Purpose Web</div>
+
+<h2 id="appendix">Appendix</h2>
+<h3>Pages reviewed</h3>
+<p>Home, Today's Rates, Purchase Assistant, Refinance Advisor, Calculator, Loan Programs, FHA Loans, Local Resources, Recommended Professionals, About, Staff Profiles, Reviews, Review Us, Blog, Monthly Newsletter, Ask a Professional and Glossary, plus the five loan officer profiles for Kevin Barker, Jennifer B. Barker, Christina Wheeler-Wellman, Chase Barker and Blaine Ramsay.</p>
+<h3>Tools</h3>
+<ul>
+  <li>Chromium 141, driven by Playwright 1.56, at 1440 × 900 and 390 × 844 with an iPhone user agent.</li>
+  <li>axe-core 4.13 with the WCAG 2.0, 2.1 and 2.2 A and AA rule sets, run on each page's main document. Content inside embedded frames, such as the lead forms, is outside what this check covers.</li>
+  <li>Google Lighthouse 12.8.2, phone preset three times per site and desktop preset once.</li>
+</ul>
+<p class="note">The raw measurements are saved with this report in <code>audit/data/measurements.json</code>.</p>
+
+</main>
+</body>
+</html>

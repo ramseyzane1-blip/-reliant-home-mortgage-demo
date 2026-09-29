@@ -23,7 +23,7 @@
   --forest:#2f7a50; --forest-h:#37885b; --on-forest:#ffffff; --accent-ink:#8fcaa6; --head:#cfe3d6; --sand:#bfae8a; --sand-soft:#1f231d; --star:#d9a94a; --good:#5cb483; --warn:#d99a5a; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.65}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.65}
 .wrap{max-width:1160px;margin:0 auto;padding-inline:20px}
 h1,h2,h3,h4{font-family:var(--display);font-weight:400;line-height:1.1;text-wrap:balance;margin:0;color:var(--head)}
 h1{font-size:clamp(2.6rem,5.2vw,4.1rem);line-height:1.03}

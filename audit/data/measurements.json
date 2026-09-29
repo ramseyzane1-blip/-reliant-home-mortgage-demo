@@ -1,0 +1,577 @@
+{
+ "audited": "2026-09-29",
+ "site": "https://www.relianthomemtg.com/",
+ "method": "Chromium via Playwright at 1440x900 and 390x844 (iPhone UA); axe-core 4 WCAG 2.2 AA tags on the main document; Lighthouse mobile x3 (median) and desktop x1. Lab numbers from a cloud container, not field data. No forms were submitted.",
+ "currentSitePages": {
+  "/": {
+   "title": "Middletown OH Home Loans | Purchase and Refinance Mortgages | Reliant Home Mortgage LLC",
+   "metaDescription": true,
+   "h1": 1,
+   "structuredData": [
+    "WebSite"
+   ],
+   "words": 660,
+   "requests": 104,
+   "transferKB": 1372,
+   "scriptKB": 443,
+   "hosts": 11,
+   "labLCPms": 2824,
+   "labCLS": 0.018,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 8518,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/37",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/todays-rates/": {
+   "title": "Today's Rates | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 157,
+   "requests": 101,
+   "transferKB": 931,
+   "scriptKB": 446,
+   "hosts": 9,
+   "labLCPms": 1664,
+   "labCLS": 0.176,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2558,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/purchase-assistant/": {
+   "title": "Purchase Assistant | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 170,
+   "requests": 99,
+   "transferKB": 906,
+   "scriptKB": 446,
+   "hosts": 9,
+   "labLCPms": 1744,
+   "labCLS": 0.182,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2660,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/refinance-advisor/": {
+   "title": "Refinance Advisor | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 170,
+   "requests": 99,
+   "transferKB": 984,
+   "scriptKB": 446,
+   "hosts": 9,
+   "labLCPms": 2012,
+   "labCLS": 0.163,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2700,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/calculator/": {
+   "title": "Calculator | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 209,
+   "requests": 91,
+   "transferKB": 923,
+   "scriptKB": 446,
+   "hosts": 9,
+   "labLCPms": 1468,
+   "labCLS": 0.004,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 3370,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "5/29",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/loan-options/": {
+   "title": "Loan Programs | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 222,
+   "requests": 86,
+   "transferKB": 909,
+   "scriptKB": 439,
+   "hosts": 9,
+   "labLCPms": 1528,
+   "labCLS": 0.028,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 4212,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/41",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/loan-options/fha-loans/": {
+   "title": "FHA Loans | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 474,
+   "requests": 84,
+   "transferKB": 1088,
+   "scriptKB": 436,
+   "hosts": 9,
+   "labLCPms": 1496,
+   "labCLS": 0,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 4215,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/local-resources/": {
+   "title": "Local Resources | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 131,
+   "requests": 94,
+   "transferKB": 979,
+   "scriptKB": 483,
+   "hosts": 9,
+   "labLCPms": 1228,
+   "labCLS": 0.077,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2758,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/21",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/recommended-professionals/": {
+   "title": "Recommended Professionals | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 131,
+   "requests": 94,
+   "transferKB": 980,
+   "scriptKB": 483,
+   "hosts": 9,
+   "labLCPms": 1400,
+   "labCLS": 0.077,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 3094,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/21",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/company/": {
+   "title": "About | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 329,
+   "requests": 84,
+   "transferKB": 1019,
+   "scriptKB": 436,
+   "hosts": 9,
+   "labLCPms": 1292,
+   "labCLS": 0,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 3570,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/21",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/staff/": {
+   "title": "Staff Profiles | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 117,
+   "requests": 104,
+   "transferKB": 2255,
+   "scriptKB": 481,
+   "hosts": 9,
+   "labLCPms": 1608,
+   "labCLS": 0.445,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 4232,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/reviews/": {
+   "title": "Reviews | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [
+    "LocalBusiness"
+   ],
+   "words": 263,
+   "requests": 89,
+   "transferKB": 961,
+   "scriptKB": 565,
+   "hosts": 12,
+   "labLCPms": 1564,
+   "labCLS": 0.018,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2797,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/22",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/review-us/": {
+   "title": "Review Us | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 117,
+   "requests": 107,
+   "transferKB": 1576,
+   "scriptKB": 968,
+   "hosts": 16,
+   "labLCPms": 1600,
+   "labCLS": 0,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 3133,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "frame-title (serious, 1)",
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": [
+    "requestStorageAccess: Permission denied."
+   ]
+  },
+  "/blog/": {
+   "title": "Blog | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 132,
+   "requests": 83,
+   "transferKB": 818,
+   "scriptKB": 437,
+   "hosts": 9,
+   "labLCPms": 1608,
+   "labCLS": 0.116,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 2179,
+   "phoneParagraphFont": "14px",
+   "phoneTapTargetsUnder24px": "5/21",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/newsletter/": {
+   "title": "Monthly Newsletter | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 124,
+   "requests": 91,
+   "transferKB": 1188,
+   "scriptKB": 441,
+   "hosts": 10,
+   "labLCPms": 1444,
+   "labCLS": 0,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 4589,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/20",
+   "axeViolations": [
+    "frame-title (serious, 1)",
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": [
+    "SyntaxError: missing ) after argument list"
+   ]
+  },
+  "/ask-a-professional/": {
+   "title": "Ask A Professional | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 178,
+   "requests": 88,
+   "transferKB": 915,
+   "scriptKB": 442,
+   "hosts": 9,
+   "labLCPms": 1400,
+   "labCLS": 0.004,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 3019,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "4/23",
+   "axeViolations": [
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  },
+  "/glossary/": {
+   "title": "Glossary | Reliant Home Mortgage LLC",
+   "metaDescription": false,
+   "h1": 1,
+   "structuredData": [],
+   "words": 4406,
+   "requests": 83,
+   "transferKB": 905,
+   "scriptKB": 436,
+   "hosts": 9,
+   "labLCPms": 1396,
+   "labCLS": 0,
+   "phoneSideScroll": false,
+   "phoneHeightPx": 25668,
+   "phoneParagraphFont": "17px",
+   "phoneTapTargetsUnder24px": "41/63",
+   "axeViolations": [
+    "link-in-text-block (serious, 1)",
+    "target-size (serious, 1)"
+   ],
+   "consoleErrors": []
+  }
+ },
+ "lighthouse": {
+  "old": {
+   "url": "https://www.relianthomemtg.com/",
+   "mobileRuns": [
+    {
+     "performance": 60,
+     "accessibility": 100,
+     "best-practices": 75,
+     "seo": 85
+    },
+    {
+     "performance": 67,
+     "accessibility": 100,
+     "best-practices": 75,
+     "seo": 85
+    },
+    {
+     "performance": 70,
+     "accessibility": 100,
+     "best-practices": 75,
+     "seo": 85
+    }
+   ],
+   "mobileMedian": {
+    "performance": 67,
+    "accessibility": 100,
+    "best-practices": 75,
+    "seo": 85
+   },
+   "mobileMedianLCPs": 6.0,
+   "mobileMedianFCPs": 3.3,
+   "mobileMedianBytesKB": 1097,
+   "requests": 94,
+   "desktop": {
+    "performance": 85,
+    "accessibility": 96,
+    "best-practices": 78,
+    "seo": 85
+   },
+   "lighthouseVersion": "12.8.2"
+  },
+  "new_before_3d_update": {
+   "url": "https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/",
+   "mobileRuns": [
+    {
+     "performance": 44,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    },
+    {
+     "performance": 76,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    },
+    {
+     "performance": 75,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    }
+   ],
+   "mobileMedian": {
+    "performance": 75,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "mobileMedianLCPs": 4.7,
+   "mobileMedianFCPs": 2.8,
+   "mobileMedianBytesKB": 917,
+   "requests": 19,
+   "desktop": {
+    "performance": 67,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "lighthouseVersion": "12.8.2"
+  },
+  "new": {
+   "url": "https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/",
+   "note": "Re-measured 2026-09-29 ~06:40 UTC after main commit 93e8adb (3D production pass)",
+   "mobileRuns": [
+    {
+     "performance": 52,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    },
+    {
+     "performance": 60,
+     "accessibility": 100,
+     "best-practices": 96,
+     "seo": 63
+    },
+    {
+     "performance": 50,
+     "accessibility": 100,
+     "best-practices": 100,
+     "seo": 63
+    }
+   ],
+   "mobileMedian": {
+    "performance": 52,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "mobileMedianLCPs": 3.3,
+   "mobileMedianFCPs": 2.6,
+   "mobileMedianBytesKB": 2573,
+   "requests": 29,
+   "desktop": {
+    "performance": 69,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 63
+   },
+   "lighthouseVersion": "12.8.2"
+  }
+ },
+ "redesignViews": {
+  "home": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "buy": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "refinance": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "loans": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "learn": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "rates": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "glossary": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "local-help": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "about": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "contact": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  },
+  "start": {
+   "axe": [],
+   "phone": {
+    "sw": 390,
+    "tel": true
+   }
+  }
+ }
+}

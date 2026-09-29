@@ -6,6 +6,9 @@
   and rendered with Blender's Cycles (`pip install bpy`). `blender/fetch_assets.py` downloads the
   CC0 Poly Haven assets it uses into `blender/assets/` (not committed).
 - `house_views.py`: converts the rendered frames into what the site loads, in one step.
+- `site_audit.js`: measures any site page by page in a real browser (weight, requests, SEO basics,
+  axe-core WCAG checks, phone-width checks, screenshots). Used for the audit in `audit/`.
+- `export_pdfs.js`: exports the audit deck and report to PDF.
 
 ## Regenerating the hero turntable
 
