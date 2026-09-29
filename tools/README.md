@@ -67,5 +67,6 @@ rectangle.
 
 ## Logo
 
-`logo-dark.png` is made from `logo.png`: the emblem sits on a cream disc and the wordmark is
-recolored light, for dark mode.
+`tools/make_logo.py` makes `logo.webp` and `logo-dark.webp` from the client's logo
+(`tools/brand/logo-source.webp`, transparent background): cropped and sized for the 44px header
+at 3x. The dark copy keeps the emblem as is and recolors the wordmark light.
