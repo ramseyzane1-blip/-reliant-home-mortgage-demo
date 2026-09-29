@@ -16,11 +16,11 @@
   --r:14px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0d1512; --alt:#111c17; --surface:#15201b; --tint:#1b2b23; --ink:#e8eeea; --muted:#a4b3aa; --line:#27362f;
-  --forest:#2f7a50; --forest-h:#37885b; --on-forest:#ffffff; --accent-ink:#8fcaa6; --head:#cfe3d6; --sand:#bfae8a; --sand-soft:#1f231d; --star:#d9a94a; --good:#5cb483; --warn:#d99a5a; color-scheme:dark }}
+  --bg:#151412; --alt:#1b1a17; --surface:#211f1c; --tint:#2a2823; --ink:#ecebe6; --muted:#aaa69c; --line:#34322d;
+  --forest:#2f7a50; --forest-h:#37885b; --on-forest:#ffffff; --accent-ink:#a3cdb1; --head:#f3efe6; --sand:#c9b995; --sand-soft:#24221d; --star:#d9a94a; --good:#5cb483; --warn:#d99a5a; color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#0d1512; --alt:#111c17; --surface:#15201b; --tint:#1b2b23; --ink:#e8eeea; --muted:#a4b3aa; --line:#27362f;
-  --forest:#2f7a50; --forest-h:#37885b; --on-forest:#ffffff; --accent-ink:#8fcaa6; --head:#cfe3d6; --sand:#bfae8a; --sand-soft:#1f231d; --star:#d9a94a; --good:#5cb483; --warn:#d99a5a; color-scheme:dark }
+  --bg:#151412; --alt:#1b1a17; --surface:#211f1c; --tint:#2a2823; --ink:#ecebe6; --muted:#aaa69c; --line:#34322d;
+  --forest:#2f7a50; --forest-h:#37885b; --on-forest:#ffffff; --accent-ink:#a3cdb1; --head:#f3efe6; --sand:#c9b995; --sand-soft:#24221d; --star:#d9a94a; --good:#5cb483; --warn:#d99a5a; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.65}
@@ -622,3 +622,41 @@ body.ds-covered>:not(.ds){visibility:hidden} /* nothing to paint under the opaqu
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 /* headings get focus from script (after a page change or answer) so screen readers announce them; no ring needed */
 h1[tabindex="-1"]:focus,h2[tabindex="-1"]:focus,section[tabindex="-1"]:focus{outline:none}
+
+/* dark mode: warm charcoal surfaces, green only for actions */
+:root[data-theme="dark"] .eyebrow{color:var(--sand)}
+:root[data-theme="dark"] .est{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+:root[data-theme="dark"] .est .eyebrow{color:var(--sand)}
+:root[data-theme="dark"] .est .big{color:var(--head)}
+:root[data-theme="dark"] .est p{color:var(--muted)}
+:root[data-theme="dark"] .est .tz-fine{color:var(--muted)}
+:root[data-theme="dark"] .est input[type=range]::-webkit-slider-thumb{border-color:var(--forest)}
+:root[data-theme="dark"] .ctaband{background:var(--alt);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+:root[data-theme="dark"] .ctaband h2{color:var(--head)}
+:root[data-theme="dark"] .ctaband .eyebrow{color:var(--sand)}
+:root[data-theme="dark"] .ctaband p{color:var(--muted)}
+:root[data-theme="dark"] .ctaband .talkline button{color:var(--ink)}
+:root[data-theme="dark"] .ctaband .btn-white,:root[data-theme="dark"] .est .btn-white{background:var(--forest);color:#fff}
+:root[data-theme="dark"] .ctaband .btn-white:hover,:root[data-theme="dark"] .est .btn-white:hover{background:var(--forest-h)}
+:root[data-theme="dark"] .est :focus-visible,:root[data-theme="dark"] .ctaband :focus-visible{outline-color:var(--sand)}
+:root[data-theme="dark"] .tz-bar i:first-child{background:var(--accent-ink)}
+:root[data-theme="dark"] .photo-slot,:root[data-theme="dark"] .portrait{background:radial-gradient(90% 60% at 50% 0%,rgba(255,255,255,.06),transparent 70%),linear-gradient(165deg,#2c2a25,#221f1b 55%,#1b1916)}
+@media (prefers-color-scheme: dark){
+:root:not([data-theme="light"]) .eyebrow{color:var(--sand)}
+:root:not([data-theme="light"]) .est{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+:root:not([data-theme="light"]) .est .eyebrow{color:var(--sand)}
+:root:not([data-theme="light"]) .est .big{color:var(--head)}
+:root:not([data-theme="light"]) .est p{color:var(--muted)}
+:root:not([data-theme="light"]) .est .tz-fine{color:var(--muted)}
+:root:not([data-theme="light"]) .est input[type=range]::-webkit-slider-thumb{border-color:var(--forest)}
+:root:not([data-theme="light"]) .ctaband{background:var(--alt);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+:root:not([data-theme="light"]) .ctaband h2{color:var(--head)}
+:root:not([data-theme="light"]) .ctaband .eyebrow{color:var(--sand)}
+:root:not([data-theme="light"]) .ctaband p{color:var(--muted)}
+:root:not([data-theme="light"]) .ctaband .talkline button{color:var(--ink)}
+:root:not([data-theme="light"]) .ctaband .btn-white,:root:not([data-theme="light"]) .est .btn-white{background:var(--forest);color:#fff}
+:root:not([data-theme="light"]) .ctaband .btn-white:hover,:root:not([data-theme="light"]) .est .btn-white:hover{background:var(--forest-h)}
+:root:not([data-theme="light"]) .est :focus-visible,:root:not([data-theme="light"]) .ctaband :focus-visible{outline-color:var(--sand)}
+:root:not([data-theme="light"]) .tz-bar i:first-child{background:var(--accent-ink)}
+:root:not([data-theme="light"]) .photo-slot,:root:not([data-theme="light"]) .portrait{background:radial-gradient(90% 60% at 50% 0%,rgba(255,255,255,.06),transparent 70%),linear-gradient(165deg,#2c2a25,#221f1b 55%,#1b1916)}
+}
