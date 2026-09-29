@@ -64,7 +64,7 @@ document.querySelectorAll('[data-team]').forEach(el=>el.innerHTML=TEAM.map((t,i)
 $('biosList').innerHTML=TEAM.map((t,i)=>`<article class="bio" id="bio-${i}">${portrait(i)}<div class="bt">
   <div><h3>${t.n}</h3><p class="muted num">Loan Officer · NMLS ${t.nmls}</p></div><p>${esc(t.bio)}</p>
   <div class="meta">${t.tags.map(x=>`<span>${x}</span>`).join('')}</div>
-  ${t.quote?`<blockquote>"${esc(t.quote)}" <span class="fine">— ${t.qby}, Google review</span></blockquote>`:''}
+  ${t.quote?`<blockquote>"${esc(t.quote)}"<span class="fine qby">${t.qby}, Google review</span></blockquote>`:''}
   ${t.slot?`<p class="fine">Bio slot: add ${t.n.split(' ')[0]}'s years in lending, specialties and hometown.</p>`:''}
   <div class="btn-row"><a class="btn btn-primary" href="#start" data-lo="${i}">Get pre-qualified with ${t.n.split(' ')[0]}</a><button class="btn btn-line" data-apply="${i}">Apply</button></div></div></article>`).join('');
 $('c-who').innerHTML='<option>Anyone on the team</option>'+TEAM.map(t=>`<option>${t.n}</option>`).join('');
@@ -249,7 +249,7 @@ const LESSONS=[
   body:['Your interest rate sets your monthly payment. The {Annual percentage rate (APR)|APR} adds certain fees spread over the loan, so it\'s the better number for comparing offers.',
         '{Discount points|Discount points} let you pay up front for a lower rate. One point costs 1% of your loan amount, and it only pays off if you keep the loan past the break-even point.',
         'Once you\'re under contract, a {Lock-in|rate lock} holds your rate while the loan closes.'],
-  key:['Compare APRs, not just rates','1 point = 1% of the loan amount','Points pay off only if you keep the loan long enough'],
+  key:['Compare APRs as well as rates','1 point = 1% of the loan amount','Points pay off only if you keep the loan long enough'],
   try:'points',q:['On a $200,000 loan, what does one point cost?',['$200','$2,000','$20,000'],1,'Right. One point is 1% of the loan amount.']},
  {t:'Closing costs and closing day',min:4,
   body:['{Closing costs|Closing costs} usually run about 2% to 5% of the loan amount. They cover things like the appraisal, title insurance and lender fees. Some can be negotiated or paid by the seller.',

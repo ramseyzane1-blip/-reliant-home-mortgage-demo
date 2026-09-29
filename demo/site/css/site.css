@@ -453,6 +453,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--accent-ink);padd
 .bio .meta{display:flex;flex-wrap:wrap;gap:8px}
 .bio .meta span{background:var(--alt);border-radius:999px;padding:3px 12px;font-size:.8rem;font-weight:600}
 .bio blockquote{margin:0;border-left:3px solid var(--sand);padding-left:14px;font-style:italic;color:var(--muted)}
+.bio blockquote .qby{display:block;font-style:normal;margin-top:4px}
 @media (max-width:720px){.bio{grid-template-columns:1fr}.portrait{min-height:0;aspect-ratio:4/3}}
 .starpick{display:flex;gap:6px}
 .starpick button{background:none;border:0;font-size:2.4rem;color:var(--line);cursor:pointer;line-height:1;padding:0}
