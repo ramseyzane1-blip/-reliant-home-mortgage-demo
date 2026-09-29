@@ -22,6 +22,10 @@ create table if not exists public.reliant_form_submissions (
   fields jsonb not null default '{}'::jsonb check (pg_column_size(fields) <= 8000)
 );
 
+-- browser roles may only insert (RLS below narrows what they can insert)
+revoke all on public.reliant_prequal, public.reliant_form_submissions from anon, authenticated;
+grant insert on public.reliant_prequal, public.reliant_form_submissions to anon, authenticated;
+
 alter table public.reliant_prequal enable row level security;
 alter table public.reliant_form_submissions enable row level security;
 
