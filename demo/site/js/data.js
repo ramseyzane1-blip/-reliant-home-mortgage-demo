@@ -2,26 +2,28 @@
 const TEAM=[
  {n:"Kevin Barker",i:"KB",nmls:"293704",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/kevinbarker",
   bio:"Kevin and Jennifer Barker run Reliant as a family business out of the Middletown office. Kevin works with first-time buyers, move-up buyers and homeowners refinancing, and his Google reviews point again and again to a quick, smooth process where clients felt their interests came first.",
-  tags:["Purchase loans","Refinancing","Realtor partner"],quote:"Kevin and his team made this home buying process very smooth and easy.",qby:"Amy Brown"},
+  tags:["Purchase loans","Refinancing","Realtor partner"],quote:"Kevin and his team made this home buying process very smooth and easy.",qby:"Cole Dickenson"},
  {n:"Jennifer Barker",i:"JB",nmls:"436409",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/jenniferbarker",
   bio:"Jennifer leads Reliant with Kevin and is often the first voice clients hear. Reviewers describe her as knowledgeable and thorough, the kind of loan officer who explains every cost up front, from closing and appraisal to title.",
-  tags:["First-time buyers","Refinancing","Cost breakdowns"],quote:"Jennifer was fantastic! She is so knowledgeable and trustworthy.",qby:"David Nguyen"},
+  tags:["First-time buyers","Refinancing","Cost breakdowns"],quote:"Jennifer at Reliant Home Mortgage was fantastic! She is so knowledgeable and trustworthy.",qby:"Dani Dean"},
  {n:"Christina Wheeler-Wellman",i:"CW",nmls:"217225",url:"https://www.blink.mortgage/app/signup/p/relianthomemortgagellc/christinawellman",
   bio:"Christina is a licensed loan officer on the Reliant team, helping Ohio, Kentucky and Indiana homebuyers and homeowners with purchase and refinance loans.",tags:["Purchase loans","Refinancing"],slot:1},
  {n:"Chase Barker",i:"CB",nmls:"2723763",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/52SG33AT",
   bio:"Chase is a licensed loan officer on the Reliant team, helping Tri-State homebuyers find the right program and rate.",tags:["Purchase loans","First-time buyers"],slot:1},
  {n:"Blaine Ramsay",i:"BR",nmls:"1917539",url:"https://www.blink.mortgage/app/signup/partner/AXMAMLVK/MXXA8C45",
   bio:"Blaine is a licensed loan officer on the Reliant team, helping clients across Ohio, Kentucky and Indiana buy and refinance homes.",tags:["Purchase loans","Refinancing"],slot:1}];
+/* Google reviews, word for word from the testimonial slider on relianthomemtg.com (author, month and text
+   checked against the page on 2026-09-29). Rating-only reviews and one that names someone outside the team are left out. */
 const REVIEWS=[
- {n:"Amy Brown",d:"Mar 2024",q:"Kevin and his team made this home buying process very smooth and easy.",who:"Kevin"},
- {n:"Jennifer Cope",d:"Mar 2024",q:"Transparent and quick to give me the breakdown of all of the costs involved.",who:"Jennifer"},
- {n:"Dani Dean",d:"Mar 2024",q:"I am constantly recommending them to my clients and colleagues!",who:"Kevin Jennifer",agent:1,role:"Realtor"},
- {n:"Luis Rodriguez",d:"Mar 2023",q:"She made sure I was aware of what was going on every step of the way.",who:"Jennifer"},
- {n:"Alexandria Kraus",d:"Nov 2023",q:"Kevin was absolutely amazing to work with on my home loan.",who:"Kevin"},
- {n:"David Nguyen",d:"Nov 2023",q:"Jennifer was fantastic! She is so knowledgeable and trustworthy.",who:"Jennifer"},
- {n:"Stephanie Wenning",d:"Nov 2023",q:"Informative, extremely thorough, and attentive to our financial needs.",who:"Jennifer"},
- {n:"Anna Spicer Osborne",d:"Nov 2023",q:"She walked us through every step of the way. I would 100% recommend her.",who:"Jennifer"},
- {n:"Tamra Hale Mulberry",d:"Nov 2023",q:"They made the home buying experience so smooth.",who:""}];
+ {n:"Cole Dickenson",d:"Mar 2024",q:"Kevin and his team made this home buying process very smooth and easy.",who:"Kevin"},
+ {n:"Boris Chen",d:"Mar 2024",q:"I appreciated how she was transparent and was quick to give me the breakdown of all of the costs involved (closing, appraisal, title, etc.)",who:"Jennifer"},
+ {n:"Stephanie Wenning",d:"Nov 2023",q:"They are great people and great loan officers, I am constantly recommending them to my clients and colleagues!",who:"Kevin Jennifer",agent:1,role:"Realtor"},
+ {n:"Alexandria Kraus",d:"Nov 2023",q:"She made sure I was aware of what was going on every step of the way.",who:"Jennifer"},
+ {n:"Jennifer Cope",d:"Mar 2024",q:"Kevin was absolutely amazing to work with on my home loan.",who:"Kevin"},
+ {n:"Dani Dean",d:"Mar 2024",q:"Jennifer at Reliant Home Mortgage was fantastic! She is so knowledgeable and trustworthy.",who:"Jennifer"},
+ {n:"Tamra Hale Mulberry",d:"Nov 2023",q:"From beginning to end, she was informative, extremely thorough, and attentive to our financial needs.",who:"Jennifer"},
+ {n:"Angie Stewart",d:"Nov 2023",q:"She was so knowledgeable and walked us through every step of the way. I would 100% recommend her and her company!",who:"Jennifer"},
+ {n:"Anna Spicer Osborne",d:"Nov 2023",q:"They made the home buying experience so smooth…",who:""}];
 const P=[
  ["conventional-loans","Conventional Loans","Purchase","The most common mortgage, not backed by a government agency.",["You have steady income and good credit","You can put down 3% to 20% or more","You want mortgage insurance that can come off later"],["Credit score affects price more than with FHA","Private mortgage insurance applies under 20% down"]],
  ["down-payment-assistance","Down Payment Assistance","Purchase","Grants and second loans that help cover your down payment and closing costs.",["You have steady income but limited savings","You're a first-time buyer (many programs require it)","You're buying in Ohio, Kentucky or Indiana"],["Programs have income and price limits","Some assistance must be repaid if you sell early"]],
