@@ -51,8 +51,9 @@ function create(box,canvas,views,opt){
  const fetchFlow=(u,done)=>fetch(u).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>{const dv=new DataView(ab);
   if(ab.byteLength<8||dv.getUint32(0)!==0x464c5732)return;const np=dv.getUint16(4,true),G=dv.getUint16(6,true),sz=G*G*2,o=8+np*2,d=o+np*8;
   if(ab.byteLength!==d+np*2*sz||(G0&&G!==G0))return;if(!G0){G0=G;mesh(G);}const q=new Int8Array(ab,d);
+  /* unpacked and uploaded a few pairs per animation frame (in frame()), so a file landing mid-drag costs no hitch */
   for(let p=0;p<np;p++){const k=dv.getUint16(8+p*2,true);if(k>=n)continue;
-   pend.push([k,[0,1].map(e=>{const m=2*p+e,sc=dv.getFloat32(o+m*4,true),f=new Float32Array(sz);for(let i=0;i<sz;i++)f[i]=q[m*sz+i]*sc;return buf(f);})]);}
+   pend.push([k,()=>[0,1].map(e=>{const m=2*p+e,sc=dv.getFloat32(o+m*4,true),f=new Float32Array(sz);for(let i=0;i<sz;i++)f[i]=q[m*sz+i]*sc;return buf(f);})]);}
  }).catch(()=>{}).finally(()=>{done();dirty=true;});
  /* Frames. Nothing downloads until the hero is about to scroll into view; then the flow and the
     two frames next to the front, then the rest the idle sway uses (+-40 degrees), then the others
@@ -140,7 +141,7 @@ function create(box,canvas,views,opt){
   if(!texSize)texSize=want_;
   else if(want_>texSize*1.25){texSize=want_;texGen++;for(let i=0;i<N;i++){if(dec[i]&&dec[i].close)dec[i].close();dec[i]=null;}}}   /* grew a lot (rotation, wider window): re-decode, nearest first */
  function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);want();upload([pr_[0],pr_[1]]);
-  for(let x=pend.length-1;x>=0;x--){const k=pend[x][0];if(!ready||k!==pr_[0]||pr_[2]<1e-3){flows[k]=pend[x][1];pend.splice(x,1);dirty=true;}}
+  for(let x=pend.length-1,m=ready?4:99;x>=0&&m>0;x--){const k=pend[x][0];if(!ready||k!==pr_[0]||pr_[2]<1e-3){flows[k]=pend[x][1]();pend.splice(x,1);dirty=true;m--;}}
   if(ready&&!allFetched&&A.every((a,i)=>tex[i]||adist(i,0)>40))fetchRest();
   if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=Math.pow(.94,dt*60);}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
   /* follow the pointer closely; drift back into the idle sway gently */
