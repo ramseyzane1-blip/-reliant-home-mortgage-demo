@@ -82,7 +82,7 @@ const SHOTS={
  approach:[
   {f:'images/approach-2.jpg',wh:W1448,a:[640,302,809,693]},
   {f:'images/approach-3.jpg',wh:W1448,a:[628,255,817,719]},
-  {f:'images/approach-4.jpg',wh:W1448,a:[562,167,875,839]},
+  {f:'images/approach-4.jpg',wh:W1448,a:[562,167,875,839],glass:[430,152,1010,760]},
   {f:'images/door.jpg',wh:[1350,1165],a:[503,97,899,969],glass:[330,120,1080,900]}],
  open:{f:'images/door-open.jpg',wh:W1448,door:[505,92,915,925],fire:[711,499,826,598]},
  inside:[
@@ -209,8 +209,11 @@ function play(root,opts){
  const name=f=>f.split('/').pop().replace('.jpg','');
  const T0={};const texOf=f=>T0[f]||(T0[f]=V.tex(imgs[f]));
  const mk=s=>({s,key:name(s.f),tex:texOf(s.f),st:{ox:0,oy:0,sc:1,a:0},sc0:0,shape:null,extra:0});
- const app=SHOTS.approach.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins],appDoor=app[app.length-1];
- const door=SHOTS.approach[SHOTS.approach.length-1],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
+ /* On a tall screen the door close-up can only be shown so large (it must cover the height) that
+    the door fills the width, so there the approach ends on the porch shot and the door opens on it. */
+ const tall=(root.clientHeight||innerHeight)>(root.clientWidth||innerWidth)*1.1,appShots=tall?SHOTS.approach.slice(0,-1):SHOTS.approach;
+ const app=appShots.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins],appDoor=app[app.length-1];
+ const door=appShots[appShots.length-1],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
  const texSide=gSide&&V.tex(gSide),texLeaf=gLeaf&&V.tex(gLeaf),texOpen=texOf(opn.f);
  // the relief of each shot
  const flatInv=new Float32Array(4).fill(1);
@@ -277,18 +280,18 @@ function play(root,opts){
  layout();addEventListener('resize',layout);
 
  /* ---- drawing ---- */
- const P=1600,rad=Math.PI/180;
+ const K=rw(door.a)/396,P=1600*K,rad=Math.PI/180; // rig constants were tuned on the close-up (door 396px wide)
  function drawDoor(L){const st=L.st,a=st.a,r=door.a,w=rw(r),h=r[3]-r[1],S=(x,y)=>[st.ox+st.sc*x,st.oy+st.sc*y];
   const rect=(x0,y0,x1,y1,u0,v0,u1,v1)=>[[...S(x0,y0),1,u0,v0,0,0],[...S(x1,y0),1,u1,v0,1,0],[...S(x0,y1),1,u0,v1,0,1],[...S(x1,y1),1,u1,v1,1,1]];
   const th=D.th*rad,open=D.open;
   const q=door.glass;if(D.lit>0&&texSide)V.quad(rect(q[0],q[1],q[2],q[3],q[0]/door.wh[0],q[1]/door.wh[1],q[2]/door.wh[0],q[3]/door.wh[1]),0,{tex:texSide,a:a*D.lit*.55});
   if(open){const o=opn.door,W1=opn.wh[0],H1=opn.wh[1];V.quad(rect(r[0],r[1],r[2],r[3],o[0]/W1,o[1]/H1,o[2]/W1,o[3]/H1),0,{tex:texOpen,a,bright:.92,cg:ins[0].cg});}
-  if(D.gap>0)V.quad(rect(r[2]-30,r[1],r[2]+10,r[3],0,0,1,1),3,{a:a*D.gap});
+  if(D.gap>0)V.quad(rect(r[2]-30*K,r[1],r[2]+10*K,r[3],0,0,1,1),3,{a:a*D.gap});
   if(open||D.lit>0){ // the leaf, hinged on the left, seen with the same 1600px perspective the render was matched to
    const pt=(u,v,z)=>{const X=u*Math.cos(th)+z*Math.sin(th),Z=-u*Math.sin(th)+z*Math.cos(th),f=P/(P-Z);return [...S(r[0]+X*f,r[1]+h/2+(v-h/2)*f),1/f];};
    const Wd=door.wh[0],Hd=door.wh[1],u0=r[0]/Wd,u1=r[2]/Wd,v0=r[1]/Hd,v1=r[3]/Hd;
    V.quad([[...pt(0,0,0),u0,v0,0,0],[...pt(w,0,0),u1,v0,1,0],[...pt(0,h,0),u0,v1,0,1],[...pt(w,h,0),u1,v1,1,1]],1,{tex:L.tex,glow:texLeaf,glowA:D.lit*.55,shade:D.shade,a,cg:L.cg});
-   if(open)V.quad([[...pt(w,0,22),0,0,0,0],[...pt(w,0,0),0,0,1,0],[...pt(w,h,22),0,0,0,1],[...pt(w,h,0),0,0,1,1]],2,{a});}
+   if(open)V.quad([[...pt(w,0,22*K),0,0,0,0],[...pt(w,0,0),0,0,1,0],[...pt(w,h,22*K),0,0,0,1],[...pt(w,h,0),0,0,1,1]],2,{a});}
   if(D.spill>0)V.quad(rect(r[0]-w*.35,r[3]-6,r[0]+w*1.35,r[3]-6+h*.3,0,0,1,1),4,{a:a*D.spill});}
  /* Exposure, like one camera: each space has one grade (NATIVE, chained from CORR, the
     per-channel gain and offset that fits each shot to the one before it over their shared area).
@@ -297,7 +300,8 @@ function play(root,opts){
     screen and settles into its grade over about 1.5s, which only shows where two renders disagree. */
  const CORR={"approach-3":[1.058,0.945,0.944,-0.059,0.004,-0.003],"approach-4":[0.944,1.012,0.886,-0.038,-0.029,0.029],"door":[1.138,1.023,0.982,0.059,0.035,-0.002],"door-open":[0.984,0.983,0.961,0.008,0.015,-0.001],"inside-1":[1.072,1.222,1.337,-0.053,-0.058,-0.001],"inside-2":[0.953,1.055,1.243,0.019,-0.017,-0.039],"inside-3":[0.986,0.915,0.794,-0.039,-0.019,-0.017],"inside-4":[0.938,0.982,0.993,0.073,0.027,0.018]};
  const NATIVE={"approach-2":[0.973,0.947,0.983,0.014,0.021,0.011],"approach-3":[1.029,0.895,0.928,-0.043,0.025,0.008],"approach-4":[0.972,0.906,0.823,-0.083,-0.001,0.036],"door":[1.106,0.927,0.808,-0.025,0.03,0.034],"door-open":[1.089,0.911,0.776,-0.016,0.044,0.033],"inside-4":[1.028,1.056,1.017,-0.014,-0.022,-0.011],"inside-3":[1.096,1.075,1.024,-0.094,-0.051,-0.03],"inside-2":[1.111,1.175,1.29,-0.051,-0.029,-0.008],"inside-1":[1.167,1.113,1.038,-0.074,-0.009,0.033]};
- function exposure(t){let g=[1,1,1],o=[0,0,0];layers.forEach(L=>{const c=CORR[L.key],n=NATIVE[L.key]||[1,1,1,0,0,0];
+ const chainKeys=[...SHOTS.approach,...SHOTS.inside].map(s=>name(s.f)),byKey=Object.fromEntries(layers.map(L=>[L.key,L]));
+ function exposure(t){let g=[1,1,1],o=[0,0,0];chainKeys.forEach(k=>{const L=byKey[k]||{key:k,t0:null},c=CORR[L.key],n=NATIVE[L.key]||[1,1,1,0,0,0];
    const mg=c?g.map((v,i)=>v*c[i]):n.slice(0,3),mo=c?o.map((v,i)=>g[i]*c[3+i]+v):n.slice(3);
    const w=L.t0==null?1:1-ss(seg(t,L.t0+.5,L.t0+2));g=mg.map((v,i)=>lerp(n[i],v,w));o=mo.map((v,i)=>lerp(n[3+i],v,w));L.cg=[g,o];});}
  /* A shot enters exactly as rendered (sc0 = its scale when it appears); from there, zooming in is
@@ -317,14 +321,14 @@ function play(root,opts){
    const u0=seg(t,T.app0,T.app1),u=lerp(u0,eio(u0),.45),walkAmt=Math.sin(Math.PI*seg(t,T.app0,T.app1)),j=rap(t);
    const lean=.014*ss(seg(t,T.knock[0]-.4,T.knock[0]-.05))-.01*ss(seg(t,T.knock[2]+.25,T.knock[2]+1));
    const push=(1+.025*ss(seg(t,T.app1,T.crack))+lean)*Math.exp(PUSH*Math.pow(seg(t,T.swing+.35,T.xf1),2))*(1+.0035*j); // into the doorway, still speeding up at the threshold
-   const W=Math.exp(lerp(Math.log(A0.w),Math.log(A1.w*1.13),u))*push;
+   const W=Math.exp(lerp(Math.log(A0.w),Math.log(A1.w*(tall?1.06:1.13)),u))*push*(tall?Math.exp(Math.log(1.24)*ss(seg(t,T.light,T.bolt+.1))):1); // tall: step up while someone comes to the door
    const x=lerp(A0.x,A1.x,u)-.8*j,y=lerp(A0.y,A1.y,u)+1.6*j;head=[sway*walkAmt*5+br*2.2,bob*walkAmt*3.5+br*1.4+2*j]; // the head moves, the anchor stays put
    chain(app,W,x,y,Math.log(1.12),1.005,gate(app,hApp,.55,t,.1),t);
    const th=doorAngle(t),op=th/OPEN;D.th=th+.35*j;D.open=th>.01;
    D.shade=.42*(1-Math.cos(th*rad))/(1-Math.cos(OPEN*rad));D.spill=.9*Math.min(1,Math.sin(th*rad)/Math.sin(OPEN*rad));D.warm=op*.35;
    D.gap=ss(seg(th,.2,CRACK))*(1-ss(seg(th,14,40)));D.lit=ss(seg(t,T.light,T.light+.16));
    const fx=ss(seg(t,T.xf0,T.xf1));
-   if(fx>0){const Lo=ins[0];const Wd=W*(rw(opn.door)/rw(door.a));const scO=Wd/rw(opn.door);
+   if(fx>0){const Lo=ins[0];const Wd=W*(rw(opn.door)/rw(SHOTS.approach[SHOTS.approach.length-1].a));const scO=Wd/rw(opn.door); // doorway / door slab
     // place the open-door image on its doorway so it lines up with the door we just opened
     const r=place(Lo,scO,x,y,opn.door,fx);Lo._t=r;Lo.wipe=true;}
    else hide([ins[0]]);
