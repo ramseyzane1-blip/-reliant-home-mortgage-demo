@@ -80,7 +80,6 @@ const Walk=(()=>{
 const W1448=[1448,1086];
 const SHOTS={
  approach:[
-  {f:'images/approach-1.jpg',wh:W1448,a:[618,526,693,676]},
   {f:'images/approach-2.jpg',wh:W1448,a:[640,302,809,693]},
   {f:'images/approach-3.jpg',wh:W1448,a:[628,255,817,719]},
   {f:'images/approach-4.jpg',wh:W1448,a:[562,167,875,839]},
@@ -112,7 +111,7 @@ function glowCanvas(s,onLeaf){const img=imgs[s.f];if(!img)return null;
    Each render has a depth map (Depth Anything V2), normalized so the shot's anchor (the door or the
    fireplace) is at depth 1, stored as 1/depth on a mesh grid. Walking forward is a real dolly
    through that relief and head motion is real parallax, so near things sweep past the far ones. */
-const DEPTH={file:'images/walk-depth.bin',shots:{"approach-1":[0,161,121],"approach-2":[19481,161,121],"approach-3":[38962,161,121],"approach-4":[58443,161,121],"door":[77924,151,130],"door-open":[97554,161,121],"inside-1":[117035,161,121],"inside-2":[136516,161,121],"inside-3":[155997,161,121],"inside-4":[175478,161,121]}};
+const DEPTH={file:'images/walk-depth.bin',shots:{"approach-2":[0,161,121],"approach-3":[19481,161,121],"approach-4":[38962,161,121],"door":[58443,151,130],"door-open":[78073,161,121],"inside-1":[97554,161,121],"inside-2":[117035,161,121],"inside-3":[136516,161,121],"inside-4":[155997,161,121]}};
 let depthBuf=null;
 let depthData;const depthLoad=()=>depthBuf||(depthBuf=fetch(DEPTH.file).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null).then(ab=>(depthData=ab)));
 
@@ -210,8 +209,8 @@ function play(root,opts){
  const name=f=>f.split('/').pop().replace('.jpg','');
  const T0={};const texOf=f=>T0[f]||(T0[f]=V.tex(imgs[f]));
  const mk=s=>({s,key:name(s.f),tex:texOf(s.f),st:{ox:0,oy:0,sc:1,a:0},sc0:0,shape:null,extra:0});
- const app=SHOTS.approach.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins];
- const door=SHOTS.approach[4],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
+ const app=SHOTS.approach.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins],appDoor=app[app.length-1];
+ const door=SHOTS.approach[SHOTS.approach.length-1],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
  const texSide=gSide&&V.tex(gSide),texLeaf=gLeaf&&V.tex(gLeaf),texOpen=texOf(opn.f);
  // the relief of each shot
  const flatInv=new Float32Array(4).fill(1);
@@ -245,7 +244,7 @@ function play(root,opts){
     sweep past) to the dolly where its relief best matches the incoming shot, and the incoming one
     starts the same distance behind. Targets: the fraction of SIFT matches between the pair that land
     within 12px after the dolly, maximized (keyed by the incoming shot). */
- const THRU={'approach-2':.3,'approach-3':.4,'approach-4':.45,door:.21,'inside-1':.3,'inside-2':.12,'inside-3':.3,'inside-4':.26};
+ const THRU={'approach-3':.4,'approach-4':.45,door:.21,'inside-1':.3,'inside-2':.12,'inside-3':.3,'inside-4':.26};
  function through(A,B,m){const base=A.sc0?DOLLY*(1-A.sc0/A.st.sc):0,d=Math.max(0,(THRU[B.key]??.25)-base),k=ss(m);A.extra=d*k;B.extra=-d*(1-k);}
  function hide(list){list.forEach(L=>{L.st.a=0;});}
  /* Handoffs: each shot waits until it is sharp enough (zoom alpha a >= .5), the one before it has
@@ -259,7 +258,7 @@ function play(root,opts){
  /* ---- timeline (seconds) ---- */
  /* arrive, three raps, the hall light comes on, footsteps, the lock turns, the door cracks open,
     a beat, then someone swings it wide */
- const T={app0:.5,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:17.4,cap:16.8,done:17.8};
+ const T={app0:1.1,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:17.4,cap:16.8,done:17.8};
  const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
  const OPEN=72,CRACK=6,FADE=.85,DOLLY=.55,PUSH=Math.log(1.1); // DOLLY: how much of each zoom-in becomes walking forward (the rest stays a zoom)
  function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
@@ -274,7 +273,7 @@ function play(root,opts){
  function govern(dt){ema+=(dt*1000-ema)*.1;since++;const up=ema<12&&since>120&&rs<1,down=ema>22&&since>15&&rs>.3;
   if(up||down){rs=Math.round(Math.min(1,Math.max(.3,rs*(up?1.15:.85)))*100)/100;since=0;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);V.coarse=rs<1;}}
  function layout(){vw=root.clientWidth||innerWidth;vh=root.clientHeight||innerHeight;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);
-  A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(SHOTS.approach[4],SHOTS.approach[4].a,1);const J=SHOTS.inside[4];I1=natural(J,J.a,1.05);}
+  A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(door,door.a,1);const J=SHOTS.inside[SHOTS.inside.length-1];I1=natural(J,J.a,1.05);}
  layout();addEventListener('resize',layout);
 
  /* ---- drawing ---- */
@@ -293,11 +292,11 @@ function play(root,opts){
   if(D.spill>0)V.quad(rect(r[0]-w*.35,r[3]-6,r[0]+w*1.35,r[3]-6+h*.3,0,0,1,1),4,{a:a*D.spill});}
  /* Exposure, like one camera: each space has one grade (NATIVE, chained from CORR, the
     per-channel gain and offset that fits each shot to the one before it over their shared area).
-    Outside is chained from the opening wide shot, inside from the last room, and the two are met
+    Outside is chained from the first approach shot, inside from the last room, and the two are met
     halfway at the threshold, so the whole walk has one grade. A shot enters matched to what is on
     screen and settles into its grade over about 1.5s, which only shows where two renders disagree. */
- const CORR={"approach-2":[1.076,1.13,1.046,0.085,0.031,0.048],"approach-3":[1.058,0.945,0.944,-0.059,0.004,-0.003],"approach-4":[0.944,1.012,0.886,-0.038,-0.029,0.029],"door":[1.138,1.023,0.982,0.059,0.035,-0.002],"door-open":[0.984,0.983,0.961,0.008,0.015,-0.001],"inside-1":[1.072,1.222,1.337,-0.053,-0.058,-0.001],"inside-2":[0.953,1.055,1.243,0.019,-0.017,-0.039],"inside-3":[0.986,0.915,0.794,-0.039,-0.019,-0.017],"inside-4":[0.938,0.982,0.993,0.073,0.027,0.018]};
- const NATIVE={"approach-1":[0.938,0.891,0.961,-0.024,0.008,-0.011],"approach-2":[1.009,1.007,1.006,0.056,0.035,0.035],"approach-3":[1.068,0.952,0.949,-0.004,0.039,0.032],"approach-4":[1.008,0.963,0.841,-0.044,0.012,0.06],"door":[1.147,0.985,0.826,0.015,0.046,0.058],"door-open":[1.129,0.969,0.794,0.024,0.06,0.057],"inside-4":[1.066,1.122,1.04,0.026,-0.009,0.011],"inside-3":[1.137,1.143,1.047,-0.057,-0.04,-0.007],"inside-2":[1.153,1.249,1.3,-0.013,-0.016,0.015],"inside-1":[1.21,1.184,1.061,-0.035,0.004,0.056]};
+ const CORR={"approach-3":[1.058,0.945,0.944,-0.059,0.004,-0.003],"approach-4":[0.944,1.012,0.886,-0.038,-0.029,0.029],"door":[1.138,1.023,0.982,0.059,0.035,-0.002],"door-open":[0.984,0.983,0.961,0.008,0.015,-0.001],"inside-1":[1.072,1.222,1.337,-0.053,-0.058,-0.001],"inside-2":[0.953,1.055,1.243,0.019,-0.017,-0.039],"inside-3":[0.986,0.915,0.794,-0.039,-0.019,-0.017],"inside-4":[0.938,0.982,0.993,0.073,0.027,0.018]};
+ const NATIVE={"approach-2":[0.973,0.947,0.983,0.014,0.021,0.011],"approach-3":[1.029,0.895,0.928,-0.043,0.025,0.008],"approach-4":[0.972,0.906,0.823,-0.083,-0.001,0.036],"door":[1.106,0.927,0.808,-0.025,0.03,0.034],"door-open":[1.089,0.911,0.776,-0.016,0.044,0.033],"inside-4":[1.028,1.056,1.017,-0.014,-0.022,-0.011],"inside-3":[1.096,1.075,1.024,-0.094,-0.051,-0.03],"inside-2":[1.111,1.175,1.29,-0.051,-0.029,-0.008],"inside-1":[1.167,1.113,1.038,-0.074,-0.009,0.033]};
  function exposure(t){let g=[1,1,1],o=[0,0,0];layers.forEach(L=>{const c=CORR[L.key],n=NATIVE[L.key]||[1,1,1,0,0,0];
    const mg=c?g.map((v,i)=>v*c[i]):n.slice(0,3),mo=c?o.map((v,i)=>g[i]*c[3+i]+v):n.slice(3);
    const w=L.t0==null?1:1-ss(seg(t,L.t0+.5,L.t0+2));g=mg.map((v,i)=>lerp(n[i],v,w));o=mo.map((v,i)=>lerp(n[3+i],v,w));L.cg=[g,o];});}
@@ -307,7 +306,7 @@ function play(root,opts){
   const w=L.s.wh[0]*st.sc,h=L.s.wh[1]*st.sc,ex=st.ox+st.sc*cx(L.s.a),ey=st.oy+st.sc*cy(L.s.a),hx=Math.abs(head[0])+1,hy=Math.abs(head[1])+1;
   // the least a far point may shrink toward the anchor and still cover the screen
   const gmin=Math.max(ex>st.ox+.5?(ex+hx)/(ex-st.ox):0,st.ox+w-ex>.5?(vw-ex+hx)/(st.ox+w-ex):0,ey>st.oy+.5?(ey+hy)/(ey-st.oy):0,st.oy+h-ey>.5?(vh-ey+hy)/(st.oy+h-ey):0);
-  V.mesh(L.tex,L.s.wh,L.shape,st,st.a,[ex,ey],cl(DOLLY*(1-L.sc0/st.sc)+L.extra,-1,.9),Math.min(gmin,1.2),head,L.wipe&&st.a<1,L.cg);if(L===app[4])drawDoor(L);});
+  V.mesh(L.tex,L.s.wh,L.shape,st,st.a,[ex,ey],cl(DOLLY*(1-L.sc0/st.sc)+L.extra,-1,.9),Math.min(gmin,1.2),head,L.wipe&&st.a<1,L.cg);if(L===appDoor)drawDoor(L);});
 }
 
  function render(t){
