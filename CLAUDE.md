@@ -68,10 +68,13 @@ placeholders.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with a
-simple depth model (house plane, lawn sloping toward the viewer, a per-vertex weight that
-keeps the outer ring fixed), rotated up to ±17° and cross-dissolved with the next view.
-Drag, arrow keys, or idle sway around the front.
+**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with its
+own depth relief (`images/house-depth.bin`, made by `tools/turntable_depth.py`; real depth on the
+house and plinth, the ring and backdrop stay flat), rotated up to ±22° and cross-dissolved with the
+next view in a narrow window at the midpoint. Until the depth loads it uses the old simple model
+(house plane, sloped lawn, ±17°). All textures load up front and upload one per frame after the
+first paint, resized to 1024 off the main thread and mipmapped. Drag, arrow keys, or idle sway
+around the front.
 
 **Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
 a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
@@ -95,13 +98,11 @@ Without WebGL the walk is skipped.
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. **Turntable textures.** Upload all 13 textures up front, one per frame after first paint,
-   instead of on demand (the texImage2D hitch during a drag is the main stutter). Resize
-   renders to 1024×1024 so they can mipmap.
+1. Done: turntable textures up front, 1024 + mipmaps.
 2. Done for the walk: depth reliefs, steering, center-out handoffs and one exposure grade. What is
    left there comes from the renders themselves (for example, the porch lantern differs between
-   approach shots); fixing that needs consistent re-renders. The turntable still cross-dissolves;
-   the same depth approach would help it.
+   approach shots); fixing that needs consistent re-renders. The turntable now uses depth too;
+   its side and back views are 45° apart, so a short blend remains right at each midpoint.
 3. Done: the walk is WebGL.
 4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
