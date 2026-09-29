@@ -3,12 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Reliant Home Mortgage Concept</title>
-<meta name="description" content="Reliant Home Mortgage redesign concept: a family-owned mortgage broker in Middletown, Ohio.">
+<title>Home Loans in Middletown, OH | Reliant Home Mortgage</title>
+<meta name="description" content="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check. Licensed in Ohio, Kentucky and Indiana.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0d1512" media="(prefers-color-scheme: dark)">
-<link rel="icon" href="images/logo.png">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<!-- link previews: crawlers don't run the router, so one card for the whole site -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Reliant Home Mortgage">
+<meta property="og:title" content="Home loans, handled like family | Reliant Home Mortgage">
+<meta property="og:description" content="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check.">
+<meta property="og:url" content="https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/">
+<meta property="og:image" content="https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/brand/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Reliant Home Mortgage: Home loans, handled like family. Family-owned mortgage broker in Middletown, Ohio.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="fonts/dm-serif-display.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css">
@@ -48,7 +61,7 @@
 
 <main id="main">
 <!-- ================= HOME ================= -->
-<section class="page" data-page="home" data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
+<section class="page" data-page="home" data-desc="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check. Licensed in Ohio, Kentucky and Indiana." data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
   <div class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
@@ -151,7 +164,7 @@
 </section>
 
 <!-- ================= PRE-QUAL ================= -->
-<section class="page" data-page="start" data-title="Get Pre-Qualified in 2 Minutes | Reliant Home Mortgage" hidden>
+<section class="page" data-page="start" data-desc="Answer a few questions and see what you can afford. About two minutes, no Social Security number and no credit check." data-title="Get Pre-Qualified in 2 Minutes | Reliant Home Mortgage" hidden>
   <div class="phead" id="pqHead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Get pre-qualified</div>
     <h1>Let's see where you stand</h1>
@@ -170,7 +183,7 @@
 </section>
 
 <!-- ================= BUY ================= -->
-<section class="page" data-page="buy" data-title="Buying a Home | Reliant Home Mortgage, Middletown OH" hidden>
+<section class="page" data-page="buy" data-desc="Find the loans that fit you, see how buying a home works, and know your budget before you tour homes." data-title="Buying a Home | Reliant Home Mortgage, Middletown OH" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Buy a home</div>
     <p class="eyebrow">Buying a home</p>
@@ -202,7 +215,7 @@
 </section>
 
 <!-- ================= REFINANCE ================= -->
-<section class="page" data-page="refinance" data-title="Refinancing: Is It Worth It? | Reliant Home Mortgage" hidden>
+<section class="page" data-page="refinance" data-desc="Find out if refinancing is worth it with a break-even calculator, and compare refinance options for homeowners." data-title="Refinancing: Is It Worth It? | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Refinance</div>
     <p class="eyebrow">Refinancing</p>
@@ -247,7 +260,7 @@
 </section>
 
 <!-- ================= LOANS (all) ================= -->
-<section class="page" data-page="loans" data-title="All Home Loan Options | Reliant Home Mortgage" hidden>
+<section class="page" data-page="loans" data-desc="Compare 20 home loan options side by side, from FHA, VA and USDA loans to jumbo and DSCR loans." data-title="All Home Loan Options | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / All loans</div>
     <h1>Every loan we offer</h1>
@@ -263,7 +276,7 @@
   </div></section>
 </section>
 
-<section class="page" data-page="program" data-title="Loan Program | Reliant Home Mortgage" hidden>
+<section class="page" data-page="program" data-desc="How this loan works, who it fits and what to keep in mind." data-title="Loan Program | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / <a href="#loans">All loans</a> / <span id="pd-crumb"></span></div>
     <p class="eyebrow" id="pd-cat"></p>
@@ -283,7 +296,7 @@
 </section>
 
 <!-- ================= LEARN ================= -->
-<section class="page" data-page="learn" data-title="Learn: Homebuying 101, Rates, Calculators & Glossary | Reliant Home Mortgage" hidden>
+<section class="page" data-page="learn" data-desc="A short homebuying course, how mortgage rates work, hands-on calculators and a plain-English glossary." data-title="Learn: Homebuying 101, Rates, Calculators & Glossary | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Learn</div>
     <p class="eyebrow">Learn</p>
@@ -373,7 +386,7 @@
 </section>
 
 <!-- ================= LOCAL HELP ================= -->
-<section class="page" data-page="local-help" data-title="Local Homebuyer Help | Reliant Home Mortgage" hidden>
+<section class="page" data-page="local-help" data-desc="Down payment programs, free homebuyer education, property records and trusted local pros for Ohio, Kentucky and Indiana buyers." data-title="Local Homebuyer Help | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Local help</div>
     <p class="eyebrow">Local help</p>
@@ -401,7 +414,7 @@
 </section>
 
 <!-- ================= ABOUT ================= -->
-<section class="page" data-page="about" data-title="About Us | Reliant Home Mortgage, Middletown OH" hidden>
+<section class="page" data-page="about" data-desc="Meet the family-owned team behind Reliant Home Mortgage in Middletown, Ohio, and read reviews from clients and real estate agents." data-title="About Us | Reliant Home Mortgage, Middletown OH" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / About us</div>
     <p class="eyebrow">About us</p>
@@ -434,7 +447,7 @@
 </section>
 
 <!-- ================= CONTACT ================= -->
-<section class="page" data-page="contact" data-title="Contact Us | Reliant Home Mortgage" hidden>
+<section class="page" data-page="contact" data-desc="Call, visit or send a question to our Middletown office at 1422 S Breiel Blvd, Middletown, OH 45044." data-title="Contact Us | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Contact</div>
     <h1>We're just down the road</h1>
@@ -457,7 +470,7 @@
 </section>
 
 <!-- ================= APPLY ================= -->
-<section class="page" data-page="apply" data-title="Apply Online | Reliant Home Mortgage" hidden>
+<section class="page" data-page="apply" data-desc="Choose a licensed loan officer to open their secure online application." data-title="Apply Online | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Apply</div>
     <h1>Apply with your loan officer</h1>
@@ -466,7 +479,7 @@
   <section class="band" style="padding-top:36px"><div class="wrap"><div class="team" data-team></div></div></section>
 </section>
 
-<section class="page" data-page="legal" data-title="Legal | Reliant Home Mortgage" hidden>
+<section class="page" data-page="legal" data-desc="Legal information for Reliant Home Mortgage LLC." data-title="Legal | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap"><div class="crumbs"><a href="#home">Home</a> / <span id="legal-crumb"></span></div><h1 id="legal-title"></h1></div></div>
   <section class="band" style="padding-top:36px"><div class="wrap" style="max-width:720px;display:grid;gap:14px"><p id="legal-body"></p><p class="fine">Demo placeholder. The full legal text carries over unchanged from the current site.</p></div></section>
 </section>

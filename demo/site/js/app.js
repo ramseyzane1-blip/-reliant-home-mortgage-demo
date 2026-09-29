@@ -608,6 +608,10 @@ function ctaFor(page){let [h,g]=CTA[page]||['Know what you can afford before you
   $('ctaH').textContent=h;if(g)$('ctaGo').dataset.goal=g;else delete $('ctaGo').dataset.goal;}
 
 /* ---------- router ---------- */
+const TAB_META={course:['Homebuying 101: A Short Mortgage Course | Reliant Home Mortgage','Six short lessons on budgets, credit, down payments, loan types, rates and closing, with calculators and quick checks.'],
+  rates:['How Mortgage Rates Work | Reliant Home Mortgage','See what moves your mortgage rate, how APR and points work, and when a rate lock helps.'],
+  calculator:['Mortgage Payment and Affordability Calculators | Reliant Home Mortgage','Estimate your monthly payment, see where it goes each year, and work out a price range from your income.'],
+  glossary:['Mortgage Glossary in Plain English | Reliant Home Mortgage','Forty mortgage terms explained in plain English, with examples and why each one matters.']};
 const TABS={learn:'course',course:'course',rates:'rates',calculator:'calculator',glossary:'glossary'};
 const ALIAS={purchase:'buy',programs:'loans',rates:'learn',calculator:'learn',glossary:'learn',course:'learn','local-resources':'local-help',professionals:'local-help',pros:'local-help',blog:'about',newsletter:'about',letter:'about',team:'about',family:'about',reviews:'about','review-us':'about'};
 const SCROLL={professionals:'pros',pros:'pros',blog:'letter',newsletter:'letter',letter:'letter',reviews:'reviewsSec','review-us':'reviewUs'};
@@ -623,7 +627,12 @@ function route(){
   if(page==='learn'){const tab=TABS[h]||'course';document.querySelectorAll('[data-tabpanel]').forEach(p=>p.hidden=p.dataset.tabpanel!==tab);document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===tab));if(tab==='course')renderLesson();if(tab==='glossary'){renderGloss();renderGDetail();}}
   if(page==='start')Walk.preload();
   if(page==='start'&&$('pqResults').hidden){drawQ();$('pqLede').textContent=wantQuote?'A few quick questions, then your results and a personal rate quote from your loan officer.':carried?'We brought along your price and down payment. A few more questions, then your results. No credit check.':'A few quick questions, then your results. No Social Security number and no credit check.';}
-  document.title=sec.dataset.title;
+  // each page (and each Learn tab, legal page and loan) gets its own title and description
+  let title=sec.dataset.title,desc=sec.dataset.desc;
+  if(page==='learn'&&TAB_META[TABS[h]||'course']){[title,desc]=TAB_META[TABS[h]||'course'];}
+  if(page==='legal'){title=LEGAL[h][0]+' | Reliant Home Mortgage';desc=LEGAL[h][1];}
+  if(page==='program'){const p=PBY[h.slice(8)];if(p)desc=p.n+': '+p.sum;}
+  document.title=title;document.querySelector('meta[name=description]').setAttribute('content',desc||'');
   const nav={program:'',loans:'',start:'',contact:'',apply:''}[page]??page;document.querySelectorAll('.mainnav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===nav));
   $('ctaband').hidden=['start','contact','apply'].includes(page);ctaFor(page);updateCmp();hidePop();
   $('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');
