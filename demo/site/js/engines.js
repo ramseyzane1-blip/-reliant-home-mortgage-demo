@@ -140,7 +140,7 @@ function create(box,canvas,views,opt){
  /* keep asking for what the current view needs, nearest first (covers evicted frames and failed
     downloads): until the hero is ready only the front and its two neighbors */
  function want(){if(!started||asleep)return;fetchFixed();const R=ready?40:3,P=pool();let live=0;for(let i=0;i<n;i++)if(tex[i]||busy[i]||dec[i])live++;
-  for(const i of nearFirst()){if(adist(i,cur)<=R||(allFetched&&(tex[i]||live<P))){if(!tex[i]&&!busy[i]&&!dec[i])live++;fetchImg(i);}}}
+  for(const i of nearFirst()){if(adist(i,cur)<=R||(!ready&&(i===1%n||i===n-1))||(allFetched&&(tex[i]||live<P))){if(!tex[i]&&!busy[i]&&!dec[i])live++;fetchImg(i);}}}
  function sleep(){if(asleep||lost||!started)return;asleep=true;texGen++;ready=false;box.classList.remove('ready');
   for(let i=0;i<N;i++){if(tex[i])gl.deleteTexture(tex[i]);tex[i]=null;gen[i]=0;if(dec[i]&&dec[i].close)dec[i].close();dec[i]=null;}
   if(fx)gl.deleteTexture(fx);fx=null;fxGen=0;allFetched=false;freeFb();th=target=vel=0;idle=true;drag=null;box.classList.remove('drag');
