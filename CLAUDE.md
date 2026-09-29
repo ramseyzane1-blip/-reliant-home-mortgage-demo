@@ -78,23 +78,20 @@ placeholders.
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
 - **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
   moves faster early and never starts empty, number answers you can type ("250k" works),
-  "your best guess is fine" help, a note on who calls from which number, and the license
+  "your best guess is fine" help, a note that phone or email is enough, and the license
   line above "See my results". The header button and the phone quick bar hide on this page.
 - **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
 - NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 12 views around the house (`HOUSE_VIEWS` in `app.js`; `house-10.jpg` is a
-copy of `house-09.jpg` and isn't used as a view, see below). Each view is drawn on a WebGL mesh with its
-own depth relief (`images/house-depth.bin`, made by `tools/turntable_depth.py`, one grid per file;
-each view's `d` picks its grid; real depth on the
+**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with its
+own depth relief (`images/house-depth.bin`, made by `tools/turntable_depth.py`; real depth on the
 house and plinth, the ring and backdrop stay flat), rotated up to ±22° and cross-dissolved with the
 next view in a narrow window at the midpoint. Until the depth loads it uses the old simple model
 (house plane, sloped lawn, ±17°). All textures load up front and upload one per frame after the
-first paint, resized to 1024 off the main thread and mipmapped (the files are already 1024×1024).
-Drag, arrow keys, or idle sway around the front. In dark mode the card is dimmed slightly with a
-vignette (CSS only).
+first paint, resized to 1024 off the main thread and mipmapped. Drag, arrow keys, or idle sway
+around the front.
 
 **Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
 a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
