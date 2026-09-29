@@ -6,3 +6,4 @@ tools/out/
 __pycache__/
 .env
 .env.*
+tools/blender/assets/
