@@ -79,19 +79,22 @@ async def main():
         res['context_loss_ends_walk'] = await pg.evaluate("!document.querySelector('.ds') && !window.__walk && !document.getElementById('pqResults').hidden && !document.body.classList.contains('ds-covered')")
         await ctx.close()
         # a mute carries over to the next walk, and the button says so
-        ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
-        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
-        await wp.start_walk(pg); await pg.click('.ds [data-ds=sound]'); await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1200)
-        res['page_visible_after_walk'] = await pg.evaluate("!document.body.classList.contains('ds-covered')")
-        await pg.wait_for_timeout(1000)
-        if await pg.is_visible('#modalBtns button'): await pg.click('#modalBtns button')   # a demo notice modal, if any (the pre-qualification's is inline)
-        await pg.click('#results details summary'); await pg.click('#redo'); await pg.wait_for_timeout(400)
-        for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
-            await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
-        await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
-        await pg.click('#wiz [data-w=submit]'); await pg.wait_for_function('!!window.__walk', timeout=20000)
-        res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent")
-        await ctx.close()
+        try:   # (a failure here is reported, not fatal, so the checks after it still run)
+            ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
+            pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+            await wp.start_walk(pg); await pg.click('.ds [data-ds=sound]'); await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1200)
+            res['page_visible_after_walk'] = await pg.evaluate("!document.body.classList.contains('ds-covered')")
+            await pg.wait_for_timeout(1000)
+            if await pg.is_visible('#modalBtns button'): await pg.click('#modalBtns button')   # a demo notice modal, if any (the pre-qualification's is inline)
+            await pg.click('#results details summary'); await pg.click('#redo'); await pg.wait_for_timeout(400)
+            for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
+                await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
+            await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
+            await pg.click('#wiz [data-w=submit]'); await pg.wait_for_function('!!window.__walk', timeout=20000)
+            res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent")
+            await ctx.close()
+        except Exception as e:
+            res['second_walk_sound_button'] = 'check failed: ' + str(e).split(chr(10))[0]; await ctx.close()
         # the knock clip: plays where it should, and every way it can fail falls back to the walk's own knock
         async def knock(size, setup=None, until=14):
             ctx = await b.new_context(viewport=size); pg = await ctx.new_page(); e2 = []
