@@ -7,7 +7,7 @@ Usage (from the repo root, with the site served on :8765; pip install playwright
           and with 4x CPU throttling (CDP Emulation.setCPUThrottlingRate): p50, p95, max,
           frames over 33ms and over 50ms after the first painted walk frame.
   audio   when each sound cue is scheduled to play vs. when the frame showing its beat runs.
-  scrub   __walk.render(t) at 30fps: mean absolute pixel difference between consecutive frames
+  scrub   __walk.seek(t) at 30fps (the knock clip's frame when it shows): mean absolute pixel difference between consecutive frames
           (spikes are pops or cuts) and every stretch where a shot is partly blended.
 
 Headless Chromium draws WebGL with SwiftShader (software), so pacing numbers are pessimistic
@@ -82,9 +82,9 @@ async def scrub(b, size):
     await start_walk(pg); await pg.evaluate('__walk.stop()'); await pg.wait_for_timeout(1300)   # the overlay has faded in, as in real playback
     await pg.evaluate("document.querySelector('.ds-top').style.visibility='hidden'")
     prev, diffs, blends = None, [], []
-    for k in range(int(19.5 * 30)):
+    for k in range(int(20.2 * 30)):   # the knock clip makes the walk .6s longer
         t = k / 30
-        shots = await pg.evaluate(f'(__walk.render({t}), __walk.shots())')
+        shots = await pg.evaluate(f'__walk.seek({t}).then(() => __walk.shots())')   # seek: the knock clip's exact frame when it is on screen
         part = [s.split(':')[0] for s in shots.split(' ') if s and 0 < float(s.split(':')[1].split('@')[0]) < 1]
         blends.append((t, part))
         img = np.asarray(Image.open(io.BytesIO(await pg.screenshot(type='jpeg', quality=80))).convert('L').resize((320, 200)), np.float32)

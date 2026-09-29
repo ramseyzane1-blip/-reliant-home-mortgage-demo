@@ -183,18 +183,40 @@ Escape is pressed, the walk ends and the results show. Turning the phone before 
 the walk at the same moment (`startAt`): shots that are already sharp show at once, and cues that
 already sounded stay done.
 
+**The knock is an AI video clip** (client pick, September 2026: no hand; the knocks are heard, felt as
+small camera bumps). From `KNOCK.t0` = 6.75s (at the door, camera settled) to the open door (`T.xf1`),
+the walk shows a Seedance 2.0 clip (Replicate, first + last frame, no audio, 6s, 1080p) instead of its
+own door rig: 16:9 on screens at least 1.16 × as wide as tall (`images/knock/knock-1920|1280`, seed 3,
+prompt `B2`), 9:16 on tall screens (`knock-tall-1080|720`, from the porch shot, the camera steps up;
+seed 5, prompt `B2T`). In between (squarish windows) the walk does its own knock. H.264 MP4 where the
+browser has it, else VP9 WebM; fetched whole into memory during the pre-qualification (a paused video
+is only partly buffered). The clip's frames are uploaded into a WebGL texture from a hidden in-page
+`<video>` and drawn through the same finishing look (one canvas, no `<video>` over it); while it plays
+the walk's clock follows `video.currentTime`, the sounds and "Knock, knock" follow the clip's own times
+(`KNOCK.wide|tall`: raps on the bump frames, latch on the door's first movement), and the walk runs on
+behind it (hidden) so it picks up exactly where the clip ends. Seedance frames 2.07% tighter than the
+keyframes, so the walk leans in by that much during the 1.75s before (by 13% on 16:10, so the 16:9
+clip covers). The walk dissolves into the clip's first frame over .25s and the clip's last frame into
+the walk over .3s. Fallbacks to the walk's own knock: not fully loaded 2s before the knock, won't start
+within 2s, a squarish screen; a stall of 3s mid-clip jumps to the open door. The keyframes, prompts,
+generation, checks and encoding are in `tools/knock_*.py` (see `tools/README.md`); spend so far is in
+`tools/out/knock_ledger.json` (not committed).
+
 Performance and memory: a software renderer (SwiftShader, llvmpipe) is detected and drawn at .3
 scale with a coarse mesh and mipmaps; a GPU draws at full resolution (device pixel ratio capped at
 2). There is no frame-time governor: a rAF-capped 60Hz loop can't tell spare headroom, and iOS Low
 Power Mode caps rAF at 30fps, which would read as a slow GPU. Low-end phone GPUs are untested. Every shot is drawn once behind
 the loading overlay (warm-up), and the walk starts once the overlay has faded in. Textures: the approach, door and doorway view upload at start; the
 rooms stream in during the knock (four bands, one per frame, decoded off the main thread); each
-shot is freed once passed. Test hooks on `window.__walk`: `render(t)`, `stop()`, `time()`,
-`scale(v)`, `mem()`, `look()`, `probe()`, `shots()`.
+shot is freed once passed. Test hooks on `window.__walk`: `render(t)`, `seek(t)` (render with the knock
+clip's exact frame, returns a promise), `stop()`, `time()` (walk time), `clock()`, `clip(on)`,
+`clipInfo()`, `keyframes(on)`, `raw(on)`, `scale(v)`, `mem()`, `look()`, `probe()`, `shots()`, `place()`.
 
 Tools: `tools/walk_perf.py` (frame pacing unthrottled and at 4× CPU throttle, audio sync, texture
 memory, a 30fps scrub for pops and stray blends) and `tools/walk_checks.py` (reduced motion, sound
-toggle and audio context lifecycle, keyboard look-around, focus ring, 390/1280 light/dark).
+toggle and audio context lifecycle, keyboard look-around, focus ring, 390/1280 light/dark, the knock
+clip and each of its fallbacks), `tools/knock_handoff.py` (the clip's handoffs at five sizes) and
+`tools/knock_record.py` (the whole walk recorded in real time, with its sound).
 
 ## Known issues / next up: make the 3D smooth
 

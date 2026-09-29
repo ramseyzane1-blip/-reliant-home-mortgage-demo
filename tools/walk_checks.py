@@ -4,6 +4,8 @@
   audio           the sound toggle mutes live; the audio context closes when the walk ends
   keyboard        arrow keys turn the look-around; "See my results" has focus, a visible
                   focus ring, and Enter goes to the results
+  knock clip      plays on wide and tall screens; a square screen, a missing or late video and a
+                  video that will not start all fall back to the walk's own knock (three knocks either way)
   layout          390x844 and 1280x800, light and dark: screenshots to tools/out/
 
 Usage: python3 tools/walk_checks.py
@@ -89,6 +91,31 @@ async def main():
         await pg.click('#wiz [data-w=submit]'); await pg.wait_for_function('!!window.__walk', timeout=20000)
         res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent")
         await ctx.close()
+        # the knock clip: plays where it should, and every way it can fail falls back to the walk's own knock
+        async def knock(size, setup=None, until=14):
+            ctx = await b.new_context(viewport=size); pg = await ctx.new_page(); e2 = []
+            pg.on('pageerror', lambda e: e2.append(str(e)))
+            await pg.add_init_script('window.__cues = []')
+            if setup: await setup(ctx, pg)
+            await pg.goto(wp.URL + '#start'); await pg.wait_for_timeout(300)
+            await pg.evaluate("(() => { const real = window.doorAudio; window.doorAudio = ac => { const a = real(ac); const c = a.cue; a.cue = (n, i, d) => { __cues.push(n); c(n, i, d); }; return a; }; })()")
+            await wp.start_walk(pg); states = set()
+            while await pg.evaluate('__walk.time()') < until:
+                states.add(str((await pg.evaluate('__walk.clipInfo()'))['state'])); await pg.wait_for_timeout(200)
+            cues = await pg.evaluate('__cues'); await ctx.close(); errs.extend(e2)
+            return f"clip states {sorted(states)}, knocks heard {cues.count('knock')}, door sounds {cues.count('latch')}/{cues.count('swing')}"
+        res['knock_clip_1920x1080'] = await knock({'width': 1920, 'height': 1080})
+        res['knock_clip_390x844'] = await knock({'width': 390, 'height': 844})
+        res['knock_square_screen_falls_back'] = await knock({'width': 1000, 'height': 1000})
+        async def missing(ctx, pg): await ctx.route('**/images/knock/**', lambda r: r.fulfill(status=404, body=''))
+        res['knock_video_missing_falls_back'] = await knock({'width': 1280, 'height': 800}, missing)
+        async def slow(ctx, pg):   # the clip arrives after the walk has decided (throttled network)
+            async def later(r): await asyncio.sleep(12); await r.continue_()
+            await ctx.route('**/images/knock/**', later)
+        res['knock_slow_network_falls_back'] = await knock({'width': 1280, 'height': 800}, slow)
+        async def stuck(ctx, pg):  # the video will not start
+            await pg.add_init_script('HTMLMediaElement.prototype.play = function () { return new Promise(() => {}); }')
+        res['knock_video_wont_play_falls_back'] = await knock({'width': 1280, 'height': 800}, stuck, 15)
         for w, h in [(390, 844), (1280, 800)]:
             for scheme in ['light', 'dark']:
                 ctx = await b.new_context(viewport={'width': w, 'height': h}, color_scheme=scheme)

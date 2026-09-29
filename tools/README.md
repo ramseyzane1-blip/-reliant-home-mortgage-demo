@@ -1,5 +1,6 @@
 # Tools
 
+- `knock_*.py`: the knock clip in the walk-through (see "Regenerating the knock clip" below).
 - `smoke_test.py`: end-to-end browser test (see the docstring for how to run it). Use
   `pip install playwright==1.56.0`, which matches the pre-installed Chromium (chromium-1194).
 - `blender/house_scene.py`: the 3D model of the house behind the hero turntable, built in code
@@ -31,6 +32,41 @@ the rest loads later, 205 KB, 90 KB brotli). It stamps a `?v=` content version o
 `js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
 but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
+
+## Regenerating the knock clip
+
+The knock and the door opening in the walk-through are an AI video clip (Seedance 2.0 on Replicate,
+image to video with a first and a last frame, no audio), one 16:9 and one 9:16. Each starts and ends on
+frames of the walk itself, so the walk hands over to it and back without a visible cut.
+
+```bash
+pip install playwright==1.56.0 pillow numpy opencv-python-headless imageio-ffmpeg
+python3 -m http.server 8765 &                                   # from the repo root
+python3 tools/knock_keyframes.py                                # tools/knock/start|end-1920x1080.jpg
+python3 tools/knock_keyframes.py 1080x1920                      # the tall pair (the porch shot)
+export REPLICATE_API_TOKEN=...                                  # never commit it
+python3 tools/knock_video.py run bytedance/seedance-2.0 tools/knock/start-1920x1080.jpg tools/knock/end-1920x1080.jpg B2 --seed 3
+python3 tools/knock_video.py run bytedance/seedance-2.0 tools/knock/start-1080x1920.jpg tools/knock/end-1080x1920.jpg B2T --seed 5
+python3 tools/knock_judge.py tools/out/<clip>.mp4 tools/knock/start-1920x1080.jpg tools/knock/end-1920x1080.jpg
+python3 tools/knock_cadence.py in.mp4 out.mp4                   # only if a clip repeats every 4th frame
+python3 tools/knock_encode.py <wide>.mp4 <tall>.mp4             # into demo/site/images/knock/
+python3 tools/knock_handoff.py                                  # the handoffs at five screen sizes
+python3 tools/knock_record.py 1440x900                          # the whole walk in real time, with sound
+```
+
+- `knock_keyframes.py` replays the walk from 0 (so the grade and the springs are as in a real run) with
+  the head held still and the finishing look off (the site adds the vignette and spill on top of the clip).
+- `knock_video.py` checks the model's input schema, runs it, downloads the clip and appends to
+  `tools/out/knock_ledger.json` (model, seed, seconds, price, running total), refusing to pass
+  `HARD_CAP`. The prompts are in the file (`B2`, `B2T`; the hand variants too). A run whose watcher
+  was lost is picked up with `fetch <prediction id> <variant>`.
+- Seedance frames its output 2.07% tighter than the keyframes, the same zoom in every run. The walk
+  leans in by that much before the clip (`KNOCK.zoom`, `off` in `js/engines.js`), and by more where
+  the screen is taller than the clip (16:10: 13%), so the clip covers the screen.
+- Check every clip frame by frame (`knock_judge.py`): the door must stay the same door, open inward on
+  the left hinge, with no frame repeated (some runs are 18 unique frames a second padded to 24, which
+  stutters) and no jumps. Then set the clip's times in `KNOCK` (raps, light, latch at the door's first
+  movement, swing) from the frames.
 
 ## How the 3D images were prepared
 

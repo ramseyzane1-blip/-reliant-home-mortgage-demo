@@ -59,6 +59,14 @@ PROMPTS = {
            '3.6s: someone unseen inside pulls the door open inward; it is hinged on the LEFT side and swings '
            'smoothly into the house over one and a half seconds, revealing a warm living room with a lit fireplace, '
            'and comes to rest at 5.2s. 5.2s to the end: everything is still. ' + COMMON),
+    # phones: the porch shot, and the camera steps up to the door while it opens (as the walk does there)
+    'B2T': ('Vertical first-person shot at a green front door on a porch at dusk. '
+           '1.0s, 1.35s, 1.7s: three knocks are felt as tiny rattles of the door in its frame; no hand or person is visible. '
+           '2.3s: the warm light inside glows brighter through the door glass. From 2.5s the camera takes one slow, '
+           'steady step forward toward the door. 3.3s: the deadbolt turns. 3.6s: someone unseen inside pulls the door '
+           'open inward; it is hinged on the LEFT side and swings smoothly into the house over one and a half seconds, '
+           'revealing a warm living room with a lit fireplace, and comes to rest at 5.2s. 5.2s to the end: everything '
+           'is still. ' + COMMON),
     'B2': ('Static first-person shot of a green front door at dusk, the camera does not move. '
            '1.0s, 1.35s, 1.7s: three knocks are felt as tiny rattles of the door in its frame; no hand or person is visible. '
            '2.5s: a warm light comes on inside, glowing through the door glass. 3.3s: the deadbolt turns. '
@@ -78,7 +86,7 @@ def req(method, path, body=None):
         try:
             with urllib.request.urlopen(r, timeout=120) as f: return json.load(f)
         except urllib.error.HTTPError as e:
-            if e.code != 429 or i == 5: raise
+            if not (e.code == 429 or (e.code >= 500 and method == 'GET')) or i == 5: raise
             time.sleep(2 ** i * 3)
         except (urllib.error.URLError, OSError):  # a dropped connection: try again (GETs only)
             if method != 'GET' or i == 5: raise
@@ -113,7 +121,9 @@ def run(model, start, end, variant, seed=None, duration=None):
     dur = duration or 6
     if 'duration' in props: inp['duration'] = dur
     if 'generate_audio' in props: inp['generate_audio'] = False
-    if 'aspect_ratio' in props: inp['aspect_ratio'] = '16:9'
+    if 'aspect_ratio' in props:  # from the keyframes
+        from PIL import Image
+        w, h = Image.open(start).size; inp['aspect_ratio'] = '16:9' if w > h else '9:16'
     inp['resolution'] = '1080p'
     if seed is not None and 'seed' in props: inp['seed'] = seed
     if 'negative_prompt' in props: inp['negative_prompt'] = NEGATIVE
