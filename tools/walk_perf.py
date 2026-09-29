@@ -1,6 +1,6 @@
 """Measure the walk-through: frame pacing, pops between frames, stray blends and audio sync.
 
-Usage (from the repo root, with the site served on :8765):
+Usage (from the repo root, with the site served on :8765; pip install playwright==1.56.0):
     python3 tools/walk_perf.py [--size 1280x800] [--out tools/out/walk_perf.json]
 
   pacing  requestAnimationFrame deltas over the whole walk, played in real time, unthrottled
@@ -79,13 +79,13 @@ async def pacing(b, size, rate):
 
 async def scrub(b, size):
     pg = await b.new_page(viewport=size)
-    await start_walk(pg); await pg.evaluate('__walk.stop()')
+    await start_walk(pg); await pg.evaluate('__walk.stop()'); await pg.wait_for_timeout(1300)   # the overlay has faded in, as in real playback
     await pg.evaluate("document.querySelector('.ds-top').style.visibility='hidden'")
     prev, diffs, blends = None, [], []
     for k in range(int(19.5 * 30)):
         t = k / 30
         shots = await pg.evaluate(f'(__walk.render({t}), __walk.shots())')
-        part = [s.split('@')[0] for s in shots.split(' ') if s and 0 < float(s.split(':')[1].split('@')[0]) < 1]
+        part = [s.split(':')[0] for s in shots.split(' ') if s and 0 < float(s.split(':')[1].split('@')[0]) < 1]
         blends.append((t, part))
         img = np.asarray(Image.open(io.BytesIO(await pg.screenshot(type='jpeg', quality=80))).convert('L').resize((320, 200)), np.float32)
         if prev is not None: diffs.append(float(np.abs(img - prev).mean()))
@@ -98,7 +98,10 @@ async def scrub(b, size):
         if part and (cur is None or cur[2] != key): cur = [t, t, key]; spans.append(cur)
         elif part: cur[1] = t
         else: cur = None
-    return {'median_diff': round(float(np.median(d)), 2), 'p99_diff': round(float(np.percentile(d, 99)), 2),
+    # planned fades: approach .55s, door -> open door .75s (xf0..xf1), rooms .85s; allow one frame
+    planned = {'approach-3': .55, 'approach-4': .55, 'door': .55, 'door-open': .75, 'inside-1': .85, 'inside-2': .85, 'inside-3': .85, 'inside-4': .85}
+    stray = [sp for sp in spans if sp[1] - sp[0] + 1 / 30 > planned.get(sp[2], 0) + 1 / 15 or ',' in sp[2]]
+    return {'stray_blends': stray, 'median_diff': round(float(np.median(d)), 2), 'p99_diff': round(float(np.percentile(d, 99)), 2),
             'max_diff': round(float(d.max()), 2), 'max_at_s': round((int(d.argmax()) + 1) / 30, 2),
             'spikes': [[round((i + 1) / 30, 2), round(float(d[i]), 1)] for i in np.where(d > 3 * np.median(d) + 8)[0]],
             'max_simultaneous_partial': max(len(p) for _, p in blends),
@@ -106,7 +109,7 @@ async def scrub(b, size):
 
 async def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--size', default='1280x800'); ap.add_argument('--out', default='tools/out/walk_perf.json')
-    ap.add_argument('--skip', default='')
+    ap.add_argument('--skip', default='')   # 'pacing' and/or 'scrub'
     a = ap.parse_args(); w, h = map(int, a.size.split('x')); size = {'width': w, 'height': h}
     res = {'size': a.size}
     async with async_playwright() as p:

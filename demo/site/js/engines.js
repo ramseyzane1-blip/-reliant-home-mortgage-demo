@@ -268,7 +268,8 @@ function play(root,opts){
    const fit=(v,i,size)=>{const a=rng(A,size,i),b=rng(B,size,i),lo=Math.max(a[0],b[0]),hi=Math.min(a[1],b[1]);st.gap=Math.max(st.gap,lo-hi);
     return lo<=hi?cl(v,lo,hi):(lo+hi)/2;};
    tx=fit(x,0,vw)-x;ty=fit(y,1,vh)-y;}
-  const dt=t-st.t;st.t=t;if(dt<0||dt>1){st.x=tx;st.y=ty;}else{const e=1-Math.exp(-dt/.16);st.x+=(tx-st.x)*e;st.y+=(ty-st.y)*e;}st.err=Math.hypot(tx-st.x,ty-st.y);if(B&&al[top+1]>0){st.x=tx;st.y=ty;} // once it shows, hold it exactly
+  const dt=t-st.t;st.t=t;if(dt<0||dt>1){st.x=tx;st.y=ty;st.vx=st.vy=0;}else{const w=9,h=Math.min(dt,.05); // a critically damped spring: starts from rest, no jerk
+   st.vx=(st.vx||0)+(w*w*(tx-st.x)-2*w*(st.vx||0))*h;st.vy=(st.vy||0)+(w*w*(ty-st.y)-2*w*(st.vy||0))*h;st.x+=st.vx*h;st.y+=st.vy*h;}st.err=Math.hypot(tx-st.x,ty-st.y);if(B&&al[top+1]>0){st.x=tx;st.y=ty;st.vx=st.vy=0;} // once it shows, hold it exactly
   x+=st.x;y+=st.y;
   list.forEach((L,i)=>{if(i<top||al[i]<=0){L.st.a=0;return;}place(L,W/rw(L.s.a),x,y,L.s.a,al[i]);if(i>top&&al[i]<1){through(list[i-1],L,al[i]);L.wipe=true;}});}
  /* During a handoff the outgoing shot keeps walking forward (the anchor holds its size, near things

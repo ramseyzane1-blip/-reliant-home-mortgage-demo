@@ -23,7 +23,9 @@ async def main():
         errs = []
         pg = await b.new_page(viewport={'width': 1280, 'height': 800})
         pg.on('pageerror', lambda e: errs.append('page: ' + str(e)))
-        pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'fonts.g' not in m.text else None)
+        pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
+        # hermetic: no third-party fonts (the page falls back to system fonts)
+        await pg.route('**fonts.googleapis.com/**', lambda r: r.fulfill(status=200, body='', content_type='text/css'))
         # keep test submissions out of the real Supabase tables (set SMOKE_REAL_DB=1 to send them)
         if not os.environ.get('SMOKE_REAL_DB'):
             await pg.route('**/rest/v1/**', lambda r: r.fulfill(status=201, body=''))
@@ -51,6 +53,8 @@ async def main():
         # phone width: no page may scroll sideways
         m = await b.new_page(viewport={'width': 390, 'height': 844})
         m.on('pageerror', lambda e: errs.append('mobile: ' + str(e)))
+        m.on('console', lambda x: errs.append('mobile: ' + x.text) if x.type == 'error' else None)
+        await m.route('**fonts.googleapis.com/**', lambda r: r.fulfill(status=200, body='', content_type='text/css'))
         await m.goto(URL); await m.wait_for_timeout(1500)
         for h in PAGES:
             await m.evaluate(f"location.hash='#{h}'"); await m.wait_for_timeout(250)
@@ -58,5 +62,6 @@ async def main():
             if w > 390: errs.append(f'{h} scrolls sideways ({w}px)')
         print('errors:', errs or 'none')
         await b.close()
+        if errs: raise SystemExit(1)
 
 asyncio.run(main())
