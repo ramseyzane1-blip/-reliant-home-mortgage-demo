@@ -150,6 +150,14 @@ def mat_pane():
     return m
 
 
+def mat_lamp():
+    """Glass of a lit lantern or fixture: a bright warm glow."""
+    m, nt, b = _mat('lamp')
+    b.inputs['Base Color'].default_value = (1, .85, .6, 1)
+    b.inputs['Emission Color'].default_value = (1, .66, .32, 1); b.inputs['Emission Strength'].default_value = 14.0
+    return m
+
+
 def mat_curtain():
     m, nt, b = _mat('curtain')
     b.inputs['Base Color'].default_value = (.92, .76, .52, 1); b.inputs['Roughness'].default_value = .8
@@ -566,7 +574,7 @@ def lap_siding(name, wall, s0, s1, z0, z1, mat, parent, gable=None, expo=.18):
 # ---------------------------------------------------------------- scene parts
 def materials():
     M = {}
-    M['siding'] = mat_pbr('siding', 'weathered_plank_siding', 1.6, tint=(.6, .56, .5), nor=.7, detail=(.02, .16))
+    M['siding'] = mat_pbr('siding', 'weathered_plank_siding', 1.6, tint=(.53, .52, .49), nor=.7, detail=(.02, .16))
     M['roof'] = mat_pbr('roof', 'grey_roof_01', 2.2, proj='FLAT', sat=0, nor=1.2, mul=(.32, .31, .31))
     M['roofy'] = mat_pbr('roofy', 'grey_roof_01', 2.2, rot=math.pi / 2, proj='FLAT', sat=0, nor=1.2, mul=(.32, .31, .31))
     M['trim'] = mat_basic('trim', (.8, .78, .72), rough=.4)
@@ -576,7 +584,7 @@ def materials():
     M['door'] = mat_basic('door', (.025, .085, .055), rough=.3, spec=.5)
     M['stone'] = mat_pbr('stone', 'stone_wall_04', 1.4, nor=1.0)
     M['chimney'] = mat_pbr('chimney', 'stone_wall_04', .9, tint=(.42, .27, .2), nor=1.0, detail=(.1, .6))
-    M['grass'] = mat_pbr('grass', 'leafy_grass', 2.0, proj='FLAT', sat=.95, mul=(1.5, 1.45, .9))
+    M['grass'] = mat_pbr('grass', 'leafy_grass', 2.0, proj='FLAT', sat=.95, mul=(1.2, 1.3, .8))
     M['path'] = mat_noisy('path', (.46, .44, .4), (.56, .54, .5), scale=6, rough=.8, bump=.12, bscale=60)
     M['plinth'] = mat_noisy('plinth', (.64, .55, .42), (.7, .61, .48), scale=4, rough=.5, bump=.04)
     M['ring'] = mat_basic('ring', (.66, .57, .44), rough=.3, spec=.5)
@@ -585,8 +593,10 @@ def materials():
     M['boxwood'] = mat_leaf('boxwood', [(.025, .07, .018), (.08, .14, .03), (.05, .1, .025)])
     M['bloom'] = mat_leaf('bloom', [(.78, .8, .72), (.92, .92, .86), (.84, .87, .78)])
     M['bloomcore'] = mat_basic('bloomcore', (.35, .38, .3), rough=.8)
-    M['blade'] = mat_leaf('blade', [(.12, .18, .04), (.3, .33, .1), (.2, .25, .06)])
+    M['blade'] = mat_leaf('blade', [(.08, .15, .035), (.22, .28, .08), (.14, .21, .05)])
     M['metal'] = mat_basic('metal', (.015, .015, .015), rough=.35, spec=.6)
+    M['lamp'] = mat_lamp()
+    M['pot'] = mat_noisy('pot', (.035, .035, .038), (.07, .07, .075), scale=14, rough=.55, bump=.1)
     M['mulch'] = mat_noisy('mulch', (.05, .03, .02), (.11, .07, .045), scale=18, rough=.95, bump=.8, bscale=120)
     M['gutter'] = mat_basic('gutter', (.78, .76, .7), rough=.3, spec=.5)
     return M
@@ -680,21 +690,73 @@ def house(M, P):
     box('proof', -1.95, 1.95, Y0 - 1.95, Y0 + .02, 3.6, 3.72, M['roof'], P, bevel=.02)
     box('pcornice', -1.98, 1.98, Y0 - 1.98, Y0, 3.52, 3.62, M['trim'], P, bevel=.015)
     box('ceiling', -1.7, 1.7, Y0 - 1.7, Y0, 3.2, 3.26, M['trim'], P)
-    box('door', -.55, .55, Y0 + .06, Y0 + .11, ZF - .02, ZF + 2.25, M['door'], P, bevel=.01)
-    box('doorframe_l', -.74, -.56, Y0 - .11, Y0 + .2, ZF, ZF + 2.4, M['trim'], P)
-    box('doorframe_r', .56, .74, Y0 - .11, Y0 + .2, ZF, ZF + 2.4, M['trim'], P)
-    box('doorframe_t', -.84, .84, Y0 - .13, Y0 + .2, ZF + 2.26, ZF + 2.55, M['trim'], P, bevel=.01)
-    for x in (-.28, .28):   # raised panels
-        for z0, z1 in ((.7, 1.45), (1.65, 2.45)):
-            box('panel', x - .18, x + .18, Y0 + .03, Y0 + .065, z0, z1, M['door'], P, bevel=.015)
-    box('knob', .38, .45, Y0 - .01, Y0 + .06, 1.55, 1.62, M['metal'], P)
-    box('lantern', -.12, .12, Y0 - 1.0, Y0 - .76, 2.55, 3.05, M['metal'], P)
-    box('lanternglow', -.09, .09, Y0 - .97, Y0 - .79, 2.6, 3.0, M['glass'], P)
+    # front door like the walk-through renders: glass in the top third, two panels below, glass
+    # sidelights with white frames, a lit hall behind, and a lantern on the wall either side
+    D0, DT = ZF - .02, ZF + 2.25
+    dy0, dy1 = Y0 + .06, Y0 + .11
+    def pane(name, x0, x1, z0, z1, y):
+        me = D.meshes.new(name); me.from_pydata([(x0, y, z0), (x1, y, z0), (x1, y, z1), (x0, y, z1)], [], [(0, 1, 2, 3)])
+        me.materials.append(M['pane']); link(D.objects.new(name, me), P)
+    for a0, a1 in ((-.48, -.36), (.36, .48)):
+        box('stile', a0, a1, dy0, dy1, D0, DT, M['door'], P)
+    for z0, z1 in ((D0, D0 + .25), (D0 + 1.35, D0 + 1.5), (DT - .15, DT)):
+        box('rail', -.36, .36, dy0, dy1, z0, z1, M['door'], P)
+    box('infill', -.36, .36, dy0 + .015, dy1, D0 + .25, D0 + 1.35, M['door'], P)
+    for x in (-.17, .17):
+        box('dpanel', x - .13, x + .13, dy0 - .005, dy0 + .015, D0 + .36, D0 + 1.24, M['door'], P, bevel=.012)
+    pane('doorglass', -.36, .36, D0 + 1.5, DT - .15, dy0 + .03)
+    for x in (-.12, .12):
+        box('dmv', x - .014, x + .014, dy0 + .01, dy0 + .03, D0 + 1.5, DT - .15, M['door'], P)
+    box('dmh', -.36, .36, dy0 + .01, dy0 + .03, (D0 + 1.5 + DT - .15) / 2 - .014, (D0 + 1.5 + DT - .15) / 2 + .014, M['door'], P)
+    box('knob', .28, .34, dy0 - .07, dy0, D0 + 1.1, D0 + 1.3, M['metal'], P)
+    for sgn in (-1, 1):   # sidelights
+        a0, a1 = sorted((sgn * .62, sgn * .98))
+        m0, m1 = sorted((sgn * .48, sgn * .62))
+        box('mullion', m0, m1, dy0 - .02, dy1, D0, DT, M['trim'], P)
+        box('slbase', a0, a1, dy0 - .02, dy1, D0, D0 + .38, M['trim'], P)
+        box('slouter', *sorted((sgn * .98, sgn * 1.0)), dy0 - .02, dy1, D0, DT, M['trim'], P)
+        pane('sidelight', a0, a1, D0 + .38, DT - .1, dy0 + .03)
+        for k in range(1, 5):
+            z = D0 + .38 + (DT - .1 - D0 - .38) * k / 5
+            box('slmh', a0, a1, dy0 + .005, dy0 + .03, z - .012, z + .012, M['trim'], P)
+    box('sltop', -1.0, 1.0, dy0 - .02, dy1, DT - .1, DT + .03, M['trim'], P)
+    box('doorframe_l', -1.18, -1.0, Y0 - .11, Y0 + .2, ZF, DT + .15, M['trim'], P)
+    box('doorframe_r', 1.0, 1.18, Y0 - .11, Y0 + .2, ZF, DT + .15, M['trim'], P)
+    box('doorframe_t', -1.26, 1.26, Y0 - .13, Y0 + .2, DT + .03, DT + .32, M['trim'], P, bevel=.01)
+    Lh = D.lights.new('hall', 'POINT'); Lh.energy = 45; Lh.color = (1, .64, .32); Lh.shadow_soft_size = .3
+    lh = D.objects.new('hall', Lh); link(lh, P); lh.location = (0, Y0 + 1.6, 2.3)
+    for x in (-1.32, 1.32):   # wall lanterns
+        box('wlampback', x - .05, x + .05, Y0 - .06, Y0 - .01, 1.9, 2.5, M['metal'], P)
+        box('wlampcap', x - .12, x + .12, Y0 - .25, Y0 - .03, 2.42, 2.5, M['metal'], P, bevel=.01)
+        box('wlampbase', x - .1, x + .1, Y0 - .23, Y0 - .05, 1.95, 2.0, M['metal'], P)
+        for cx in (-.1, .1):
+            for cy in (-.23, -.05):
+                box('wlampbar', x + cx - .01, x + cx + .01, Y0 + cy - .01, Y0 + cy + .01, 2.0, 2.42, M['metal'], P)
+        box('wlampglow', x - .085, x + .085, Y0 - .215, Y0 - .065, 2.0, 2.42, M['lamp'], P)
+        Lw = D.lights.new('wlamp', 'POINT'); Lw.energy = 14; Lw.color = (1, .6, .28); Lw.shadow_soft_size = .05
+        lw = D.objects.new('wlamp', Lw); link(lw, P); lw.location = (x, Y0 - .13, 2.18)
+    box('lanterncap', -.15, .15, Y0 - 1.03, Y0 - .73, 3.0, 3.08, M['metal'], P, bevel=.01)
+    box('lanternbase', -.12, .12, Y0 - 1.0, Y0 - .76, 2.55, 2.6, M['metal'], P)
+    for cx in (-.12, .12):
+        for cy in (-1.0, -.76):
+            box('lanternbar', cx - .012, cx + .012, Y0 + cy - .012, Y0 + cy + .012, 2.6, 3.0, M['metal'], P)
+    box('lanternglow', -.105, .105, Y0 - .985, Y0 - .775, 2.6, 3.0, M['lamp'], P)
     box('chain', -.015, .015, Y0 - .9, Y0 - .86, 3.05, 3.2, M['metal'], P)
     L = D.lights.new('lantern', 'POINT'); L.energy = 40; L.color = (1, .62, .3); L.shadow_soft_size = .1
     lo = D.objects.new('lantern', L); link(lo, P); lo.location = (0, Y0 - .88, 2.8)
-    for x in (-1.0, 1.0):   # clay pots with plants either side of the door
-        place('planter_pot_clay', P, (x, Y0 - .35, .45), height=.5)
+    for x in (-1.2, 1.2):   # tall charcoal planters either side of the door (topiaries in plantings())
+        c = D.meshes.new('pot'); bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=.19, radius2=.25, depth=.55); bm.to_mesh(c); bm.free()
+        po = D.objects.new('pot', c); c.materials.append(M['pot']); link(po, P); po.location = (x, Y0 - .38, .45 + .275)
+        for pp in c.polygons: pp.use_smooth = True
+    # low path lights along the walk
+    for x in (-1.08, 1.08):
+        for y in (-6.6, -8.4, -10.1):
+            box('plpost', x - .03, x + .03, y - .03, y + .03, 0, .4, M['metal'], P)
+            box('plcap', x - .07, x + .07, y - .07, y + .07, .4, .44, M['metal'], P, bevel=.01)
+            box('plglow', x - .045, x + .045, y - .045, y + .045, .33, .4, M['lamp'], P)
+            Lp = D.lights.new('pathlight', 'POINT'); Lp.energy = 5; Lp.color = (1, .62, .3); Lp.shadow_soft_size = .03
+            lp = D.objects.new('pathlight', Lp); link(lp, P); lp.location = (x, y, .36)
 
     # --- lap siding on every wall, gables included (window and door openings are cut through it)
     front = Wall((0, Y0, 0), (1, 0, 0), (0, -1, 0))
@@ -713,7 +775,7 @@ def house(M, P):
     lap_siding('sid_wf', wfront, WX0, WX1, zs, WR - .2, M['siding'], P, gable=(WE, WR - .15, (WX0 + WX1) / 2))
     lap_siding('sid_wb', wback, -WX1, -WX0, zs, WR - .2, M['siding'], P, gable=(WE, WR - .15, -(WX0 + WX1) / 2))
     lap_siding('sid_wr', wright, WY0, WY1, zs, WE, M['siding'], P)
-    door_opening(front, 0, 1.12, 2.28, ZF - .02, M, P)
+    door_opening(front, 0, 2.0, 2.3, ZF - .02, M, P)
     door_opening(back, 0, 1.92, 2.32, ZF + .03, M, P)
 
     # --- windows
@@ -736,7 +798,7 @@ def house(M, P):
     window(back, 0.0, ZF + .05, 1.9, 2.3, M, P, cols=4, rows=2, name='french')
     box('patio', -2.9, 2.9, Y1, Y1 + 3.3, 0, .1, M['path'], P, bevel=.02)
     for s in (-1.0, 1.0):   # wall lamps beside the French doors
-        box('sconce', s * 1.45 - .08, s * 1.45 + .08, Y1, Y1 + .14, 2.3, 2.62, M['glass'], P)
+        box('sconce', s * 1.45 - .08, s * 1.45 + .08, Y1, Y1 + .14, 2.3, 2.62, M['lamp'], P)
     place('outdoor_table_chair_set_01', P, (0, Y1 + 1.8, .1), scale=1.15, rotz=math.pi / 2)
     box('ac', WX1 + .25, WX1 + 1.05, .2, 1.0, 0, .8, M['metal'], P, bevel=.03)
 
@@ -933,10 +995,10 @@ def plantings(M, P, PR):
               blooms=(i in (1, 3, 4, 6, 9)), h=(1.3 if big else None))
     for x in (-1.6, 1.6, -4.4, 4.5, 7.6):   # low front row
         shrub(M, P, PR, x, -4.95, r.uniform(.3, .4), 150 + int(x * 10), blooms=(abs(x) in (4.4, 7.6)))
-    for x in (-2.35, 2.35):
-        evergreen(M, P, PR, x, -4.25, 1.9, int(abs(x) * 10) + 300 + (x > 0))
+    for x in (-2.35, 2.35):   # round boxwoods flanking the steps
+        shrub(M, P, PR, x, -4.3, .5, int(abs(x) * 10) + 300 + (x > 0), h=.8)
     for x in (-1.0, 1.0):   # clipped topiaries in the door pots
-        shrub(M, P, PR, x, -3.85, .24, 400 + int(x * 5), h=.3, z0=.72)
+        shrub(M, P, PR, x * 1.2, -3.88, .24, 400 + int(x * 5), h=.3, z0=.98)
     for i, (x, y) in enumerate([(-6.2, -2.4), (-6.3, 2.2), (10.6, -1.8), (10.5, 1.9), (-3.8, 4.3), (3.6, 4.4), (8.0, 3.4),
                                 (-9.0, -4.5), (-4.5, -7.5), (5.0, -7.8)]):
         shrub(M, P, PR, x, y, r.uniform(.5, .8), 200 + i, blooms=(i in (2, 5)))
