@@ -602,20 +602,24 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 body.ds-covered>:not(.ds){visibility:hidden} /* nothing to paint under the opaque walk */
 .ds.out{opacity:0;transition:opacity .8s ease}
 .ds-view{position:absolute;inset:0;overflow:hidden}
-.ds-view.explore{cursor:grab}
-.ds-view.explore.drag{cursor:grabbing}
-.wk-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* the short step inside (Walk in js/engines.js): two photos, transforms and opacity only */
+.wk{position:absolute;inset:0;overflow:hidden;background:#070a08}
+.wk-img{position:absolute;max-width:none;will-change:transform,opacity;backface-visibility:hidden}
+.wk-img+.wk-img{opacity:0}
+.wk-scrim{position:absolute;inset:0;opacity:0;background:linear-gradient(to top,rgba(7,10,8,.72) 0%,rgba(7,10,8,.35) 38%,rgba(7,10,8,0) 62%),radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(0,0,0,.35) 100%)}
+.wk-sweep{position:absolute;top:-10%;bottom:-10%;left:25%;width:50%;opacity:0;pointer-events:none;mix-blend-mode:screen;
+  background:linear-gradient(90deg,rgba(255,236,200,0) 0%,rgba(255,236,200,.16) 42%,rgba(255,244,222,.34) 50%,rgba(255,236,200,.16) 58%,rgba(255,236,200,0) 100%)}
+.wk-house{display:block;width:clamp(72px,9vw,100px);height:auto;margin:0 auto 14px;overflow:visible;fill:none;stroke:#f3dcae;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 10px rgba(0,0,0,.55))}
+.wk-house path{stroke-dasharray:1;stroke-dashoffset:1}
 .ds-ui{position:absolute;left:0;right:0;bottom:calc(7% + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:18px;text-align:center;color:#fff;padding-inline:20px;pointer-events:none}
 .ds-cap{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,3.4rem);line-height:1.06;text-shadow:0 2px 14px rgba(0,0,0,.6);margin:0;opacity:0;color:#fff;will-change:opacity}
-.ds-cap .kk{display:inline-block;opacity:0}
 .ds-cap small{display:block;font-family:var(--ui);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:#f3dcae;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
 .ds-actions{display:grid;gap:10px;justify-items:center;pointer-events:auto;opacity:0;transition:opacity .8s;will-change:opacity}
 .ds-actions.show{opacity:1}
-.ds-hint{font-size:.86rem;color:rgba(255,255,255,.88);text-shadow:0 2px 8px rgba(0,0,0,.7)}
 .ds :focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 6px rgba(0,0,0,.55)} /* reads over the dark porch and the bright room */
 .ds-top{position:absolute;right:18px;top:calc(18px + env(safe-area-inset-top,0px));display:flex;gap:8px;z-index:3}
 .ds-top button{background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:.86rem}
-.ds-load{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.8);font-size:.9rem;letter-spacing:.08em}
 /* motion stays short and optional */
 @media (prefers-reduced-motion:reduce){.btn,.arr,.path .pi,header,.mbar,.tz-bar i{transition:none}.btn-primary:hover,.btn-white:hover,.btn-go:hover .arr,.path:hover .arr{transform:none}}
 /* skip link and screen-reader-only text */
