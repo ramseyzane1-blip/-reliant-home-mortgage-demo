@@ -8,7 +8,8 @@ All images in `demo/site/images/` are AI-generated renders of a fictional house 
 the client. They are used **only** in the two 3D pieces (the hero turntable and the
 walk-through). Don't use them anywhere else on the site.
 
-- `house-00.jpg` … `house-12.jpg`: 13 views of the model home on its plinth, 1100×1100,
+- `house-00.jpg` … `house-12.jpg` (no `house-10.jpg`; it was a copy of `house-09.jpg`): 12 views
+  of the model home on its plinth, 1024×1024 so the turntable can mipmap them,
   ordered by camera angle. The angles are in `HOUSE_VIEWS` in `js/app.js`
   (0° front, 90° right side, 180° back, 270° left side).
 - `approach-1…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
@@ -24,3 +25,8 @@ walk-through). Don't use them anywhere else on the site.
 The source renders (PNG, ~1.5 MB each) are not in the repo. If you regenerate an image,
 keep the framing, dusk lighting and camera height consistent, and re-measure its anchor
 rectangle.
+
+## Logo
+
+`logo-dark.png` is made from `logo.png`: the emblem sits on a cream disc and the wordmark is
+recolored light, for dark mode.

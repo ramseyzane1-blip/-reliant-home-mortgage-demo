@@ -32,7 +32,7 @@ demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
 demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
-demo/site/images/           3D renders only (see tools/README.md) + logo.png
+demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 ```
@@ -55,7 +55,8 @@ tools/smoke_test.py         Playwright end-to-end test
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
-- **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice.
+- **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice (inline on
+  the pre-qualification results, so nothing covers them; a modal for the other forms).
 - Blog and newsletter are merged into "The Reliant Letter" on About us.
 
 ## Content sources
@@ -66,12 +67,30 @@ programs, Google reviews, glossary terms. Bios for Christina, Chase and Blaine a
 placeholders (the original site has no bio content). Staff headshots and the team photo are
 placeholders.
 
+## How the site leads to the pre-qualification
+
+- **Home, top to bottom:** hero (one button, a real Google review under it, the office phone
+  under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
+  (price and down payment sliders; the estimate uses the same math as the results page, and
+  its button carries both numbers into the pre-qualification) → how it works → the team →
+  reviews → closing band. The first screen should always show the top of the next section.
+- **Closing band:** its headline fits the page and its button presets the pre-qualification
+  goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
+- **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
+  moves faster early and never starts empty, number answers you can type ("250k" works),
+  "your best guess is fine" help, a note on who calls from which number, and the license
+  line above "See my results". The header button and the phone quick bar hide on this page.
+- **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
+- NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
+
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with a
+**Turntable** (hero): 12 renders around the house (1024×1024). Each view is drawn on a WebGL mesh with a
 simple depth model (house plane, lawn sloping toward the viewer, a per-vertex weight that
 keeps the outer ring fixed), rotated up to ±17° and cross-dissolved with the next view.
-Drag, arrow keys, or idle sway around the front.
+Drag, arrow keys, or idle sway around the front. After the first frame, every render is decoded
+off the main thread and uploaded one texture per frame with mipmaps, so a drag never waits on
+`texImage2D`. In dark mode the card is dimmed slightly with a vignette (CSS only).
 
 **Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
 camera follows the door (outside) then the fireplace (inside); each image takes over when it
@@ -87,22 +106,21 @@ Timeline constants are in `T` inside `Walk.play`.
 
 ## Known issues / next up: make the 3D smooth
 
-The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
+The client's feedback: "getting better, but clunky and not smooth." Done so far: all turntable
+textures upload up front with mipmaps, and a duplicate render (the old `house-10.jpg`, a copy
+of `house-09.jpg` that doubled the house between 318° and 327°) is gone. Next, in order:
 
-1. **Turntable textures.** Upload all 13 textures up front, one per frame after first paint,
-   instead of on demand (the texImage2D hitch during a drag is the main stutter). Resize
-   renders to 1024×1024 so they can mipmap.
-2. **Optical-flow morphing instead of cross-dissolves.** Precompute dense flow between
+1. **Optical-flow morphing instead of cross-dissolves.** Precompute dense flow between
    neighboring views offline (OpenCV `DISOpticalFlow`, forward-backward consistency check,
    smoothed to a ~65×65 grid) and store it as a small binary file. In the shader, displace
    the mesh of view A by `t·flow(A→B)` and view B by `(1−t)·flow(B→A)` while blending. This
    turns ghosting into motion. The front views (10–15° apart) will morph well; sides and
    back are ~45° apart, so damp the flow where consistency is poor.
-3. **Move the walk to WebGL.** Scaling large DOM layers that contain CSS 3D children forces
+2. **Move the walk to WebGL.** Scaling large DOM layers that contain CSS 3D children forces
    re-rasterization every frame. Render every shot as a textured quad on one canvas, draw the
    door leaf as a real perspective quad, and apply the same flow morphing at each handoff
    (align the pair by their anchor rectangles first, then compute flow on the overlap).
-4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
+3. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
 ## Supabase
 

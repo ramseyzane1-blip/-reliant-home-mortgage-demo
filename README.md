@@ -7,6 +7,8 @@ mortgage broker in Middletown, Ohio.
 
 - Drag-to-turn 3D model home in the hero
 - One primary action: a two-minute pre-qualification with an answer review step
+- A payment estimate on the home page whose numbers carry into the pre-qualification
+- Light and dark themes that follow the visitor's system setting
 - A knock-and-walk-in 3D sequence when the pre-qualification is submitted
 - Loan finder, refinance break-even calculator, rate factors, Homebuying 101 course,
   interactive glossary, local resource finder with a checklist

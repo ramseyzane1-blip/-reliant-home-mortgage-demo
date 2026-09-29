@@ -22,13 +22,22 @@ function create(box,canvas,views,opt){
  const I=[];for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,d=c+1;I.push(a,c,b,b,c,d);}
  const buf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
  const bP=buf(new Float32Array(P)),bU=buf(new Float32Array(UV)),bE=buf(new Float32Array(E)),bR=buf(new Float32Array(RW)),bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER),NI=I.length;
- /* textures: load lazily, keep a few in GPU memory */
- const imgs=views.map(()=>null),tex=new Map();
- function img(i){if(!imgs[i]){const im=new Image();im.decoding='async';im.src=views[i].f;imgs[i]=im;im.onload=()=>{dirty=true;};}return imgs[i];}
- function texture(i){if(tex.has(i)){const t=tex.get(i);tex.delete(i);tex.set(i,t);return t;}const im=img(i);if(!im.complete||!im.naturalWidth)return null;
-  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  tex.set(i,t);if(tex.size>5){const k=tex.keys().next().value;gl.deleteTexture(tex.get(k));tex.delete(k);}return t;}
+ /* textures: the first views load right away; after the first frame is on screen, every other view is
+    decoded off the main thread and uploaded one per frame, so a drag never waits on texImage2D.
+    The renders are 1024x1024, so each texture gets mipmaps and stays sharp when scaled down. */
+ const imgs=views.map(()=>null),ok=views.map(()=>false),tex=new Map();
+ function img(i){if(!imgs[i]){const im=new Image();im.decoding='async';im.src=views[i].f;imgs[i]=im;
+   im.onload=()=>{(im.decode?im.decode():Promise.resolve()).catch(()=>{}).then(()=>{ok[i]=true;dirty=true;});};}return imgs[i];}
+ const pot=v=>v>0&&(v&(v-1))===0,aniso=gl.getExtension('EXT_texture_filter_anisotropic')||gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic');
+ function upload(i){const im=img(i);if(!ok[i]||!im.naturalWidth)return null;
+  const t=gl.createTexture(),mip=pot(im.naturalWidth)&&pot(im.naturalHeight);gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);
+  if(mip)gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mip?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  if(mip&&aniso)gl.texParameterf(gl.TEXTURE_2D,aniso.TEXTURE_MAX_ANISOTROPY_EXT,Math.min(4,gl.getParameter(aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
+  tex.set(i,t);return t;}
+ const texture=i=>tex.get(i)||upload(i);
+ let warmed=false;
+ function warm(){if(tex.size>=n)return;if(!warmed){warmed=true;views.forEach((v,i)=>img(i));}for(let i=0;i<n;i++)if(!tex.has(i)&&ok[i]){upload(i);return;}}
  const A=views.map(v=>v.a),n=views.length;
  function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,a0,a1,t];}return [0,1,A[0],A[1],th];}
  const bg=opt.bg||[.949,.918,.882];let dirty=true;
@@ -56,7 +65,8 @@ function create(box,canvas,views,opt){
  function frame(ts){const t=(ts-t0)/1000,dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
   if(!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=.94;}else if(idle&&!opt.reduced()){target=Math.sin(t*.22)*34;}}
   const prev=th;th+=(target-th)*Math.min(1,dt*6);if(Math.abs(th-prev)>.001)dirty=true;
-  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready){ready=true;box.classList.add('ready');}}
+  if(dirty){const done=draw(th);dirty=!done;if(done&&!ready){ready=true;box.classList.add('ready');}}
+  if(ready&&!drag)warm();
   raf=vis?requestAnimationFrame(frame):0;}
  box.addEventListener('pointerdown',e=>{drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
  box.addEventListener('pointermove',e=>{if(!drag)return;const w=box.clientWidth||400;target=drag.t-(e.clientX-drag.x)/w*200;const now=performance.now();vel=-(e.clientX-drag.px)/w*200/Math.max(1,(now-drag.pt)/16.7);drag.px=e.clientX;drag.pt=now;});

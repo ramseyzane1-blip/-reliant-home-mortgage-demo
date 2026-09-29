@@ -6,6 +6,8 @@
 <title>Reliant Home Mortgage Concept</title>
 <meta name="description" content="Reliant Home Mortgage redesign concept: a family-owned mortgage broker in Middletown, Ohio.">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1512" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="images/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +26,7 @@
 
 <header>
   <div class="wrap hdr">
-    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo" src="images/logo.png" alt="Reliant Home Mortgage" width="180" height="44"></a>
+    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo logo-l" src="images/logo.png" alt="Reliant Home Mortgage" width="180" height="44"><img class="logo logo-d" src="images/logo-dark.png" alt="" width="180" height="44"></a>
     <nav class="mainnav" aria-label="Main">
       <a href="#buy" data-nav="buy">Buy a home</a>
       <a href="#refinance" data-nav="refinance">Refinance</a>
@@ -48,33 +50,79 @@
 <section class="page" data-page="home" data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
   <div class="hero">
     <div class="wrap hero-grid">
-      <div>
+      <div class="hero-copy">
         <p class="eyebrow">Family-owned mortgage broker · Middletown, Ohio</p>
         <h1>Home loans, handled like <em>family.</em></h1>
         <p class="lede">Find out what you can afford in about two minutes. Then a real person from our Middletown office walks you through the rest.</p>
-        <div class="btn-row"><a class="btn btn-primary btn-lg" href="#start">Get pre-qualified</a><a class="linkish" href="#how">See how it works</a></div>
+        <div class="btn-row"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a><a class="linkish" href="#home" data-scroll="how">See how it works</a></div>
         <div class="assure"><span>About 2 minutes</span><span>No Social Security number</span><span>No credit check</span></div>
-        <div class="trust">
-          <div class="faces" data-faces></div>
-          <p>Rather talk it through?<br><button class="num" data-demo="call">Call our Middletown office at (513) 783-4018</button></p>
-        </div>
       </div>
       <div class="hphoto" id="hphoto" tabindex="0" role="img" aria-label="Model of a family home. Drag, or use the arrow keys, to turn it all the way around.">
-        <img class="hp-fallback" src="images/house-00.jpg" alt="" width="1100" height="1100">
+        <img class="hp-fallback" src="images/house-00.jpg" alt="" width="1024" height="1024" fetchpriority="high">
         <canvas id="hcanvas"></canvas>
         <span class="hp-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Drag to walk around the house</span>
       </div>
+      <div class="hero-trust">
+        <figure class="hq"><span class="stars" role="img" aria-label="5 stars">★★★★★</span><blockquote>“Transparent and quick to give me the breakdown of all of the costs involved.”</blockquote><figcaption>Jennifer Cope · Google review · <a class="linkish" href="#reviews">More reviews</a></figcaption></figure>
+        <div class="trust">
+          <div class="faces" data-faces></div>
+          <p>Rather talk it through?<br><button class="num" data-demo="call">Call our Middletown office at <span class="nw">(513) 783-4018</span></button></p>
+        </div>
+      </div>
     </div>
   </div>
+
+  <section class="glance" aria-label="Reliant at a glance">
+    <div class="wrap glance-grid">
+      <div><b>20 loan programs</b><span>FHA, VA, USDA, conventional, jumbo and more</span></div>
+      <div><b>Lenders nationwide</b><span>We shop for your most competitive rate</span></div>
+      <div><b>One loan officer</b><span>From your first question to closing day</span></div>
+      <div><b class="num">OH · KY · IN</b><span>Licensed in three states, NMLS #2292251</span></div>
+    </div>
+  </section>
 
   <section class="band">
     <div class="wrap">
       <div class="sec-head"><p class="eyebrow">Start where you are</p><h2>What brings you here?</h2></div>
       <div class="paths">
-        <a class="path" href="#buy"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><h3>I'm buying a home</h3><p>See which loans fit you, what you can afford and how the process works.</p><em>Buying with Reliant →</em></div></a>
-        <a class="path" href="#refinance"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><h3>I already own a home</h3><p>Find out if refinancing is worth it with a break-even calculator.</p><em>Is refinancing worth it? →</em></div></a>
-        <a class="path" href="#learn"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-5a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h6z"/></svg></span><h3>I'm still learning</h3><p>A short course, how rates work, calculators and a plain-English glossary.</p><em>Start learning →</em></div></a>
+        <a class="path" href="#buy"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><h3>I'm buying a home</h3><p>See which loans fit you, what you can afford and how the process works.</p><em>Buying with Reliant <span class="arr" aria-hidden="true">→</span></em></div></a>
+        <a class="path" href="#refinance"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><h3>I already own a home</h3><p>Find out if refinancing is worth it with a break-even calculator.</p><em>Is refinancing worth it? <span class="arr" aria-hidden="true">→</span></em></div></a>
+        <a class="path" href="#learn"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-5a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h6z"/></svg></span><h3>I'm still learning</h3><p>A short course, how rates work, calculators and a plain-English glossary.</p><em>Start learning <span class="arr" aria-hidden="true">→</span></em></div></a>
       </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="tryit">
+    <div class="wrap tease">
+      <div>
+        <div class="sec-head"><p class="eyebrow">Try your numbers</p><h2>What would a home cost you each month?</h2><p>Move the sliders for a quick estimate. When you pre-qualify, we bring these numbers along and add the loans that fit you.</p></div>
+        <div class="card tease-in">
+          <div class="field"><label for="tz-price">Home price <output id="tz-price-o" class="num"></output></label><input type="range" id="tz-price" min="80000" max="900000" step="5000" value="250000"></div>
+          <div class="field" style="margin:0"><label for="tz-down">Down payment <output id="tz-down-o" class="num"></output></label><input type="range" id="tz-down" min="0" max="30" step="0.5" value="5"></div>
+        </div>
+      </div>
+      <div class="est tease-out" aria-live="polite">
+        <span class="eyebrow">Estimated monthly payment</span>
+        <div class="big num" id="tz-pay"></div>
+        <div class="tz-bar" aria-hidden="true"><i id="tz-bpi"></i><i></i></div>
+        <div class="tz-legend num"><span><i></i>Principal &amp; interest <b id="tz-pi"></b></span><span><i></i>Taxes &amp; insurance <b id="tz-ti"></b></span></div>
+        <p>Your pre-qualification adds the loans you fit and a real rate from your loan officer.</p>
+        <div><a class="btn btn-white btn-lg btn-go" href="#start" data-goal="buy" data-carry>Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
+        <p class="tz-fine">Example 6.5% 30-year fixed rate with property taxes and homeowners insurance. Mortgage insurance, if any, is extra.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <div class="sec-head center"><p class="eyebrow">How it works</p><h2>Three steps to your keys</h2></div>
+      <div class="steps3">
+        <div class="st"><span class="n">1</span><h3>Pre-qualify</h3><p>Answer a few questions and see what you can afford. About two minutes.</p></div>
+        <div class="st"><span class="n">2</span><h3>Talk with your loan officer</h3><p>We compare your options and quote today's rates for your situation.</p></div>
+        <div class="st"><span class="n">3</span><h3>Apply and close</h3><p>Apply online, and we keep you and your agent updated until closing day.</p></div>
+      </div>
+      <div class="btn-row" style="justify-content:center;margin-top:44px"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
+      <p class="fine" style="text-align:center;margin-top:12px">About 2 minutes. No credit check.</p>
     </div>
   </section>
 
@@ -92,19 +140,7 @@
     </div>
   </section>
 
-  <section class="band" id="how">
-    <div class="wrap">
-      <div class="sec-head center"><p class="eyebrow">How it works</p><h2>Three steps to your keys</h2></div>
-      <div class="steps3">
-        <div class="st"><span class="n">1</span><h3>Pre-qualify</h3><p>Answer a few questions and see what you can afford. About two minutes.</p></div>
-        <div class="st"><span class="n">2</span><h3>Talk with your loan officer</h3><p>We compare your options and quote today's rates for your situation.</p></div>
-        <div class="st"><span class="n">3</span><h3>Apply and close</h3><p>Apply online, and we keep you and your agent updated until closing day.</p></div>
-      </div>
-      <div class="btn-row" style="justify-content:center;margin-top:44px"><a class="btn btn-primary btn-lg" href="#start">Start step 1</a></div>
-    </div>
-  </section>
-
-  <section class="band alt">
+  <section class="band">
     <div class="wrap">
       <div class="sec-head center"><p class="eyebrow">From our clients</p><h2>Neighbors recommend us</h2></div>
       <div class="reviews" data-reviews="3"></div>
@@ -120,11 +156,12 @@
     <h1>Let's see where you stand</h1>
     <p class="lede" id="pqLede">A few quick questions, then your results. No Social Security number and no credit check.</p>
   </div></div>
-  <section class="band" style="padding-top:36px" id="pqForm"><div class="wrap pq">
+  <section class="band pq-band" id="pqForm"><div class="wrap pq">
     <div class="wiz" id="wiz"></div>
     <aside class="side">
-      <div class="card"><div class="faces" data-faces style="margin-bottom:12px"></div><h3>A real person reviews every answer</h3><p class="muted" style="margin-top:8px">Your results go to a licensed loan officer in our Middletown office, not a call center.</p></div>
-      <div class="card"><ul class="checks"><li><span class="mk">✓</span>About 2 minutes</li><li><span class="mk">✓</span>No Social Security number</li><li><span class="mk">✓</span>No credit check, no commitment</li><li><span class="mk">✓</span>Your information stays private</li></ul></div>
+      <div class="card"><div class="faces" data-faces style="margin-bottom:12px"></div><h3>A real person reviews every answer</h3><p class="muted" style="margin-top:8px">Your results go straight to a licensed loan officer in our Middletown office.</p></div>
+      <div class="card"><ul class="checks"><li><span class="mk">✓</span>About 2 minutes</li><li><span class="mk">✓</span>No Social Security number</li><li><span class="mk">✓</span>No credit check, no commitment</li><li><span class="mk">✓</span>Your information stays private</li></ul>
+        <p class="fine num" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">Licensed in Ohio, Kentucky and Indiana. NMLS #2292251. <a href="https://nmlsconsumeraccess.org/Home.aspx/SubSearch?searchText=2292251" target="_blank" rel="noopener">Verify us</a></p></div>
       <p class="fine" style="padding-inline:6px">Prefer to talk? <button class="linkish num" data-demo="call">(513) 783-4018</button></p>
     </aside>
   </div></section>
@@ -136,7 +173,7 @@
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Buy a home</div>
     <p class="eyebrow">Buying a home</p>
-    <h1>Buy with a plan, not a guess</h1>
+    <h1>Buy with a clear plan</h1>
     <p class="lede">Find the loans that fit your situation, see how the process works, and know your budget before you start touring.</p>
     <div class="jump"><a href="#buy" data-scroll="finder">Loan finder</a><a href="#buy" data-scroll="buysteps">How buying works</a><a href="#loans">Compare all 20 loans</a><a href="#learn">Homebuying 101</a></div>
   </div></div>
@@ -238,7 +275,7 @@
       <div class="card"><h3>A good fit if</h3><ul class="checks" id="pd-fit" style="margin-top:16px"></ul></div>
       <div class="card"><h3>Keep in mind</h3><ul class="checks" id="pd-mind" style="margin-top:16px"></ul></div>
     </div>
-    <div class="card" style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><div><h3>See if <span id="pd-name2"></span> fits you</h3><p class="muted">Your pre-qualification suggests the best loans for your answers.</p></div><a class="btn btn-primary" href="#start" id="pd-go">Get pre-qualified</a></div>
+    <div class="card" style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><div><h3>See if this loan fits you</h3><p class="muted">Your pre-qualification suggests the best loans for your answers.</p></div><a class="btn btn-primary" href="#start" id="pd-go">Get pre-qualified</a></div>
     <h3 style="margin:44px 0 14px">Related options</h3>
     <div class="lrows" id="pd-related"></div>
   </div></section>
@@ -436,8 +473,8 @@
 
 <div class="ctaband" id="ctaband"><div class="wrap">
   <p class="eyebrow">Two minutes, no credit check</p>
-  <h2>Know what you can afford before you fall for a house.</h2>
-  <a class="btn btn-white btn-lg" href="#start">Get pre-qualified</a>
+  <h2 id="ctaH">Know what you can afford before you fall for a house.</h2>
+  <a class="btn btn-white btn-lg btn-go" href="#start" id="ctaGo">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a>
   <p class="talkline">or call our Middletown office at <button class="num" data-demo="call">(513) 783-4018</button></p>
 </div></div>
 
@@ -460,7 +497,7 @@
   </div>
 </div></footer>
 
-<div class="mbar" aria-label="Quick actions"><button class="btn btn-line" data-demo="call">Call</button><a class="btn btn-primary" href="#start">Get pre-qualified</a></div>
+<div class="mbar" aria-label="Quick actions"><button class="btn btn-line" data-demo="call" aria-label="Call our Middletown office"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Call</button><a class="btn btn-primary" href="#start">Get pre-qualified</a></div>
 <div class="cmpbar" id="cmpbar" hidden><span id="cmpText"></span><button class="btn btn-white" id="cmpGo">Compare</button><button class="x" id="cmpClear" aria-label="Clear comparison">✕</button></div>
 <div class="pop" id="pop" hidden role="tooltip"></div>
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-box"><span class="badge">Demo site</span><h3 id="modalTitle"></h3><p id="modalBody" class="muted"></p><pre id="modalData" hidden></pre><div class="btn-row" id="modalBtns"></div></div></div>
