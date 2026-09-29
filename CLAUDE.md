@@ -33,6 +33,8 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+                            team/<name>.webp (160px face) and <name>-lg.webp (480px): the real staff
+                            headshots from relianthomemtg.com/staff (the original site's own photos)
                             turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
 demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
@@ -58,7 +60,8 @@ audit/                      client audit: slide deck (index.html), written repor
 - **Financing, not real estate:** communicate it through what the site shows (loan steps,
   payments, rates), not with "we don't sell homes" disclaimers.
 - **Photos only in the 3D pieces.** The AI renders appear in the hero turntable and the
-  walk-through, nowhere else.
+  walk-through, nowhere else. The one other kind of photo is the team's real headshots
+  (`images/team/`), which carry the family feel.
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
@@ -78,20 +81,29 @@ pieces.
 
 Everything factual comes from relianthomemtg.com: licenses (NMLS #2292251, OH RM.804827.000,
 KY MB855092, IN 2292251), loan officer NMLS numbers, office address and phone, the 20 loan
-programs, Google reviews, glossary terms. Bios for Christina, Chase and Blaine are
-placeholders here, and staff headshots and the team photo are placeholders. The original site does
-have real headshots, a team photo and full bios for all five loan officers (at /staff/<name>,
-inside an embedded listing), so replace the placeholders with those. See `audit/` for the
+programs, Google reviews, glossary terms. The five loan officers' headshots, titles and bios come
+from their pages on the original site (/staff/<name>, inside an embedded listing); the bios are
+shortened into plain third person but every detail (years in lending, family, pets, specialties)
+is theirs. Chase Barker's relationship to Kevin and Jennifer isn't stated on the original site, so
+the demo doesn't state one. See `audit/` for the
 September 2026 audit of the original site.
 
 ## How the site leads to the pre-qualification
 
-- **Home, top to bottom:** hero (one button, a real Google review under it, the office phone
-  under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
+- **Home, top to bottom:** hero (headline "Home loans, from our family to yours.", a lede that says
+  a husband and wife have run it since 1996, one button, "About 2 minutes. No credit check.", the
+  five real faces with "Five loan officers, one family-owned office on Breiel Boulevard.", then a
+  real Google review and the office phone) → "What brings you here?" → **Try your numbers**
   (price and down payment sliders; the estimate uses the same math as the results page, and
-  its button carries both numbers into the pre-qualification) → how it works → the team →
-  reviews → closing band. At 1440×900 the top of the "at a glance" strip shows on the first screen,
-  so the page never looks finished there.
+  its button carries both numbers into the pre-qualification) → how it works (no button of its own) →
+  the team (Kevin and Jennifer's photos, family details from their bios, all five faces) with three
+  Google reviews in the same section → closing band. Kept deliberately calm:
+  research on visual complexity (Tuch et al. 2012) and NN/g's homepage guidelines say busy pages and
+  repeated elements lower trust, so decoration isn't repeated; real faces (content, not decoration) appear in
+  the hero and the team section, not the footer.
+- **Color:** green is for actions (buttons, sliders, progress). Cards and placeholders are neutral
+  (white or warm sand in light mode, warm charcoal `#151412`-`#2a2823` in dark mode, never green-tinted).
+  The light closing band is the one green block.
 - **Closing band:** its headline fits the page and its button presets the pre-qualification
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
 - **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
