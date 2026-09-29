@@ -451,7 +451,8 @@ const Q=[
   {id:'stage',lab:'Where you are',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you in the process?',opts:[['Just exploring',"Seeing what's possible"],['Looking at homes','Touring and comparing'],['Ready to make an offer','Found the one'],['Under contract','Need financing now']]},
   {id:'first',lab:'First home',when:a=>a.goal==='Buying a home',type:'choice',q:'Is this your first home?',opts:[['Yes, first home'],["No, I've owned before"]]},
   {id:'price',lab:'Price range',when:a=>a.goal==='Buying a home',type:'range',q:'What price range are you considering?',help:'Your best guess is fine. Type a number or use the slider.',min:80000,max:900000,step:5000,value:250000,fmt:money},
-  {id:'down',lab:'Down payment',when:a=>a.goal==='Buying a home',type:'range',q:'How much could you put down?',help:'Include savings and any gift funds from family. Your best guess is fine.',min:0,max:200000,step:1000,value:12000,fmt:money},
+  {id:'down',lab:'Down payment',when:a=>a.goal==='Buying a home',type:'range',q:'How much could you put down?',help:'Include savings and any gift funds from family. Your best guess is fine.',min:0,max:270000,step:1000,value:12000,fmt:money},
+  {id:'area',lab:'Where',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you hoping to buy?',opts:[['In town','Middletown, Hamilton, suburbs'],['Rural or small town','Outside city limits'],['Not sure yet']]},
   {id:'rgoal',lab:'Refinance goal',when:a=>a.goal==='Refinancing',type:'choice',q:'What would you like your refinance to do?',opts:[['Lower my payment'],['Pay off my home sooner'],['Take cash out'],['Consolidate debt'],['Drop mortgage insurance'],['Switch from an ARM to fixed']]},
   {id:'value',lab:'Home value',when:a=>a.goal==='Refinancing',type:'range',q:'About what is your home worth today?',help:'Your best guess is fine. Type a number or use the slider.',min:80000,max:900000,step:5000,value:275000,fmt:money},
   {id:'bal',lab:'Loan balance',when:a=>a.goal==='Refinancing',type:'range',q:'What do you still owe on your mortgage?',help:'Your best guess is fine.',min:0,max:800000,step:5000,value:180000,fmt:money},
@@ -460,7 +461,6 @@ const Q=[
   {id:'credit',lab:'Credit',type:'choice',q:'How would you describe your credit?',help:'Your best guess is fine. We won\'t check your credit.',opts:[['Excellent','740 or higher'],['Good','680 to 739'],['Fair','620 to 679'],['Rebuilding','Below 620'],['Not sure',"That's fine"]]},
   {id:'mil',lab:'Military service',type:'choice',q:'Have you served in the military?',help:'Veterans, active duty and some surviving spouses may qualify for VA loans.',opts:[['Yes'],['No']]},
   {id:'work',lab:'Income',when:a=>a.goal==='Buying a home',type:'choice',q:'How do you earn your income?',opts:[['Employed (W-2)'],['Self-employed'],['Retired or fixed income'],['Medical professional']]},
-  {id:'area',lab:'Where',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you hoping to buy?',opts:[['In town','Middletown, Hamilton, suburbs'],['Rural or small town','Outside city limits'],['Not sure yet']]},
   {id:'age',lab:'62 or older',when:a=>a.goal==='Refinancing',type:'choice',q:'Is any borrower 62 or older?',opts:[['Yes'],['No']]},
   {id:'contact',type:'contact',q:'Where should we send your results?'},
   {id:'review',type:'review',q:'Check your answers'}];
@@ -546,7 +546,7 @@ let pqRow=null,submitting=false;
 function savePQ(){const n=$('pqNoteText'),a=$('pqRetry');if(a)a.hidden=true;
   DB.insert('reliant_prequal',pqRow).then(r=>{if(!$('pqNoteText'))return;
     if(r&&r.ok){$('pqNoteText').textContent='This is a demo. Your answers were saved to the demo database. On the live site, they go straight to your loan officer.';return;}
-    $('pqNoteText').textContent=(r&&r.reason==='timeout'?'Saving your answers is taking too long.':'Your answers didn\'t reach our office.')+' Your results below are still here. Try again, or call our Middletown office at (513) 783-4018.';
+    $('pqNoteText').textContent=(r&&r.reason==='timeout'?'Saving your answers is taking too long.':'Your answers didn\'t save.')+' Your results below are still here. Try again, or call our Middletown office at (513) 783-4018.';
     $('pqRetry').hidden=false;});}
 function submitPQ(){
   if(submitting)return;submitting=true;const sb=$('wiz').querySelector('[data-w=submit]');if(sb){sb.disabled=true;sb.textContent='Opening your results…';}
@@ -597,7 +597,7 @@ function teaser(){const pr=+$('tz-price').value,dp=+$('tz-down').value,down=pr*d
   $('tz-pay').innerHTML=usd(tot)+'<span>/mo</span>';$('tz-pi').textContent=usd(pi);$('tz-ti').textContent=usd(ti);$('tz-bpi').style.width=(pi/tot*100).toFixed(1)+'%';say(`Estimated monthly payment ${usd(tot)}.`);}
 ['tz-price','tz-down'].forEach(id=>$(id).addEventListener('input',teaser));
 document.addEventListener('click',e=>{if(!e.target.closest('[data-carry]')||!$('pqResults').hidden)return;const pr=+$('tz-price').value;
-  ans.price=pr;ans.down=Math.min(200000,Math.round(pr*+$('tz-down').value/100/1000)*1000);carried=true;});
+  ans.price=pr;ans.down=Math.min(270000,Math.round(pr*+$('tz-down').value/100/1000)*1000);carried=true;});
 
 /* ---------- the closing call to action speaks to the page it's on ---------- */
 const CTA={buy:['Know what you can afford before you fall for a house.','buy'],refinance:['See what a refinance could do for your payment.','refi'],

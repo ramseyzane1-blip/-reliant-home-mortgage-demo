@@ -76,7 +76,8 @@ placeholders.
   under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
   (price and down payment sliders; the estimate uses the same math as the results page, and
   its button carries both numbers into the pre-qualification) → how it works → the team →
-  reviews → closing band. The first screen should always show the top of the next section.
+  reviews → closing band. At 1440×900 the top of the "at a glance" strip shows on the first screen,
+  so the page never looks finished there.
 - **Closing band:** its headline fits the page and its button presets the pre-qualification
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
 - **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
