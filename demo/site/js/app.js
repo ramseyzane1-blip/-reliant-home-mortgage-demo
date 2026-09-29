@@ -661,7 +661,13 @@ function route(){
 addEventListener('hashchange',route);
 (()=>{if(!('IntersectionObserver' in window))return;const seen=new Set(),io=new IntersectionObserver(es=>{es.forEach(e=>e.isIntersecting?seen.add(e.target):seen.delete(e.target));document.body.classList.toggle('cta-in-view',seen.size>0);});
   document.querySelectorAll('main a.btn-primary[href="#start"],main .btn-go,#ctaGo').forEach(el=>io.observe(el));})();
-addEventListener('scroll',()=>document.querySelector('header').classList.toggle('scrolled',scrollY>8),{passive:true});
+{const hdr=document.querySelector('header'),narrow=matchMedia('(max-width:1040px)');let lastY=scrollY;
+  addEventListener('scroll',()=>{const y=scrollY,dy=y-lastY;hdr.classList.toggle('scrolled',y>8);
+    // phones: hide the header while scrolling down, show it on the way back up (never while its menu is open or it has focus)
+    if(!narrow.matches||y<hdr.offsetHeight||!$('drawer').hidden||hdr.contains(document.activeElement))hdr.classList.remove('hdr-away');
+    else if(dy>6)hdr.classList.add('hdr-away');else if(dy<-6)hdr.classList.remove('hdr-away');
+    if(Math.abs(dy)>6||y<hdr.offsetHeight)lastY=y;},{passive:true});
+  hdr.addEventListener('focusin',()=>hdr.classList.remove('hdr-away'));}
 // phone menu: closes on any link (even the page you're on), a tap outside the header, scrolling the page, or widening past the menu breakpoint
 function setDrawer(open){$('drawer').hidden=!open;$('burger').setAttribute('aria-expanded',open);$('burger').textContent=open?'Close':'Menu';document.body.classList.toggle('drawer-open',open);}
 $('burger').addEventListener('click',()=>setDrawer($('drawer').hidden));
