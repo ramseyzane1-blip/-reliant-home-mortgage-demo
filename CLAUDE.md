@@ -106,10 +106,23 @@ September 2026 audit of the original site.
   The light closing band is the one green block.
 - **Closing band:** its headline fits the page and its button presets the pre-qualification
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
-- **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
-  moves faster early and never starts empty, number answers you can type ("250k" works),
+- **Pre-qualification:** named stages ("Your plans · Question 1 of 11"), a progress bar that
+  moves faster early and never starts empty (fast-to-slow bars cut drop-off in a 32-experiment
+  meta-analysis; constant ones don't), number answers you can type ("250k" works),
   "your best guess is fine" help, a note that phone or email is enough, and the license
   line above "See my results". The header button and the phone quick bar hide on this page.
+  Buyers are asked household income and monthly debts, so the results can lead with "What you may
+  be able to afford" (the Learn calculator's math: housing up to 43% of gross income, less debts).
+  Answers that depend on each other are kept possible (down payment at most the price, balance at
+  most the home's value). The down payment help says many loans need far less than 20% down (Fannie
+  Mae: 90% of people overstate or don't know the minimum). "What happens next" says the loan officer
+  calls the phone or emails the address the visitor gave, and that mortgage credit checks within 45
+  days count as one (CFPB). Answers and results survive a reload in the same tab (sessionStorage).
+- **Reviews:** every star rating is offered the Google review link; 1 to 3 stars also get "Tell us
+  what happened". Asking only happy clients for public reviews ("review gating") breaks Google's
+  review policy.
+- **Other forms** (Question, Reliant Letter) check required fields before saving, with the message
+  under the field, and use autocomplete.
 - **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
 - NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
 
