@@ -83,7 +83,8 @@ async def main():
         pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
         await wp.start_walk(pg); await pg.click('.ds [data-ds=sound]'); await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1200)
         res['page_visible_after_walk'] = await pg.evaluate("!document.body.classList.contains('ds-covered')")
-        await pg.wait_for_timeout(1000); await pg.click('#modalBtns button')   # the demo notice
+        await pg.wait_for_timeout(1000)
+        if await pg.is_visible('#modalBtns button'): await pg.click('#modalBtns button')   # a demo notice modal, if any (the pre-qualification's is inline)
         await pg.click('#results details summary'); await pg.click('#redo'); await pg.wait_for_timeout(400)
         for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
             await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
