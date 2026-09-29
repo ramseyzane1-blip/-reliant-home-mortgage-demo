@@ -59,7 +59,7 @@ function create(box,canvas,views,opt){
  const N=n,all=views;
  const tex=all.map(()=>null),gen=all.map(()=>0),dec=all.map(()=>null),busy=all.map(()=>false),fails=all.map(()=>0),retry=all.map(()=>0);
  let dirty=true,cur=0,texSize=0,texGen=1,started=false,allFetched=false,lost=false;
- const POOL=(navigator.deviceMemory&&navigator.deviceMemory<4)?16:n;
+ const POOL=(navigator.deviceMemory&&navigator.deviceMemory<4)?16:matchMedia('(pointer: coarse)').matches?Math.min(n,36):n;   /* phones: at most ~74 MB of frames on the GPU */
  const A=views.map(v=>v.a),adist=(i,th)=>Math.abs(((A[i]-th)%360+540)%360-180);
  /* use the copy the fallback <img> already loaded (so frame 0 is not fetched twice); before it has chosen, pick by size: phones get the 768px copies */
  const small=()=>{const s=opt.front&&opt.front.currentSrc;return s?s.indexOf('/sm/')>=0&&texSize<=768:texSize<=768;};

@@ -2,7 +2,10 @@
 
     python3 tools/blender/fetch_assets.py
     python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64     (about 80 minutes on 4 CPU cores)
-    python3 tools/house_views.py /tmp/turn                              (needs numpy, opencv-python-headless, pillow)
+    python3 tools/house_views.py /tmp/turn [/tmp/mid]                   (needs numpy, opencv-python-headless, pillow)
+
+/tmp/mid holds optional in-between renders (house_scene.py angles mode, files *_ROT.png) for the
+pairs where the morph is not good enough; HOUSE_VIEWS angles need not be evenly spaced.
 
 One step, into demo/site/images/turn/:
 - fixed.webp: everything that looks the same in every frame (most of the ring and the front of the
@@ -97,11 +100,19 @@ def save(im, name, alpha=(80, 70)):
     im.resize((SMALL, SMALL), Image.LANCZOS).save(os.path.join(OUT, 'turn', 'sm', name), quality=72, method=6, alpha_quality=alpha[1])
 
 
-def main(src):
-    files = sorted(glob.glob(os.path.join(src, 'turn-*.png')))
-    # Blender turns the house counter-clockwise by i*step; the site numbers views the other way so
-    # that dragging to the right turns the house to the right
-    files = [files[(len(files) - j) % len(files)] for j in range(len(files))]
+def main(src, extra=None):
+    """src: Blender frames turn-NNN.png, evenly spaced. extra: optional folder of in-between renders
+    named *_ROT.png (ROT = Blender rotation in degrees, from house_scene.py angles mode), added
+    only where the morph between two frames is not good enough."""
+    uni = sorted(glob.glob(os.path.join(src, 'turn-*.png')))
+    shots = [((360 - i * 360 / len(uni)) % 360, f) for i, f in enumerate(uni)]
+    # Blender turns the house counter-clockwise; the site angle runs the other way so that
+    # dragging to the right turns the house to the right
+    if extra:
+        for f in glob.glob(os.path.join(extra, '*_*.png')):
+            shots.append(((360 - float(re.findall(r'_([\d.]+)\.png$', f)[0])) % 360, f))
+    shots.sort()
+    angles = [a for a, _ in shots]; files = [f for _, f in shots]
     os.makedirs(os.path.join(OUT, 'turn', 'sm'), exist_ok=True)
     F = np.stack([np.asarray(Image.open(f).convert('RGBA')) for f in files])
     med = np.median(F, 0)
@@ -130,8 +141,8 @@ def main(src):
     ver = h.hexdigest()[:8]
     app = os.path.join(ROOT, 'demo', 'site', 'js', 'app.js')
     js = open(app, encoding='utf-8').read()
-    line = ("const HOUSE_VIEWS=Array.from({length:%d},(_,i)=>{const p=String(i).padStart(3,'0');"
-            "return {f:`images/turn/turn-${p}.webp`,s:`images/turn/sm/turn-${p}.webp`,a:i*%s};});") % (len(files), '%g' % (360 / len(files)))
+    line = ("const HOUSE_VIEWS=[%s].map((a,i)=>{const p=String(i).padStart(3,'0');"
+            "return {f:`images/turn/turn-${p}.webp`,s:`images/turn/sm/turn-${p}.webp`,a};});") % ','.join('%g' % a for a in angles)
     js, k = re.subn(r"const HOUSE_VIEWS=[^\n]*;", lambda m: line, js, count=1)
     assert k == 1, 'HOUSE_VIEWS not found in app.js'
     for path, text in ((app, js), (os.path.join(ROOT, 'demo', 'site', 'index.html'), None)):
@@ -142,4 +153,4 @@ def main(src):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
