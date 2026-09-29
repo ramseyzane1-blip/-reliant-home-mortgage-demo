@@ -353,7 +353,7 @@ function renderPros(){const p=PROS[proK];$('proPanel').innerHTML=`<div class="gr
 
 /* ---------- hero: the model home, turnable ---------- */
 const HOUSE_VIEWS=[{"f": "images/house-00.jpg", "a": 0}, {"f": "images/house-01.jpg", "a": 14}, {"f": "images/house-02.jpg", "a": 25}, {"f": "images/house-03.jpg", "a": 36}, {"f": "images/house-04.jpg", "a": 90}, {"f": "images/house-05.jpg", "a": 135}, {"f": "images/house-06.jpg", "a": 180}, {"f": "images/house-07.jpg", "a": 225}, {"f": "images/house-08.jpg", "a": 270}, {"f": "images/house-09.jpg", "a": 318}, {"f": "images/house-10.jpg", "a": 327}, {"f": "images/house-11.jpg", "a": 340}, {"f": "images/house-12.jpg", "a": 348}];
-(()=>{const box=$('hphoto');try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,bg:[.949,.918,.882],depth:'images/house-depth.bin'});if(!tt)box.classList.add('static');window.__turntable=tt;}catch(e){box.classList.add('static');}})();
+(()=>{const box=$('hphoto');try{if(!Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,bg:[.949,.918,.882]}))box.classList.add('static');}catch(e){box.classList.add('static');}})();
 
 /* ---------- knock, the door opens, walk inside ---------- */
 let soundOn=true;
