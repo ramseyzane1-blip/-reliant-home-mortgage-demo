@@ -33,10 +33,13 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+                            turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
 demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
+tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
+tools/house_views.py        turns the Blender frames into turn/*.webp + turn/flow-*.bin
 ```
 
 ## Decisions the client has made (don't undo these)
@@ -61,6 +64,13 @@ tools/smoke_test.py         Playwright end-to-end test
 - **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice (inline on
   the pre-qualification results, so nothing covers them; a modal for the other forms).
 - Blog and newsletter are merged into "The Reliant Letter" on About us.
+
+**Proposed, pending client sign-off:** the hero turntable now shows a 3D model of the same house
+(rendered in Blender, see below) instead of the AI renders, so it can turn a full 360° without
+ghosting. The walk-through still uses the AI renders; the model matches them closely (siding,
+trim, roof, windows, portico, glazed green door with sidelights and lanterns) but not exactly
+(for example, round portico columns instead of square). Renders still appear only in the two 3D
+pieces.
 
 ## Content sources
 
@@ -89,13 +99,55 @@ placeholders.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with its
-own depth relief (`images/house-depth.bin`, made by `tools/turntable_depth.py`; real depth on the
-house and plinth, the ring and backdrop stay flat), rotated up to ±22° and cross-dissolved with the
-next view in a narrow window at the midpoint. Until the depth loads it uses the old simple model
-(house plane, sloped lawn, ±17°). All textures load up front and upload one per frame after the
-first paint, resized to 1024 off the main thread and mipmapped. Drag, arrow keys, or idle sway
-around the front.
+**Turntable** (hero): a real 3D model of the house, built in code in Blender
+(`tools/blender/house_scene.py`) and rendered as a 360° turn: 55 frames, every 10° around the front
+and every 5° on the sides and back (where 10° steps ghosted mid-morph), with a transparent background so the house, plinth and ring float on the page with no card (client
+request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
+model has lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed
+green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
+gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and shrubs.
+
+Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
+`fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
+of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
+each; `sm/`, 768px copies for phones, about 64 KB each; the optical flow in two files,
+`flow-front.bin` (the 8 pairs within ±40° of the front: 35 KB, 18 KB as served, brotli) and
+`flow-rest.bin` (the other 47: 205 KB, 90 KB as served). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
+
+In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along
+precomputed optical flow while they blend; the fixed layer goes on top, still (drawn only over
+the tiles where it has content), so the ring never ghosts. The front frame and the fixed layer
+are preloaded with the page as two stacked `<img>`s (the Largest Contentful Paint on desktop and
+on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile, was 3.8 s), with
+`sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
+hero is about to scroll into view: then the front flow and the two frames next to the front
+(the hero is ready once those are in), then the rest of the 9 frames the idle sway uses (front
+±40°), then the rest of the flow and the frames once those are in or the visitor starts turning.
+A pair whose flow has not arrived yet simply crossfades; a flow that lands while its pair is on
+screen waits until the turn moves on, so nothing pops. On a throttled phone profile the hero is
+interactive after about 430 KB at 3.2 s (one flow file: 650 KB at 4.6 to 5.2 s).
+Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
+the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
+on screen is missing; the decoded copy is released after upload. Touch devices and devices
+reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the 16 nearest on the GPU
+(about 29 MB on a 390px phone); the others are fetched into the HTTP cache and decoded again
+when needed. About a second after the hero is well out of view (scrolled away, another page, or
+the walk-through, which also puts it to sleep directly) it releases every texture and its
+drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
+(ready in about 0.2 s). At the walk's peak on a 390px phone that leaves only the walk's textures
+on the GPU (73 MB with drawing buffers; was 139 MB with the hero's 63 MB still held). Failed
+frames retry with backoff. Drag, arrow
+keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
+without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
+drops the drag and keyboard hints.
+
+To change the house: edit `house_scene.py`, preview with
+`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
+and `python3 tools/blender/fetch_assets.py` once), render with
+`python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU
+cores) plus the 5° in-betweens with `angles 960 /tmp/mid/b 64 <Blender rotations>` (the current set:
+45 55 65 75 85 95 105 115 125 135 195 225 235 265 275 285 295 305 315), then run
+`python3 tools/house_views.py /tmp/turn /tmp/mid`. See `tools/README.md`.
 
 **Walk** (after the pre-qualification is submitted): WebGL (WebGL2 where available), one canvas.
 Each render is a 3D relief: a mesh with per-vertex depth from Depth Anything V2
@@ -144,11 +196,10 @@ toggle and audio context lifecycle, keyboard look-around, focus ring, 390/1280 l
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. Done: turntable textures up front, 1024 + mipmaps.
+1. Done: the hero turntable is a real 3D model rendered from every angle (see above).
 2. Done for the walk: depth reliefs, steering, center-out handoffs, one exposure grade and a
    consistent approach (the far shot `approach-1`, a different porch design, was dropped; the
-   porch pendant was added to `approach-2`). The turntable now uses depth too; its side and back
-   views are 45° apart, so a short blend remains right at each midpoint.
+   porch pendant was added to `approach-2`).
 3. Done: the walk is WebGL.
 4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
@@ -172,7 +223,7 @@ the project; greaterpurposeweb.com is the account's existing domain.
 
 ## Testing
 
-`tools/smoke_test.py` walks every page at 390px (no sideways scroll allowed), completes the
+`tools/smoke_test.py` checks the hero turntable (loads with its flow, turns when dragged), walks every page at 390px (no sideways scroll allowed), completes the
 pre-qualification including an Edit from the review step, renders walk-through frames and
 takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
 hermetic). Run it before pushing visual changes, with `pip install playwright==1.56.0` (matches the

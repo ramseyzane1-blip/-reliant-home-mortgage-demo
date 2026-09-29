@@ -4,7 +4,8 @@ Usage (from the repo root):
     python3 -m http.server 8765 &        # serve the repo
     python3 tools/smoke_test.py          # needs: pip install playwright && playwright install chromium
 
-Checks every page at phone width for sideways scrolling, walks the full pre-qualification
+Checks the hero turntable (loads with its flow, turns when dragged), checks every page at phone
+width for sideways scrolling, walks the full pre-qualification
 (including an Edit from the review step), plays the walk-through, and saves screenshots to
 tools/out/. WebGL runs through SwiftShader so it works headless.
 """
@@ -29,6 +30,23 @@ async def main():
         # keep test submissions out of the real Supabase tables (set SMOKE_REAL_DB=1 to send them)
         if not os.environ.get('SMOKE_REAL_DB'):
             await pg.route('**/rest/v1/**', lambda r: r.fulfill(status=201, body=''))
+        # hero turntable, on a reduced-motion page so the idle sway cannot hide a broken drag: it
+        # becomes ready with its flow loaded, and dragging right turns it (the angle goes down)
+        tp = await b.new_page(viewport={'width': 1280, 'height': 800}, reduced_motion='reduce')
+        tp.on('pageerror', lambda e: errs.append('turntable page: ' + str(e)))
+        await tp.goto(URL)
+        try:
+            await tp.wait_for_function("window.__turntable&&window.__turntable.ready()", timeout=30000)
+        except Exception:
+            errs.append('turntable never became ready (frames or flow missing)')
+        hero = await tp.query_selector('#hphoto'); bb = await hero.bounding_box()
+        a0 = await tp.evaluate('window.__turntable.angle()')
+        await tp.mouse.move(bb['x'] + bb['width'] * .3, bb['y'] + bb['height'] / 2); await tp.mouse.down()
+        await tp.mouse.move(bb['x'] + bb['width'] * .7, bb['y'] + bb['height'] / 2, steps=10); await tp.mouse.up()
+        await tp.wait_for_timeout(1200)
+        a1 = await tp.evaluate('window.__turntable.angle()')
+        if not a1 < a0 - 40: errs.append(f'dragging the turntable did not turn it ({a0:.0f} -> {a1:.0f} degrees)')
+        await tp.close()
         await pg.goto(URL); await pg.wait_for_timeout(2500)
         print('turntable:', await pg.evaluate("document.getElementById('hphoto').className"))
         await pg.screenshot(path=f'{OUT}/home.png')

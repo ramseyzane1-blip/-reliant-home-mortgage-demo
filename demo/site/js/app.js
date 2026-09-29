@@ -370,8 +370,10 @@ function renderPros(){const p=PROS[proK];$('proPanel').innerHTML=`<div class="gr
   <div style="display:grid;gap:12px"><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><p class="fine">Demo layout. Reliant adds the partners they already refer clients to.</p></div></div>`;}
 
 /* ---------- hero: the model home, turnable ---------- */
-const HOUSE_VIEWS=[{"f": "images/house-00.jpg", "a": 0}, {"f": "images/house-01.jpg", "a": 14}, {"f": "images/house-02.jpg", "a": 25}, {"f": "images/house-03.jpg", "a": 36}, {"f": "images/house-04.jpg", "a": 90}, {"f": "images/house-05.jpg", "a": 135}, {"f": "images/house-06.jpg", "a": 180}, {"f": "images/house-07.jpg", "a": 225}, {"f": "images/house-08.jpg", "a": 270}, {"f": "images/house-09.jpg", "a": 318}, {"f": "images/house-10.jpg", "a": 327}, {"f": "images/house-11.jpg", "a": 340}, {"f": "images/house-12.jpg", "a": 348}];
-(()=>{const box=$('hphoto');try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,bg:[.949,.918,.882],depth:'images/house-depth.bin'});if(!tt)box.classList.add('static');window.__turntable=tt;}catch(e){box.classList.add('static');}})();
+const HOUSE_VIEWS=[0,10,20,30,40,45,50,55,60,65,70,75,80,85,90,95,100,110,120,125,130,135,140,150,160,165,170,180,190,200,210,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,330,340,350].map((a,i)=>{const p=String(i).padStart(3,'0');return {f:`images/turn/turn-${p}.webp?v=d35d0ecb`,s:`images/turn/sm/turn-${p}.webp?v=d35d0ecb`,a};});
+(()=>{const box=$('hphoto'),front=box.querySelector('.hp-fallback');
+ const still=()=>{box.classList.add('static');box.removeAttribute('tabindex');box.setAttribute('aria-label','Model of a family home.');};   /* no WebGL: a still picture */
+ try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:{front:'images/turn/flow-front.bin?v=d35d0ecb',rest:'images/turn/flow-rest.bin?v=d35d0ecb'},fixed:{f:'images/turn/fixed.webp?v=d35d0ecb',s:'images/turn/sm/fixed.webp?v=d35d0ecb'},front,lost:still});if(!tt)still();window.__turntable=tt;}catch(e){still();}})();
 
 /* ---------- knock, the door opens, walk inside ---------- */
 let soundOn=true;
@@ -445,6 +447,7 @@ function playDoor(name,done){
   addEventListener('resize',turned);addEventListener('hashchange',finish); // Back or a link mid-walk ends it
   ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';if(snd)snd.mute(!soundOn);}});
   ds.addEventListener('keydown',e=>{if(e.key==='Escape')finish();});
+  if(window.__turntable)window.__turntable.sleep();   /* the hero gives its GPU memory back for the walk */
   Promise.race([Walk.preload().then(a=>a.every(Boolean)),new Promise(r=>setTimeout(()=>r(false),7000))]).then(ok=>{
     if(stopped)return;if(!ok){finish();return;}q('.ds-load').remove();
     wopts={cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,onLost:finish,

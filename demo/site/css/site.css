@@ -129,13 +129,15 @@ header.scrolled{box-shadow:0 10px 30px -22px rgba(16,32,26,.45)}
 .face+.face{margin-left:-10px}
 .trust p{font-size:.93rem;line-height:1.45}
 .trust button{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:700;cursor:pointer;text-align:left}
-.hphoto{position:relative;justify-self:end;width:100%;max-width:560px;aspect-ratio:1/1;border-radius:26px;overflow:hidden;background:#f2eae1;box-shadow:0 40px 70px -34px rgba(16,32,26,.45),0 0 0 1px rgba(16,32,26,.06);cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.hphoto{grid-area:photo;position:relative;justify-self:end;width:100%;max-width:560px;aspect-ratio:1/1;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;border-radius:18px}
 .hphoto.drag{cursor:grabbing}
-.hphoto .hp-fallback{display:block;width:100%;height:100%;object-fit:cover}
-.hphoto canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s}
+.hphoto .hp-fallback,.hphoto .hp-fixed{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.hphoto canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0}
 .hphoto.ready canvas{opacity:1}
-.hp-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:.8rem;font-weight:600;color:#10201a;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);border-radius:999px;padding:7px 14px;box-shadow:0 4px 14px rgba(16,32,26,.12);pointer-events:none;transition:opacity .5s}
+.hphoto.ready .hp-fallback,.hphoto.ready .hp-fixed{visibility:hidden}
+.hp-hint{z-index:2;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:.8rem;font-weight:600;color:#10201a;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);border-radius:999px;padding:7px 14px;box-shadow:0 4px 14px rgba(16,32,26,.12);pointer-events:none;transition:opacity .5s}
 .hphoto.used .hp-hint{opacity:0}
+.hphoto.static{cursor:default}.hphoto.static .hp-hint{display:none}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;grid-template-areas:"copy" "photo" "trust";padding-block:36px 44px;row-gap:32px}.hphoto{justify-self:center;max-width:480px}.hero-trust{grid-template-columns:1fr}.hero-trust .trust{flex-wrap:wrap}}
 
 /* at a glance */
