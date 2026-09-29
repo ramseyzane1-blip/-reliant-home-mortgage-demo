@@ -413,16 +413,24 @@ function playDoor(name,done){
   const ds=document.createElement('div');ds.className='ds';ds.setAttribute('role','dialog');ds.setAttribute('aria-modal','true');ds.setAttribute('aria-label','Welcome home');ds.tabIndex=-1;
   ds.innerHTML=`<div class="ds-view"></div><p class="ds-load" aria-live="polite">Opening the door…</p>
    <div class="ds-ui"><p class="ds-cap"></p><div class="ds-actions"><button class="btn btn-white btn-lg" data-ds="go">See my results →</button><p class="ds-hint">Move or drag to look around</p></div></div>
-   <div class="ds-top"><button data-ds="sound">Sound on</button><button data-ds="go">Skip</button></div>`;
-  document.body.appendChild(ds);const shown=performance.now();requestAnimationFrame(()=>ds.classList.add('on'));ds.focus({preventScroll:true});
+   <div class="ds-top"><button data-ds="sound" aria-pressed="${!soundOn}">${soundOn?'Sound on':'Sound off'}</button><button data-ds="go">Skip</button></div>`;
+  document.body.appendChild(ds);const shown=performance.now();requestAnimationFrame(()=>ds.classList.add('on'));
+  ds.focus({preventScroll:true});
+  // once the overlay is opaque, stop painting the page beneath it (restored before it fades out)
+  ds.addEventListener('transitionend',e=>{if(e.target===ds&&ds.classList.contains('on')&&!ds.classList.contains('out'))document.body.classList.add('ds-covered');});
   const q=x=>ds.querySelector(x);let P=null,stopped=false;
-  function finish(){if(stopped)return;stopped=true;if(P)P.stop();if(snd)snd.stop();ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
-  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';if(snd)snd.mute(!soundOn);}});
+  function finish(){if(stopped)return;stopped=true;removeEventListener('resize',turned);if(P)P.stop();P=null;if(window.__walk)window.__walk=null;if(snd)snd.stop();document.body.classList.remove('ds-covered');ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
+  // turning the phone mid-walk flips which shot the door opens on: rebuild the walk at the same moment
+  let wopts=null;const turned=()=>{if(stopped||!P||!P.started)return;const tall=innerHeight>innerWidth*1.1;if(tall===P.tall)return;
+    const t=P.time();P.stop();const v=q('.ds-view');v.querySelector('canvas')?.remove();P=Walk.play(v,{...wopts,startAt:t});if(!P){finish();return;}window.__walk=P;P.start();};
+  addEventListener('resize',turned);
+  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';b.setAttribute('aria-pressed',!soundOn);if(snd)snd.mute(!soundOn);}});
   ds.addEventListener('keydown',e=>{if(e.key==='Escape')finish();});
   Promise.race([Walk.preload().then(a=>a.every(Boolean)),new Promise(r=>setTimeout(()=>r(false),7000))]).then(ok=>{
     if(stopped)return;if(!ok){finish();return;}q('.ds-load').remove();
-    P=Walk.play(q('.ds-view'),{cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
-      onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');if(g&&!stopped)g.focus({preventScroll:true});},60);}});
+    wopts={cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
+      onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');const f=document.activeElement;if(g&&!stopped&&(f===ds||!ds.contains(f)))g.focus({preventScroll:true});},60);}};
+    P=Walk.play(q('.ds-view'),wopts);
     if(!P){finish();return;}window.__walk=P;
     setTimeout(()=>{if(!stopped)P.start();},Math.max(0,950-(performance.now()-shown)));}); // start once the overlay has faded in: nothing blends over the walk
 }

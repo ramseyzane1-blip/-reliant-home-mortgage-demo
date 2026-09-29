@@ -73,23 +73,44 @@ simple depth model (house plane, lawn sloping toward the viewer, a per-vertex we
 keeps the outer ring fixed), rotated up to ±17° and cross-dissolved with the next view.
 Drag, arrow keys, or idle sway around the front.
 
-**Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
-a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
-`tools/walk_depth.py`), normalized so the shot's anchor (door or fireplace) is at depth 1. The camera
-follows the anchor; zooming in is turned into walking forward through the relief (`DOLLY`), and
-walking bob, breathing and the pointer move the head (real parallax). Each shot enters exactly as
-rendered. Handoffs: a shot waits until it is sharp and the camera has lined it up (the camera steers
-so both shots can put the anchor on the same pixel, which matters on tall phones), then it is
-revealed from the anchor outward while the outgoing shot keeps dollying to the depth where it best
-matches (`THRU`, fit to SIFT matches). Exposure is graded like one camera (`CORR`, `NATIVE`). The door
-leaf is a perspective quad hinged on the left, with the open-door render in the doorway. The door
-sequence: three knocks (each nudges the camera and the door), the hall light warms the door glass,
-footsteps, the lock turns, the door cracks open with a line of light, then swings wide on an
+**Walk** (after the pre-qualification is submitted): WebGL (WebGL2 where available), one canvas.
+Each render is a 3D relief: a mesh with per-vertex depth from Depth Anything V2
+(`images/walk-depth.bin`, made by `tools/walk_depth.py`), normalized so the shot's anchor (door or
+fireplace) is at depth 1. The camera follows the anchor; zooming in is turned into walking forward
+through the relief (`DOLLY`), and walking bob, breathing and the pointer move the head (real
+parallax). Shots: `approach-2…4`, `door` (desktop only), `door-open`, `inside-1…4`. Each shot enters
+exactly as rendered, once it is sharp and the camera has lined it up (on tall screens the camera
+steers, on a critically damped spring, so both shots can put the anchor on the same pixel), and is
+revealed from the anchor outward while the outgoing shot dollies to the depth where it best matches
+(`THRU`). One fade at a time: approach .55s, door to open door .75s, rooms .85s. Exposure is graded
+like one camera (`CORR`, `NATIVE`, from `tools/walk_grade.py`). The vignette, caption scrim, warm
+spill and the fade in from black are applied inside the shaders, so nothing in the page blends over
+the canvas (the page beneath is hidden while the overlay is opaque).
+
+On tall screens (height > 1.1 × width) the approach ends on the porch shot `approach-4` and the door
+opens there (the close-up would fill the width); you knock from a step back, then step up while the
+footsteps come. The door rig (leaf as a perspective quad hinged on the left, the open-door render in
+the doorway, the crack of light, spill, hall-light glow on the glass) scales to whichever shot ends
+the approach. The door sequence: three knocks (each nudges the camera and the door), the hall light
+warms the door glass, footsteps, the lock turns, the door cracks open, then swings wide on an
 underdamped spring. All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks,
-footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`.
-It ends in a look-around in the last room (mouse, drag or arrows turn the view and move the head)
-until the visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`.
-Without WebGL the walk is skipped.
+footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`,
+scheduled against the audio clock (measured within ~15ms of the visual beat). It ends in a
+look-around in the last room (mouse, drag or arrow keys turn the view and move the head) until the
+visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`. Without WebGL, or
+with `prefers-reduced-motion`, the walk is skipped.
+
+Performance and memory: a software renderer (SwiftShader, llvmpipe) is detected and drawn at .3
+scale with a coarse mesh and mipmaps; a governor steps the scale with frame time; a GPU draws at
+full resolution. Every shot is drawn once behind the loading overlay (warm-up), and the walk starts
+once the overlay has faded in. Textures: the approach, door and doorway view upload at start; the
+rooms stream in during the knock (four bands, one per frame, decoded off the main thread); each
+shot is freed once passed. Test hooks on `window.__walk`: `render(t)`, `stop()`, `time()`,
+`scale(v)`, `mem()`, `look()`, `probe()`, `shots()`.
+
+Tools: `tools/walk_perf.py` (frame pacing unthrottled and at 4× CPU throttle, audio sync, texture
+memory, a 30fps scrub for pops and stray blends) and `tools/walk_checks.py` (reduced motion, sound
+toggle and audio context lifecycle, keyboard look-around, focus ring, 390/1280 light/dark).
 
 ## Known issues / next up: make the 3D smooth
 
@@ -98,10 +119,10 @@ The client's feedback: "getting better, but clunky and not smooth." Planned fixe
 1. **Turntable textures.** Upload all 13 textures up front, one per frame after first paint,
    instead of on demand (the texImage2D hitch during a drag is the main stutter). Resize
    renders to 1024×1024 so they can mipmap.
-2. Done for the walk: depth reliefs, steering, center-out handoffs and one exposure grade. What is
-   left there comes from the renders themselves (for example, the porch lantern differs between
-   approach shots); fixing that needs consistent re-renders. The turntable still cross-dissolves;
-   the same depth approach would help it.
+2. Done for the walk: depth reliefs, steering, center-out handoffs, one exposure grade and a
+   consistent approach (the far shot `approach-1`, a different porch design, was dropped; the
+   porch pendant was added to `approach-2`). The turntable still cross-dissolves; it belongs to
+   the turntable work (`claude/admiring-maxwell-trn3ea`).
 3. Done: the walk is WebGL.
 4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
@@ -127,7 +148,9 @@ the project; greaterpurposeweb.com is the account's existing domain.
 
 `tools/smoke_test.py` walks every page at 390px (no sideways scroll allowed), completes the
 pre-qualification including an Edit from the review step, renders walk-through frames and
-takes screenshots. Run it before pushing visual changes.
+takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
+hermetic). Run it before pushing visual changes, with `pip install playwright==1.56.0` (matches the
+pre-installed Chromium). For the walk also run `tools/walk_perf.py` and `tools/walk_checks.py`.
 
 ## Accessibility & quality bar
 

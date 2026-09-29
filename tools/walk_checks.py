@@ -28,6 +28,48 @@ async def main():
         try: await wp.start_walk(pg); res['reduced_motion_skips_walk'] = False
         except Exception: res['reduced_motion_skips_walk'] = await pg.evaluate("!window.__walk && !document.querySelector('.ds') && !document.getElementById('pqResults').hidden")
         await ctx.close()
+        # Escape closes the walk early (the dialog has focus from the start)
+        ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await wp.start_walk(pg); await pg.wait_for_timeout(2000)
+        res['dialog_has_focus'] = await pg.evaluate("document.activeElement === document.querySelector('.ds')")
+        await pg.keyboard.press('Escape'); await pg.wait_for_timeout(1300)
+        res['escape_closes'] = await pg.evaluate("!document.querySelector('.ds') && !document.getElementById('pqResults').hidden && window.__walk === null")
+        await ctx.close()
+        # turning the phone mid-walk rebuilds it at the same moment, without replaying sounds
+        ctx = await b.new_context(viewport={'width': 390, 'height': 844})
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await pg.add_init_script('window.__cues = []')
+        await pg.goto(wp.URL + '#start'); await pg.wait_for_timeout(300)
+        await pg.evaluate("(() => { const real = window.doorAudio; window.doorAudio = ac => { const a = real(ac); const c = a.cue; a.cue = (n, i, d) => { __cues.push(n); c(n, i, d); }; return a; }; })()")
+        await pg.route('**/rest/v1/**', lambda r: r.fulfill(status=201, body=''))
+        await pg.route('**fonts.googleapis.com**', lambda r: r.fulfill(status=200, body='', content_type='text/css'))
+        for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
+            await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
+        await pg.fill('#pq-name', 'Test'); await pg.fill('#pq-phone', '513-555-0100')
+        await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
+        await pg.click('#wiz [data-w=submit]')
+        await pg.wait_for_function('window.__walk && __walk.time() > 8.3', timeout=120000)
+        t0 = await pg.evaluate('__walk.time()'); tall0 = await pg.evaluate('__walk.tall')
+        await pg.set_viewport_size({'width': 844, 'height': 390}); await pg.wait_for_timeout(1200)
+        tall1 = await pg.evaluate('__walk.tall'); t1 = await pg.evaluate('__walk.time()'); nc = await pg.evaluate("document.querySelectorAll('.wk-canvas').length")
+        res['rotate_rebuilds'] = f'tall {tall0} -> {tall1}, walk time {t0:.1f} -> {t1:.1f}, canvases {nc}'
+        await pg.wait_for_function('__walk.time() > 12.5', timeout=120000)
+        res['knocks_heard_once'] = (await pg.evaluate('__cues')).count('knock') == 3
+        await ctx.close()
+        # a mute carries over to the next walk, and the button says so
+        ctx = await b.new_context(viewport={'width': 1280, 'height': 800})
+        pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append(str(e)))
+        await wp.start_walk(pg); await pg.click('.ds [data-ds=sound]'); await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1200)
+        res['page_visible_after_walk'] = await pg.evaluate("!document.body.classList.contains('ds-covered')")
+        await pg.wait_for_timeout(1000); await pg.click('#modalBtns button')   # the demo notice
+        await pg.click('#results details summary'); await pg.click('#redo'); await pg.wait_for_timeout(400)
+        for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
+            await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(280)
+        await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
+        await pg.click('#wiz [data-w=submit]'); await pg.wait_for_function('!!window.__walk', timeout=20000)
+        res['second_walk_sound_button'] = await pg.evaluate("document.querySelector('.ds [data-ds=sound]').textContent + ' / aria-pressed=' + document.querySelector('.ds [data-ds=sound]').getAttribute('aria-pressed')")
+        await ctx.close()
         for w, h in [(390, 844), (1280, 800)]:
             for scheme in ['light', 'dark']:
                 ctx = await b.new_context(viewport={'width': w, 'height': h}, color_scheme=scheme)
@@ -44,7 +86,9 @@ async def main():
                     res['sound_on_gain'] = round(await pg.evaluate('__gains[0].gain.value'), 4)
                 await pg.wait_for_function('__walk.time() > 18.2', timeout=120000)   # the look-around
                 await pg.wait_for_timeout(900)
-                await pg.keyboard.press('Shift+Tab'); await pg.keyboard.press('Tab')   # reach it by keyboard
+                for _ in range(6):   # reach it by keyboard, from wherever focus is
+                    await pg.keyboard.press('Tab')
+                    if (await pg.evaluate('document.activeElement.textContent')).startswith('See my results'): break
                 focus = await pg.evaluate("""(() => { const a = document.activeElement, s = getComputedStyle(a);
                   return {text: a.textContent.trim(), focus_visible: a.matches(':focus-visible'), outline: s.outlineStyle + ' ' + s.outlineWidth + ' ' + s.outlineColor}; })()""")
                 await pg.screenshot(path=os.path.join(OUT, f'walk_focus_{tag}.png'))

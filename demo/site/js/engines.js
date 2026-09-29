@@ -93,7 +93,7 @@ const SHOTS={
   {f:'images/inside-4.jpg',wh:W1448,a:[660,461,853,627]}]};
 const files=()=>{const s=new Set();SHOTS.approach.forEach(x=>s.add(x.f));SHOTS.inside.forEach(x=>s.add(x.f));s.add(SHOTS.open.f);return [...s];};
 const cache={},imgs={};
-function preload(){return Promise.all([depthLoad(),...files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>{imgs[f]=i;res(i);});};i.onerror=()=>res(null);i.src=f;})))]).then(r=>r.slice(1));}
+function preload(){return Promise.all([depthLoad(),...files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>{imgs[f]=i;res(i);});};i.onerror=()=>{delete cache[f];res(null);};i.src=f;})))]).then(r=>r.slice(1));}
 const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),seg=(t,a,b)=>cl((t-a)/(b-a)),ss=x=>x*x*(3-2*x),eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,t)=>a+(b-a)*t;
 const cx=r=>(r[0]+r[2])/2,cy=r=>(r[1]+r[3])/2,rw=r=>r[2]-r[0];
 /* Someone switches the hall light on: a warm wash over the door glass. The mask keeps only the
@@ -113,7 +113,7 @@ function glowCanvas(s,onLeaf){const img=imgs[s.f];if(!img)return null;
    through that relief and head motion is real parallax, so near things sweep past the far ones. */
 const DEPTH={file:'images/walk-depth.bin',shots:{"approach-2":[0,161,121],"approach-3":[19481,161,121],"approach-4":[38962,161,121],"door":[58443,151,130],"door-open":[78073,161,121],"inside-1":[97554,161,121],"inside-2":[117035,161,121],"inside-3":[136516,161,121],"inside-4":[155997,161,121]}};
 let depthBuf=null;
-let depthData;const depthLoad=()=>depthBuf||(depthBuf=fetch(DEPTH.file).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null).then(ab=>(depthData=ab)));
+let depthData;const depthLoad=()=>depthBuf||(depthBuf=fetch(DEPTH.file).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null).then(ab=>{if(!ab)depthBuf=null;return depthData=ab;})); // a failure is retried next time
 
 /* ---- WebGL: every shot is a textured mesh on one canvas; the door leaf is a true perspective quad ---- */
 /* A shot is photo-exact while uDolly is 0. uDolly moves the camera toward the anchor (depth 1):
@@ -144,7 +144,12 @@ ${POST}
 void main(){if(vNear<.01)discard;float a=uWipe.z>.5?clamp((uWipe.x*(1.+uWipe.y)-length(vQ-uWE)/uWR)/uWipe.y,0.,1.):uA;gl_FragColor=vec4(post(texture2D(uTex,vUV).rgb*uGain+uOff),a*vNear);}`;
 const VS_QUAD=`attribute vec4 aPos;attribute vec2 aUV;attribute vec2 aL;varying highp vec2 vUV;varying vec2 vL;
 void main(){gl_Position=aPos;vUV=aUV;vL=aL;}`;
-const FS_QUAD=`precision mediump float;uniform sampler2D uTex,uGlow;uniform int uMode;uniform float uA,uGlowA,uShade,uBright;uniform vec3 uGain,uOff;varying highp vec2 vUV;varying vec2 vL;
+const FS_QUAD=`#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+uniform sampler2D uTex,uGlow;uniform int uMode;uniform float uA,uGlowA,uShade,uBright;uniform vec3 uGain,uOff;varying vec2 vUV;varying vec2 vL;
 ${POST}
 void main(){
  if(uMode==0){vec4 c=texture2D(uTex,vUV);gl_FragColor=vec4(post((c.rgb*uGain+uOff)*uBright),c.a*uA);}
@@ -223,7 +228,8 @@ function play(root,opts){
  const TX={},mem={now:0,peak:0},MIP=SOFT;
  const account=d=>{mem.now+=d;mem.peak=Math.max(mem.peak,mem.now);};
  const size=(w,h,mip)=>w*h*4*(mip&&V.gl2?4/3:1);
- function upload(f,src){src=src||imgs[f];drop(f);const t=V.tex(src,MIP),b=size(src.naturalWidth||src.width,src.naturalHeight||src.height,MIP);TX[f]={t,b,ready:true};account(b);return t;}
+ const SRC={};
+ function upload(f,src){src=src||SRC[f]||imgs[f];drop(f);const t=V.tex(src,MIP),b=size(src.naturalWidth||src.width,src.naturalHeight||src.height,MIP);TX[f]={t,b,ready:true};account(b);return t;}
  function tx(f){const e=TX[f];return e&&e.ready?e.t:upload(f);}
  function drop(f){const e=TX[f];if(!e)return;V.drop(e.t);account(-e.b);delete TX[f];}
  const mk=s=>({s,key:name(s.f),st:{ox:0,oy:0,sc:1,a:0},sc0:0,shape:null,extra:0});
@@ -232,7 +238,7 @@ function play(root,opts){
  const tall=(root.clientHeight||innerHeight)>(root.clientWidth||innerWidth)*1.1,appShots=tall?SHOTS.approach.slice(0,-1):SHOTS.approach;
  const app=appShots.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins],appDoor=app[app.length-1];
  const door=appShots[appShots.length-1],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
- if(gSide)upload('glow-side',gSide);if(gLeaf)upload('glow-leaf',gLeaf);
+ if(gSide)upload('glow-side',SRC['glow-side']=gSide);if(gLeaf)upload('glow-leaf',SRC['glow-leaf']=gLeaf);
  [...app.map(L=>L.s.f),opn.f].forEach(f=>tx(f)); // the way to the door, and the view through it
  const STREAM=SHOTS.inside.slice(1).map(s=>s.f),BANDS=4,bands={};
  // decode the bands from the file's bytes (HTTP cache): createImageBitmap on a Blob decodes off
@@ -292,6 +298,7 @@ function play(root,opts){
     a beat, then someone swings it wide */
  const T={app0:1.1,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:17.4,cap:16.8,done:17.8};
  const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
+ cues.forEach((c,i)=>{if(c[0]<(opts.startAt||0)-.06)fired.add(i);}); // resuming: what already sounded stays done
  const OPEN=72,CRACK=6,FADE=.85,DOLLY=.55,PUSH=Math.log(1.1); // DOLLY: how much of each zoom-in becomes walking forward (the rest stays a zoom)
  function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
   // a hand on the door: speeds up, then eases out with a slight settle (an underdamped spring from rest)
@@ -299,11 +306,9 @@ function play(root,opts){
  function rap(t){let j=0;T.knock.forEach(k=>{if(t>=k){const d=t-k;j+=Math.exp(-d*30)*Math.cos(d*55);}});return j;} // each knock nudges the camera and the door, then settles
  let head=[0,0];const hApp=[],hIns=[],D={th:0,shade:0,spill:0,gap:0,lit:0,warm:0};
  let A0,A1,I1,stopped=false,explore=false,capState='',p=0,pt=0,py=0,pty=0,lastMove=0,drag=null;
- /* Render scale: full resolution on a GPU. A software renderer (no GPU, or a blocklisted one) starts
-    at .3, and a governor steps the scale down while frames run long and back up when they are quick. */
- let rs=SOFT?.3:1,ema=16,since=0;V.coarse=rs<1;
- function govern(dt){ema+=(dt*1000-ema)*.1;since++;const up=ema<12&&since>120&&rs<1,down=ema>22&&since>15&&rs>.3;
-  if(up||down){rs=Math.round(Math.min(1,Math.max(.3,rs*(up?1.15:.85)))*100)/100;since=0;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);V.coarse=rs<1;}}
+ /* Render scale: full resolution on a GPU. A software renderer (no GPU, or a blocklisted one) draws
+    at .3 with the coarse mesh; its pixels are what cost there. */
+ let rs=SOFT?.3:1;V.coarse=SOFT;
  function layout(){vw=root.clientWidth||innerWidth;vh=root.clientHeight||innerHeight;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);
   A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(door,door.a,1);const J=SHOTS.inside[SHOTS.inside.length-1];I1=natural(J,J.a,1.05);}
  layout();addEventListener('resize',layout);
@@ -313,13 +318,13 @@ function play(root,opts){
  function drawDoor(L){const st=L.st,a=st.a,r=door.a,w=rw(r),h=r[3]-r[1],S=(x,y)=>[st.ox+st.sc*x,st.oy+st.sc*y];
   const rect=(x0,y0,x1,y1,u0,v0,u1,v1)=>[[...S(x0,y0),1,u0,v0,0,0],[...S(x1,y0),1,u1,v0,1,0],[...S(x0,y1),1,u0,v1,0,1],[...S(x1,y1),1,u1,v1,1,1]];
   const th=D.th*rad,open=D.open;
-  const q=door.glass;if(D.lit>0&&TX['glow-side'])V.quad(rect(q[0],q[1],q[2],q[3],q[0]/door.wh[0],q[1]/door.wh[1],q[2]/door.wh[0],q[3]/door.wh[1]),0,{tex:tx('glow-side'),a:a*D.lit*.55});
+  const q=door.glass;if(D.lit>0&&gSide)V.quad(rect(q[0],q[1],q[2],q[3],q[0]/door.wh[0],q[1]/door.wh[1],q[2]/door.wh[0],q[3]/door.wh[1]),0,{tex:tx('glow-side'),a:a*D.lit*.55});
   if(open){const o=opn.door,W1=opn.wh[0],H1=opn.wh[1];V.quad(rect(r[0],r[1],r[2],r[3],o[0]/W1,o[1]/H1,o[2]/W1,o[3]/H1),0,{tex:tx(opn.f),a,bright:.92,cg:ins[0].cg});}
   if(D.gap>0)V.quad(rect(r[2]-30*K,r[1],r[2]+10*K,r[3],0,0,1,1),3,{a:a*D.gap});
   if(open||D.lit>0){ // the leaf, hinged on the left, seen with the same 1600px perspective the render was matched to
    const pt=(u,v,z)=>{const X=u*Math.cos(th)+z*Math.sin(th),Z=-u*Math.sin(th)+z*Math.cos(th),f=P/(P-Z);return [...S(r[0]+X*f,r[1]+h/2+(v-h/2)*f),1/f];};
    const Wd=door.wh[0],Hd=door.wh[1],u0=r[0]/Wd,u1=r[2]/Wd,v0=r[1]/Hd,v1=r[3]/Hd;
-   V.quad([[...pt(0,0,0),u0,v0,0,0],[...pt(w,0,0),u1,v0,1,0],[...pt(0,h,0),u0,v1,0,1],[...pt(w,h,0),u1,v1,1,1]],1,{tex:tx(L.s.f),glow:TX['glow-leaf']&&tx('glow-leaf'),glowA:D.lit*.55,shade:D.shade,a,cg:L.cg});
+   V.quad([[...pt(0,0,0),u0,v0,0,0],[...pt(w,0,0),u1,v0,1,0],[...pt(0,h,0),u0,v1,0,1],[...pt(w,h,0),u1,v1,1,1]],1,{tex:tx(L.s.f),glow:gLeaf&&tx('glow-leaf'),glowA:D.lit*.55,shade:D.shade,a,cg:L.cg});
    if(open)V.quad([[...pt(w,0,22*K),0,0,0,0],[...pt(w,0,0),0,0,1,0],[...pt(w,h,22*K),0,0,0,1],[...pt(w,h,0),0,0,1,1]],2,{a});}
   if(D.spill>0)V.quad(rect(r[0]-w*.35,r[3]-6,r[0]+w*1.35,r[3]-6+h*.3,0,0,1,1),4,{a:a*D.spill});}
  /* Exposure, like one camera: each space has one grade (NATIVE, chained from CORR, the
@@ -369,10 +374,10 @@ function play(root,opts){
   }
   // inside
   if(t>=T.xf1){
-   hide(app);if(!ins[0]._start){const r=ins[0]._t||place(ins[0],cover(ins[0].s)*1.05,vw/2,vh/2,opn.door,1);ins[0]._start={w:rw(opn.fire)*r.sc,x:r.ox+r.sc*cx(opn.fire),y:r.oy+r.sc*cy(opn.fire)};}
+   hide(app);if(!ins[0]._start){const r=ins[0]._t||place(ins[0],cover(ins[0].s)*1.05,vw/2,vh/2,opn.door,1);ins[0]._start={w:rw(opn.fire)*r.sc/I1.w,x:(r.ox+r.sc*cx(opn.fire)-I1.x)/vw,y:(r.oy+r.sc*cy(opn.fire)-I1.y)/vh};} // relative to the end framing
    const inGate=gate(ins,hIns,FADE,t);
    // keep walking at the speed we crossed the threshold with, then ease to a stop (a Hermite curve in log size)
-   const S=ins[0]._start,s1=seg(t,T.xf1,T.in1),u=eio(s1),walkAmt=Math.sin(Math.PI*s1),Dur=T.in1-T.xf1,L0=Math.log(S.w),L1=Math.log(I1.w);
+   const S0=ins[0]._start,S={w:S0.w*I1.w,x:I1.x+S0.x*vw,y:I1.y+S0.y*vh},s1=seg(t,T.xf1,T.in1),u=eio(s1),walkAmt=Math.sin(Math.PI*s1),Dur=T.in1-T.xf1,L0=Math.log(S.w),L1=Math.log(I1.w);
    const m0=Math.min(2*PUSH/(T.xf1-T.swing-.35)*Dur,3*Math.max(L1-L0,0)),s2=s1*s1,s3=s2*s1;
    let W=Math.exp((2*s3-3*s2+1)*L0+(s3-2*s2+s1)*m0+(3*s2-2*s3)*L1),x=lerp(S.x,I1.x,u),y=lerp(S.y,I1.y,u);head=[sway*walkAmt*4+br*2.2,bob*walkAmt*3+br*1.4];
    if(t>=T.in1){ // look around
@@ -395,20 +400,22 @@ function play(root,opts){
   if(t>=T.done&&!render.shown){render.shown=1;opts.onDone&&opts.onDone();}
  }
  function setCap(k,h){if(capState!==k){capState=k;opts.cap.innerHTML=h;}}
- let clock=0,lastTs=0;
- function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(dt)govern(dt);if(clock>2)decode();if(clock>T.app1&&clock<T.crack)stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
- root.addEventListener('pointermove',e=>{if(!explore)return;lastMove=performance.now();if(drag){pt=cl(drag.p-(e.clientX-drag.x)/vw*2.2,-1,1);pty=cl(drag.py-(e.clientY-drag.y)/vh*1.2,-.4,.4);}else if(e.pointerType==='mouse'){pt=cl((e.clientX/vw-.5)*2.2,-1,1);pty=cl((e.clientY/vh-.5)*.8,-.4,.4);}});
- root.addEventListener('pointerdown',e=>{if(!explore||e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,p:pt,py:pty};root.classList.add('drag');lastMove=performance.now();});
- const up=()=>{drag=null;root.classList.remove('drag');};root.addEventListener('pointerup',up);root.addEventListener('pointercancel',up);
- (root.closest('[role=dialog]')||root).addEventListener('keydown',e=>{if(!explore)return;const k={ArrowLeft:[-.2,0],ArrowRight:[.2,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[e.key];if(k){pt=cl(pt+k[0],-1,1);pty=cl(pty+k[1],-.4,.4);lastMove=performance.now();e.preventDefault();}});
+ let clock=opts.startAt||0,lastTs=0,started=false;
+ function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(clock>2)decode();if(clock>T.app1&&clock<T.crack)stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
+ const onMove=e=>{if(!explore)return;lastMove=performance.now();if(drag){pt=cl(drag.p-(e.clientX-drag.x)/vw*2.2,-1,1);pty=cl(drag.py-(e.clientY-drag.y)/vh*1.2,-.4,.4);}else if(e.pointerType==='mouse'){pt=cl((e.clientX/vw-.5)*2.2,-1,1);pty=cl((e.clientY/vh-.5)*.8,-.4,.4);}};
+ const onDown=e=>{if(!explore||e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,p:pt,py:pty};root.classList.add('drag');lastMove=performance.now();};
+ const up=()=>{drag=null;root.classList.remove('drag');};
+ const keyEl=root.closest('[role=dialog]')||root,onKey=e=>{if(!explore)return;const k={ArrowLeft:[-.2,0],ArrowRight:[.2,0],ArrowUp:[0,-.1],ArrowDown:[0,.1]}[e.key];if(k){pt=cl(pt+k[0],-1,1);pty=cl(pty+k[1],-.4,.4);lastMove=performance.now();e.preventDefault();}};
+ const on=[[root,'pointermove',onMove],[root,'pointerdown',onDown],[root,'pointerup',up],[root,'pointercancel',up],[keyEl,'keydown',onKey]];
+ on.forEach(([el,ev,f])=>el.addEventListener(ev,f));
  /* Warm up behind the loading overlay: draw every shot and every door piece once (textures, mipmaps
     and shader paths get their first use now, not in the middle of the walk), then reset. */
  (function prewarm(){const d={...D};Object.assign(D,{th:30,open:true,lit:1,gap:.5,spill:.5,shade:.3,warm:.2});
   layers.forEach(L=>{Object.assign(L.st,{ox:0,oy:0,sc:cover(L.s)*1.01,a:TX[L.s.f]?.01:0});L.wipe=L!==app[0];});draw(1);V.gl.finish();
   Object.assign(D,d);layers.forEach(L=>{L.st.a=0;L.sc0=0;L.t0=null;L.wipe=false;});})();
  render(0); // first frame now, so there is no blank canvas before the loop starts
- return {start(){requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
-  mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>clock,scale:v=>{if(v){rs=v;V.coarse=rs<1;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
+ return {tall,get started(){return started;},start(){started=true;requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);on.forEach(([el,ev,f])=>el.removeEventListener(ev,f));Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));Object.keys(TX).forEach(drop);const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
+  mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>clock,scale:v=>{if(v){rs=v;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
   shots:()=>layers.filter(L=>L.st.a>0).map(L=>L.key+':'+L.st.a.toFixed(2)+'@'+(L.sc0?(1-L.sc0/L.st.sc).toFixed(2):'-')).join(' ')};
 }
 return {preload,play,SHOTS};

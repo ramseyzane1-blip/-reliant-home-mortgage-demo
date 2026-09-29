@@ -500,6 +500,7 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 /* walk-through */
 .ds{position:fixed;inset:0;z-index:70;background:#070a08;opacity:0;transition:opacity .9s ease;touch-action:none;user-select:none;-webkit-user-select:none}
 .ds.on{opacity:1}
+body.ds-covered>:not(.ds){visibility:hidden} /* nothing to paint under the opaque walk */
 .ds.out{opacity:0;transition:opacity .8s ease}
 .ds-view{position:absolute;inset:0;overflow:hidden}
 .ds-view.explore{cursor:grab}
