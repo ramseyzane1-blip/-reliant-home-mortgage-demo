@@ -188,7 +188,22 @@ const SHOTS={
   {f:'images/inside-4.jpg',wh:W1448,a:[660,461,853,627]}]};
 const files=()=>{const s=new Set();SHOTS.approach.forEach(x=>s.add(x.f));SHOTS.inside.forEach(x=>s.add(x.f));s.add(SHOTS.open.f);return [...s];};
 const cache={},imgs={};
-function preload(){return Promise.all([depthLoad(),...files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>{imgs[f]=i;res(i);});};i.onerror=()=>{delete cache[f];res(null);};i.src=f;})))]).then(r=>r.slice(1));}
+/* ---- the knock and the door as a video clip (made with AI video, tools/knock_video.py) ----
+   It starts and ends on frames of this walk (tools/knock_keyframes.py): at t0 the camera holds still at
+   the door and the clip plays; at its end the walk carries on from the open door (T.xf1). The model
+   frames the clip 2.07% tighter than the keyframes it was given (zoom about a point near the center,
+   off = that zoom's offset in 1920x1080 pixels), so the walk leans in by the same amount before it.
+   Times in the clip, in seconds: the raps, the light, the bolt, the latch, the swing (sounds and captions). */
+const KNOCK={src:[], // [[min width in device pixels, file], ...]: empty until the clip is chosen (then the walk does its own knock)
+ dur:6.04,t0:6.75,zoom:1.0207,off:[19.4,11.1],
+ knock:[1.0,1.35,1.7],cues:[[1.0,'knock',0],[1.35,'knock',1],[1.7,'knock',2],[2.3,'light'],[2.55,'step',0],[2.8,'step',1],[3.05,'step',2],[3.25,'bolt'],[3.5,'latch'],[3.6,'swing'],[5.0,'inside']],swing:[3.6,4.6]};
+let kv=null;
+const kvOk=v=>!!v&&!v.error&&v.readyState>=3&&v.buffered.length>0&&v.buffered.end(v.buffered.length-1)>=(v.duration||KNOCK.dur)-.1;
+function knockVideo(){ // fetched while the visitor fills in the pre-qualification; muted and inline, so it may play without a tap
+ if(kv||typeof document==='undefined'||!KNOCK.src.length)return kv;const w=(innerWidth||1280)*Math.min(2,devicePixelRatio||1),v=document.createElement('video');
+ v.muted=true;v.defaultMuted=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';
+ v.src=KNOCK.src.find(x=>w>=x[0])[1];v.load();return kv=v;}
+function preload(){knockVideo();return Promise.all([depthLoad(),...files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>{imgs[f]=i;res(i);});};i.onerror=()=>{delete cache[f];res(null);};i.src=f;})))]).then(r=>r.slice(1));}
 const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),seg=(t,a,b)=>cl((t-a)/(b-a)),ss=x=>x*x*(3-2*x),eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,t)=>a+(b-a)*t;
 const cx=r=>(r[0]+r[2])/2,cy=r=>(r[1]+r[3])/2,rw=r=>r[2]-r[0];
 /* Someone switches the hall light on: a warm wash over the door glass. The mask keeps only the
@@ -224,11 +239,11 @@ void main(){vec2 p=uPlace.xy+uPlace.z*aUV*uSize;float Z=1./aInv,Zp=max((Z-uDolly
 /* The finishing look, applied inside every shader instead of as extra full-screen passes: a warm
    spill of light (screen), vignette + caption scrim, and the fade in from black (multiply). Both are
    affine in the color, so layers blended with alpha still come out exactly right. */
-const POST=`uniform vec2 uRes,uPost;
-vec3 post(vec3 c){vec2 s=gl_FragCoord.xy/uRes;s.y=1.-s.y;float r=length((s-.5)*2.)/1.4142;
+const POST=`uniform vec2 uRes,uPost;uniform float uRaw;
+vec3 post(vec3 c){if(uRaw>.5)return c;vec2 s=gl_FragCoord.xy/uRes;s.y=1.-s.y;float r=length((s-.5)*2.)/1.4142;
  vec3 w=vec3(1.,.745,.431)*(.18*(1.-clamp(r/.6,0.,1.))*uPost.y);c=c+w-c*w;
  return c*(1.-.45*clamp((r-.58)/.42,0.,1.))*(1.-.42*clamp((s.y-.55)/.45,0.,1.))*uPost.x;}
-float vig(){vec2 s=gl_FragCoord.xy/uRes;s.y=1.-s.y;float r=length((s-.5)*2.)/1.4142;return (1.-.45*clamp((r-.58)/.42,0.,1.))*uPost.x;}`;
+float vig(){if(uRaw>.5)return 1.;vec2 s=gl_FragCoord.xy/uRes;s.y=1.-s.y;float r=length((s-.5)*2.)/1.4142;return (1.-.45*clamp((r-.58)/.42,0.,1.))*uPost.x;}`;
 const FS_MESH=`#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
@@ -282,17 +297,19 @@ function glView(canvas){
  const band=(t,y,src)=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texSubImage2D(gl.TEXTURE_2D,0,0,y,gl.RGBA,gl.UNSIGNED_BYTE,src);};
  const finish=(t,mip)=>{if(mip&&gl2){gl.bindTexture(gl.TEXTURE_2D,t);gl.generateMipmap(gl.TEXTURE_2D);params(true);}};
  let W=1,H=1;
- const api={gl,post:[1,0],coarse:false,
+ const api={gl,post:[1,0],raw:0,coarse:false,
   tex,alloc,band,finish,gl2,drop:t=>gl.deleteTexture(t),
   read(t,pts){const fb=gl.createFramebuffer(),px=new Uint8Array(4),out=[];gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
    pts.forEach(([x,y])=>{gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);out.push([...px].slice(0,3));});gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fb);return out;}, // for tests
+  video(t,v){if(!t){t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);params(false);}gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v);return t;},
   shape(inv,gx,gy){const g=grid(gx,gy);return {g,inv:buf(inv)};},
   resize(w,h,dpr){W=w;H=h;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);gl.viewport(0,0,canvas.width,canvas.height);},
   clear(){gl.clearColor(.027,.039,.031,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);},
   mesh(t,size,sh,pl,alpha,e,dolly,gmin,head,wipe,cg){gl.useProgram(M.p);gl.bindBuffer(gl.ARRAY_BUFFER,sh.g.uv);gl.enableVertexAttribArray(M.a.aUV);gl.vertexAttribPointer(M.a.aUV,2,gl.FLOAT,false,0,0);
    gl.bindBuffer(gl.ARRAY_BUFFER,sh.inv);gl.enableVertexAttribArray(M.a.aInv);gl.vertexAttribPointer(M.a.aInv,1,gl.FLOAT,false,0,0);
    gl.uniform2f(M.u.uView,W,H);gl.uniform2f(M.u.uSize,size[0],size[1]);gl.uniform3f(M.u.uPlace,pl.ox,pl.oy,pl.sc);gl.uniform2f(M.u.uE,e[0],e[1]);gl.uniform2f(M.u.uHead,head[0],head[1]);
-   gl.uniform2f(M.u.uRes,canvas.width,canvas.height);gl.uniform2f(M.u.uPost,api.post[0],api.post[1]);gl.uniform1f(M.u.uDolly,dolly);gl.uniform1f(M.u.uGmin,gmin);gl.uniform1f(M.u.uA,alpha);gl.uniform3f(M.u.uWipe,alpha,.5,wipe?1:0);gl.uniform2f(M.u.uWE,e[0],e[1]);gl.uniform3fv(M.u.uGain,(cg||ID)[0]);gl.uniform3fv(M.u.uOff,(cg||ID)[1]);
+   gl.uniform2f(M.u.uRes,canvas.width,canvas.height);gl.uniform2f(M.u.uPost,api.post[0],api.post[1]);gl.uniform1f(M.u.uRaw,api.raw);gl.uniform1f(M.u.uDolly,dolly);gl.uniform1f(M.u.uGmin,gmin);gl.uniform1f(M.u.uA,alpha);gl.uniform3f(M.u.uWipe,alpha,.5,wipe?1:0);gl.uniform2f(M.u.uWE,e[0],e[1]);gl.uniform3fv(M.u.uGain,(cg||ID)[0]);gl.uniform3fv(M.u.uOff,(cg||ID)[1]);
    gl.uniform1f(M.u.uWR,Math.max(Math.hypot(e[0],e[1]),Math.hypot(W-e[0],e[1]),Math.hypot(e[0],H-e[1]),Math.hypot(W-e[0],H-e[1]),1));
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);gl.uniform1i(M.u.uTex,0);
    gl.clear(gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LESS); // the relief hides itself correctly; each shot blends over the last
@@ -302,7 +319,7 @@ function glView(canvas){
   quad(corners,mode,o){gl.useProgram(Q.p);corners.forEach((c,i)=>{const w=c[2]||1,nx=c[0]/W*2-1,ny=1-c[1]/H*2;qData.set([nx*w,ny*w,0,w,c[3],c[4],c[5],c[6]],i*8);});
    gl.bindBuffer(gl.ARRAY_BUFFER,qB);gl.bufferData(gl.ARRAY_BUFFER,qData,gl.STREAM_DRAW);
    gl.enableVertexAttribArray(Q.a.aPos);gl.vertexAttribPointer(Q.a.aPos,4,gl.FLOAT,false,32,0);gl.enableVertexAttribArray(Q.a.aUV);gl.vertexAttribPointer(Q.a.aUV,2,gl.FLOAT,false,32,16);gl.enableVertexAttribArray(Q.a.aL);gl.vertexAttribPointer(Q.a.aL,2,gl.FLOAT,false,32,24);
-   gl.uniform2f(Q.u.uRes,canvas.width,canvas.height);gl.uniform2f(Q.u.uPost,api.post[0],api.post[1]);gl.uniform1i(Q.u.uMode,mode);gl.uniform1f(Q.u.uA,o.a);gl.uniform1f(Q.u.uGlowA,o.glowA||0);gl.uniform1f(Q.u.uShade,o.shade||0);gl.uniform1f(Q.u.uBright,o.bright||1);const cg=o.cg||ID;gl.uniform3fv(Q.u.uGain,cg[0]);gl.uniform3fv(Q.u.uOff,cg[1]);
+   gl.uniform2f(Q.u.uRes,canvas.width,canvas.height);gl.uniform2f(Q.u.uPost,api.post[0],api.post[1]);gl.uniform1f(Q.u.uRaw,api.raw);gl.uniform1i(Q.u.uMode,mode);gl.uniform1f(Q.u.uA,o.a);gl.uniform1f(Q.u.uGlowA,o.glowA||0);gl.uniform1f(Q.u.uShade,o.shade||0);gl.uniform1f(Q.u.uBright,o.bright||1);const cg=o.cg||ID;gl.uniform3fv(Q.u.uGain,cg[0]);gl.uniform3fv(Q.u.uOff,cg[1]);
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,o.tex||null);gl.uniform1i(Q.u.uTex,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,o.glow||o.tex||null);gl.uniform1i(Q.u.uGlow,1);
    if(mode===4)gl.blendFunc(gl.ONE_MINUS_DST_COLOR,gl.ONE); // screen
    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);[Q.a.aPos,Q.a.aUV,Q.a.aL].forEach(l=>gl.disableVertexAttribArray(l));if(mode===4)gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.activeTexture(gl.TEXTURE0);}};
@@ -394,11 +411,35 @@ function play(root,opts){
  const T={app0:1.1,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:17.4,cap:16.8,done:17.8};
  const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
  const resumeAt=opts.startAt||0;let resume=resumeAt>0; // rebuilt mid-walk (the phone turned)
- cues.forEach((c,i)=>{if(resume&&c[0]-.06<=resumeAt)fired.add(i);}); // what already sounded stays done (render fires a cue from c[0]-.06)
+ cues.forEach((c,i)=>{if(resume&&c[0]-.06<=resumeAt)fired.add('w'+i);});
+ const clipCues=[[0,'start'],...KNOCK.cues.map(c=>[KNOCK.t0+c[0],c[1],c[2]])];if(fired.has('w0'))fired.add('c0'); // what already sounded stays done (render fires a cue from c[0]-.06)
  const OPEN=72,CRACK=6,FADE=.85,DOLLY=.55,PUSH=Math.log(1.1); // DOLLY: how much of each zoom-in becomes walking forward (the rest stays a zoom)
  function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
   // a hand on the door: speeds up, then eases out with a slight settle (an underdamped spring from rest)
   const u=t-T.swing,w=4.2,z=.8,wd=w*Math.sqrt(1-z*z);return OPEN-(OPEN-CRACK)*Math.exp(-z*w*u)*(Math.cos(wd*u)+z*w/wd*Math.sin(wd*u));}
+ /* The knock clip (AI video) starts and ends on frames of this walk: the head settles before it and
+    picks up again after, so both ends are still frames. */
+ /* The knock clip: decided 2s before it (the video must be fully buffered by then), only on screens at least
+    1.16 times as wide as tall (there the walk's framing scales with the width, like the 16:9 keyframes).
+    clip: undefined (not decided), null (the walk's own knock), or {state: wait, play, done}. */
+ const C0=KNOCK.t0,C1=T.xf1,CD=KNOCK.dur,DEC=C0-2;
+ if(kv){kv.className='wk-video';root.insertBefore(kv,canvas);} // in the page, under the canvas: a detached or hidden video may not be decoded
+ let clip=(opts.startAt||0)>DEC-.5?null:undefined,clipMode=false,capture=false,abortAt=null,vt=null,vtT=-1,vFrame=false,vStall=0;
+ const eligible=()=>!tall&&vw>=vh*1.16&&opts.knock!==false;
+ function decide(t){if(clip!==undefined||t<DEC)return;clip=!capture&&eligible()&&kvOk(kv)?{state:'wait'}:null;clipMode=!!clip;
+  if(clip&&kv.requestVideoFrameCallback){const f=()=>{vFrame=true;if(clip&&clip.state!=='done'&&!stopped)kv.requestVideoFrameCallback(f);};kv.requestVideoFrameCallback(f);}}
+ // walk time (the timeline T) from clock time: the clip stands in for C0..C1 of the walk
+ const te=c=>!clipMode?c:c<C0?c:c<C0+CD?C0+(c-C0)*(C1-C0)/CD:c-(C0+CD-C1);
+ const inClip=c=>clipMode&&c>=C0&&c<C0+CD;
+ // the head settles before the clip and picks up again after it (both ends are still frames)
+ const calm=t=>abortAt!=null?ss(seg(t,abortAt,abortAt+1.5)):clipMode||capture?Math.max(1-ss(seg(t,C0-1.2,C0)),ss(seg(t,C1,C1+1.5))):1;
+ /* Where the clip goes on this screen: the walk maps the 1920x1080 keyframe onto the screen by the width
+    (k, b); the clip is drawn to cover the screen (kz, bz); the walk leans in by Z about P so that, at C0,
+    it shows exactly what the clip's first frame shows. */
+ let CK={};
+ function clipFit(){const k=vw/1920,b=[vw/2-k*960,vh/2-k*540],kz=Math.max(vw/1920,vh/1080),Z=kz*KNOCK.zoom/k,bz=[(vw-kz*1920)/2,(vh-kz*1080)/2];
+  CK={kz,bz,Z,P:[0,1].map(i=>(bz[i]-kz*KNOCK.off[i]-Z*b[i])/(1-Z))};}
+ const leanIn=t=>clipMode||abortAt!=null?1+(CK.Z-1)*ss(seg(t,C0-1.75,C0)):1;
  function rap(t){let j=0;T.knock.forEach(k=>{if(t>=k){const d=t-k;j+=Math.exp(-d*30)*Math.cos(d*55);}});return j;} // each knock nudges the camera and the door, then settles
  let head=[0,0];const hApp=[],hIns=[],D={th:0,shade:0,spill:0,gap:0,lit:0,warm:0};
  let A0,A1,I1,stopped=false,explore=false,capState='',p=0,pt=0,py=0,pty=0,lastMove=0,drag=null;
@@ -406,7 +447,7 @@ function play(root,opts){
     at .3 with the coarse mesh; its pixels are what cost there. */
  let rs=SOFT?.3:1;V.coarse=SOFT;
  function layout(){vw=root.clientWidth||innerWidth;vh=root.clientHeight||innerHeight;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);
-  A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(door,door.a,1);const J=SHOTS.inside[SHOTS.inside.length-1];I1=natural(J,J.a,1.05);}
+  clipFit();A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(door,door.a,1);const J=SHOTS.inside[SHOTS.inside.length-1];I1=natural(J,J.a,1.05);}
  layout();addEventListener('resize',layout);
 
  /* ---- drawing ---- */
@@ -436,7 +477,13 @@ function play(root,opts){
    const w=L.t0==null?1:1-ss(seg(t,L.t0+.5,L.t0+2));g=mg.map((v,i)=>lerp(n[i],v,w));o=mo.map((v,i)=>lerp(n[3+i],v,w));L.cg=[g,o];});}
  /* A shot enters exactly as rendered (sc0 = its scale when it appears); from there, zooming in is
     turned into walking forward through its relief. */
- function draw(t){exposure(t);V.post=[ss(seg(t,0,.6)),D.warm];V.clear();layers.forEach(L=>{const st=L.st;if(L.t0!=null&&t<L.t0-.5)L.t0=null;if(st.a<=0||!L.shape){L.sc0=0;return;}if(!L.sc0)L.sc0=st.sc;if(L.t0==null)L.t0=t; // t0: when it first appeared (kept after it hands off)
+ function drawClip(tw){ // the clip's current frame, over the whole screen, with the same finishing look
+  if(kv.readyState>=2&&(vFrame||kv.currentTime!==vtT||!vt)){vt=V.video(vt,kv);vtT=kv.currentTime;vFrame=false;}
+  V.post=[1,.35*ss(seg(tw,C0+KNOCK.swing[0],C0+KNOCK.swing[1]))];V.clear();if(!vt)return;
+  const {kz,bz}=CK,X0=bz[0],Y0=bz[1],X1=bz[0]+kz*1920,Y1=bz[1]+kz*1080;
+  V.quad([[X0,Y0,1,0,0,0,0],[X1,Y0,1,1,0,1,0],[X0,Y1,1,0,1,0,1],[X1,Y1,1,1,1,1,1]],0,{tex:vt,a:1});}
+ function clipDone(){if(!clip||clip.state==='done')return;clip.state='done';try{kv.pause();}catch(e){}if(vt){V.drop(vt);vt=null;}}
+ function draw(t,tw){if(inClip(tw)){drawClip(tw);return;}if(clipMode&&tw>=C0+CD)clipDone();exposure(t);V.post=[ss(seg(t,0,.6)),D.warm];V.clear();layers.forEach(L=>{const st=L.st;if(L.t0!=null&&t<L.t0-.5)L.t0=null;if(st.a<=0||!L.shape){L.sc0=0;return;}if(!L.sc0)L.sc0=st.sc;if(L.t0==null)L.t0=t; // t0: when it first appeared (kept after it hands off)
   const w=L.s.wh[0]*st.sc,h=L.s.wh[1]*st.sc,ex=st.ox+st.sc*cx(L.s.a),ey=st.oy+st.sc*cy(L.s.a),hx=Math.abs(head[0])+1,hy=Math.abs(head[1])+1;
   // the least a far point may shrink toward the anchor and still cover the screen
   const gmin=Math.max(ex>st.ox+.5?(ex+hx)/(ex-st.ox):0,st.ox+w-ex>.5?(vw-ex+hx)/(st.ox+w-ex):0,ey>st.oy+.5?(ey+hy)/(ey-st.oy):0,st.oy+h-ey>.5?(vh-ey+hy)/(st.oy+h-ey):0);
@@ -446,7 +493,7 @@ function play(root,opts){
   if(t>T.xf1+.3){drop(appDoor.s.f);drop('glow-side');drop('glow-leaf');}
 }
 
- function render(t){
+ function render(tw){decide(tw);const t=te(tw);
   layers.forEach(L=>{L.extra=0;L.wipe=false;});
   const bob=Math.sin(t*Math.PI*2*.9)*2.2,sway=Math.sin(t*Math.PI*.9)*1.6,br=Math.sin(t*.8)*1.2+Math.sin(t*1.9)*.6;
   // approach + door
@@ -454,8 +501,9 @@ function play(root,opts){
    const u0=seg(t,T.app0,T.app1),u=lerp(u0,eio(u0),.45),walkAmt=Math.sin(Math.PI*seg(t,T.app0,T.app1)),j=rap(t);
    const lean=.014*ss(seg(t,T.knock[0]-.4,T.knock[0]-.05))-.01*ss(seg(t,T.knock[2]+.25,T.knock[2]+1));
    const push=(1+.025*ss(seg(t,T.app1,T.crack))+lean)*Math.exp(PUSH*Math.pow(seg(t,T.swing+.35,T.xf1),2))*(1+.0035*j); // into the doorway, still speeding up at the threshold
-   const W=Math.exp(lerp(Math.log(A0.w),Math.log(A1.w*(tall?1.06:1.13)),u))*push*(tall?Math.exp(Math.log(1.24)*ss(seg(t,T.light,T.bolt+.1))):1); // tall: step up while someone comes to the door
-   const x=lerp(A0.x,A1.x,u)-.8*j,y=lerp(A0.y,A1.y,u)+1.6*j;head=[sway*walkAmt*5+br*2.2,bob*walkAmt*3.5+br*1.4+2*j]; // the head moves, the anchor stays put
+   let W=Math.exp(lerp(Math.log(A0.w),Math.log(A1.w*(tall?1.06:1.13)),u))*push*(tall?Math.exp(Math.log(1.24)*ss(seg(t,T.light,T.bolt+.1))):1); // tall: step up while someone comes to the door
+   let x=lerp(A0.x,A1.x,u)-.8*j,y=lerp(A0.y,A1.y,u)+1.6*j;head=[sway*walkAmt*5+br*2.2,bob*walkAmt*3.5+br*1.4+2*j].map(v=>v*calm(t)); // the head moves, the anchor stays put
+   if(clip!==null){const z=leanIn(t);W*=z;x=CK.P[0]+z*(x-CK.P[0]);y=CK.P[1]+z*(y-CK.P[1]);}
    chain(app,W,x,y,Math.log(1.12),1.005,gate(app,hApp,.55,t,.1),t);
    const th=doorAngle(t),op=th/OPEN;D.th=th+.35*j;D.open=th>.01;
    D.shade=.42*(1-Math.cos(th*rad))/(1-Math.cos(OPEN*rad));D.spill=.9*Math.min(1,Math.sin(th*rad)/Math.sin(OPEN*rad));D.warm=op*.35;
@@ -475,7 +523,7 @@ function play(root,opts){
    // keep walking at the speed we crossed the threshold with, then ease to a stop (a Hermite curve in log size)
    const S0=ins[0]._start,S={w:S0.w*I1.w,x:I1.x+S0.x*vw,y:I1.y+S0.y*vh},s1=seg(t,T.xf1,T.in1),u=eio(s1),walkAmt=Math.sin(Math.PI*s1),Dur=T.in1-T.xf1,L0=Math.log(S.w),L1=Math.log(I1.w);
    const m0=Math.min(2*PUSH/(T.xf1-T.swing-.35)*Dur,3*Math.max(L1-L0,0)),s2=s1*s1,s3=s2*s1;
-   let W=Math.exp((2*s3-3*s2+1)*L0+(s3-2*s2+s1)*m0+(3*s2-2*s3)*L1),x=lerp(S.x,I1.x,u),y=lerp(S.y,I1.y,u);head=[sway*walkAmt*4+br*2.2,bob*walkAmt*3+br*1.4];
+   let W=Math.exp((2*s3-3*s2+1)*L0+(s3-2*s2+s1)*m0+(3*s2-2*s3)*L1),x=lerp(S.x,I1.x,u),y=lerp(S.y,I1.y,u);head=[sway*walkAmt*4+br*2.2,bob*walkAmt*3+br*1.4].map(v=>v*calm(t));
    if(t>=T.in1){ // look around
     if(!explore){explore=true;root.classList.add('explore');opts.onExplore&&opts.onExplore();}
     if(performance.now()-lastMove>3000&&!drag){pt=Math.sin((t-T.in1)*.28)*.3;pty=Math.sin((t-T.in1)*.21)*.15;}
@@ -486,19 +534,32 @@ function play(root,opts){
    chain(ins,W,x,y,Math.log(1.07),1,inGate,t);
    D.warm=.35*(1-seg(t,T.xf1,T.in1));
   }
-  draw(t);
+  draw(t,tw);
   // sounds: each cue is handed over a moment early with its exact delay, so it lands on the frame it belongs to
-  cues.forEach((c,i)=>{if(t>=c[0]-.06&&!fired.has(i)){fired.add(i);opts.cue&&opts.cue(c[1],c[2]||0,Math.max(0,c[0]-t));}});
+  (clipMode?clipCues:cues).forEach((c,i)=>{const k=(clipMode?'c':'w')+i,x=clipMode?tw:t;if(x>=c[0]-.06&&!fired.has(k)){fired.add(k);opts.cue&&opts.cue(c[1],c[2]||0,Math.max(0,c[0]-x));}});
   // captions: "Knock," and "knock." land on the first two knocks
   if(t<T.open1){setCap('a',opts.capA);opts.cap.style.opacity=(seg(t,T.app1-.4,T.app1+.3)*(1-seg(t,T.crack+.3,T.crack+1))).toFixed(3);
-   opts.cap.querySelectorAll('.kk').forEach((w,i)=>{const v=ss(seg(t,T.knock[i]-.02,T.knock[i]+.22));w.style.opacity=v.toFixed(3);w.style.transform=`translateY(${((1-v)*6).toFixed(2)}px)`;});}
+   opts.cap.querySelectorAll('.kk').forEach((w,i)=>{const kt=clipMode?C0+KNOCK.knock[i]:T.knock[i],v=ss(seg(clipMode?tw:t,kt-.02,kt+.22));w.style.opacity=v.toFixed(3);w.style.transform=`translateY(${((1-v)*6).toFixed(2)}px)`;});}
   else{setCap('b',opts.capB);opts.cap.style.opacity=seg(t,T.cap,T.cap+.9).toFixed(3);}
   if(t>=T.done&&!render.shown){render.shown=1;opts.onDone&&opts.onDone();}
   if(t>=resumeAt)resume=false;
  }
  function setCap(k,h){if(capState!==k){capState=k;opts.cap.innerHTML=h;}}
  let clock=opts.startAt||0,lastTs=0,started=false;
- function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(clock>2)decode();if(clock>T.app1&&(clock<T.crack||resumeAt>=T.crack))stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
+ /* The clock: capped steps (a hidden tab or a slow frame pauses, never skips). While the clip plays it
+    follows the video, so a video that stalls holds the picture instead of running ahead of it. If the
+    clip cannot start, the walk does its own knock from the same moment; if it stalls for good, the walk
+    picks up at the open door. */
+ function abort(){if(!clip||clip.state==='done')return;if(clip.state==='play'){clock=Math.max(clock,C0+CD);clipDone();return;}
+  try{kv.pause();}catch(e){}clip=null;clipMode=false;abortAt=clock;}
+ function tick(dt){
+  if(!clip||clip.state==='done'||clock+dt<C0){clock+=dt;return;}
+  if(clip.state==='wait'){clip.state='start';clock=C0;vStall=0;try{kv.currentTime=0;const pr=kv.play();if(pr&&pr.then)pr.then(()=>{if(clip&&clip.state==='start')clip.state='play';},abort);else clip.state='play';}catch(e){abort();}return;}
+  if(clip.state==='start'){if((vStall+=dt)>2)abort();return;}
+  if(kv.ended||kv.currentTime>=CD-.02){clock=C0+CD;clipDone();return;}
+  const c=C0+kv.currentTime;if(c>clock+1e-4){clock=c;vStall=0;}else if((vStall+=dt)>3)abort();}
+ function loop(ts){if(stopped)return;const dt=lastTs?Math.min(.1,(ts-lastTs)/1000):0;lastTs=ts;tick(dt);const w=te(clock);
+  if(clock>2)decode();if(w>T.app1&&(w<T.crack||resumeAt>=T.crack))stream();render(clock);requestAnimationFrame(loop);}
  const onMove=e=>{if(!explore)return;lastMove=performance.now();if(drag){pt=cl(drag.p-(e.clientX-drag.x)/vw*2.2,-1,1);pty=cl(drag.py-(e.clientY-drag.y)/vh*1.2,-.4,.4);}else if(e.pointerType==='mouse'){pt=cl((e.clientX/vw-.5)*2.2,-1,1);pty=cl((e.clientY/vh-.5)*.8,-.4,.4);}};
  const onDown=e=>{if(!explore||e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,p:pt,py:pty};root.classList.add('drag');lastMove=performance.now();};
  const up=()=>{drag=null;root.classList.remove('drag');};
@@ -512,8 +573,12 @@ function play(root,opts){
   layers.forEach(L=>{Object.assign(L.st,{ox:0,oy:0,sc:cover(L.s)*1.01,a:TX[L.s.f]?.01:0});L.wipe=L!==app[0];});draw(1);V.gl.finish();
   Object.assign(D,d);layers.forEach(L=>{L.st.a=0;L.sc0=0;L.t0=null;L.wipe=false;});})();
  render(resumeAt); // first frame now, so there is no blank canvas before the loop starts
- return {tall,get started(){return started;},start(){started=true;requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);on.forEach(([el,ev,f])=>el.removeEventListener(ev,f));Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));Object.keys(TX).forEach(drop);const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
-  mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>clock,scale:v=>{if(v){rs=v;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
+ return {tall,get started(){return started;},start(){started=true;requestAnimationFrame(loop);},stop(){stopped=true;if(kv){try{kv.pause();}catch(e){}if(kv.parentNode===root)kv.remove();}if(vt){V.drop(vt);vt=null;}removeEventListener('resize',layout);on.forEach(([el,ev,f])=>el.removeEventListener(ev,f));Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));Object.keys(TX).forEach(drop);const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
+  mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>te(clock),clock:()=>clock,raw:v=>{V.raw=v?1:0;},keyframes:v=>{capture=!!v;},
+  // tests: clip(true) plays the knock clip regardless of timing; seek(c) shows clock time c, with the clip's frame when it is on screen
+  clip:v=>{clip=v&&kv?{state:'wait'}:null;clipMode=!!clip;return clipMode;},clipInfo:()=>({mode:clipMode,state:clip&&clip.state,t0:C0,dur:CD,xf1:C1,Z:CK.Z}),
+  seek:c=>!inClip(c)?Promise.resolve(render(c)):new Promise(res=>{const go=()=>{vFrame=true;render(c);res();};const want=Math.min(c-C0,CD-.01);
+   if(Math.abs(kv.currentTime-want)<1e-3&&kv.readyState>=2)go();else{kv.addEventListener('seeked',()=>kv.requestVideoFrameCallback?kv.requestVideoFrameCallback(go):go(),{once:true});kv.currentTime=want;}}),scale:v=>{if(v){rs=v;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
   shots:()=>layers.filter(L=>L.st.a>0).map(L=>L.key+':'+L.st.a.toFixed(2)+'@'+(L.sc0?(1-L.sc0/L.st.sc).toFixed(2):'-')).join(' ')};
 }
 return {preload,play,SHOTS};
