@@ -33,8 +33,10 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png
+                            house-NN.webp cut-outs + house-flow.bin for the turntable
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
+tools/house_views.py        builds the turntable cut-outs and flow from tools/house-src/
 ```
 
 ## Decisions the client has made (don't undo these)
@@ -68,10 +70,13 @@ placeholders.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with a
-simple depth model (house plane, lawn sloping toward the viewer, a per-vertex weight that
-keeps the outer ring fixed), rotated up to ±17° and cross-dissolved with the next view.
-Drag, arrow keys, or idle sway around the front.
+**Turntable** (hero): 12 renders around the house, cut out of their studio background so the
+house, plinth and ring float on the page with no card (client request). Between neighboring
+views each image is drawn on a 41×41 WebGL mesh displaced along precomputed optical flow
+(`images/house-flow.bin`) while the two blend across the whole interval, so the house moves
+into the next view instead of flashing. All textures load up front, one GPU upload per frame.
+Drag, arrow keys, or idle sway around the front. Rebuild the images and flow with
+`python3 tools/house_views.py`.
 
 **Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
 camera follows the door (outside) then the fireplace (inside); each image takes over when it
@@ -84,15 +89,9 @@ Timeline constants are in `T` inside `Walk.play`.
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. **Turntable textures.** Upload all 13 textures up front, one per frame after first paint,
-   instead of on demand (the texImage2D hitch during a drag is the main stutter). Resize
-   renders to 1024×1024 so they can mipmap.
-2. **Optical-flow morphing instead of cross-dissolves.** Precompute dense flow between
-   neighboring views offline (OpenCV `DISOpticalFlow`, forward-backward consistency check,
-   smoothed to a ~65×65 grid) and store it as a small binary file. In the shader, displace
-   the mesh of view A by `t·flow(A→B)` and view B by `(1−t)·flow(B→A)` while blending. This
-   turns ghosting into motion. The front views (10–15° apart) will morph well; sides and
-   back are ~45° apart, so damp the flow where consistency is poor.
+1. ~~Turntable textures~~ and 2. ~~optical-flow morphing~~ are done (see above). The front
+   views (11–14° apart) morph cleanly; the sides and back are 45–54° apart and still show
+   some blending mid-turn. More renders at those angles would fix that best.
 3. **Move the walk to WebGL.** Scaling large DOM layers that contain CSS 3D children forces
    re-rasterization every frame. Render every shot as a textured quad on one canvas, draw the
    door leaf as a real perspective quad, and apply the same flow morphing at each handoff

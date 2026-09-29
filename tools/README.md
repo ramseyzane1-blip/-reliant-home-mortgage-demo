@@ -8,9 +8,12 @@ All images in `demo/site/images/` are AI-generated renders of a fictional house 
 the client. They are used **only** in the two 3D pieces (the hero turntable and the
 walk-through). Don't use them anywhere else on the site.
 
-- `house-00.jpg` … `house-12.jpg`: 13 views of the model home on its plinth, 1100×1100,
-  ordered by camera angle. The angles are in `HOUSE_VIEWS` in `js/app.js`
-  (0° front, 90° right side, 180° back, 270° left side).
+- `house-NN.webp` (12 views) and `house-flow.bin`: built by `python3 tools/house_views.py`
+  from the renders in `tools/house-src/` (1100×1100 JPEG, ordered by camera angle; the angles
+  are in `HOUSE_VIEWS` in `js/app.js`, 0° front, 90° right side, 180° back, 270° left side).
+  The script cuts each view out of its cream background (keeping the plinth and ring, dropping
+  floor shadows) and computes optical flow between neighboring views for the morph. The
+  original set had a duplicate render at 318°/327°; it was dropped.
 - `approach-1…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
   door slab.

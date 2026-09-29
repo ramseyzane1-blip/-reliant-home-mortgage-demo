@@ -1,73 +1,75 @@
 /* ================= Turntable: drag the model home around 360 degrees =================
-   Each rendered view is draped over a simple depth model (house plane, lawn sloping toward
-   the viewer) so turning between views has real parallax. Neighboring views cross-dissolve. */
+   The views are cut-outs (see tools/house_views.py), drawn on a transparent canvas so the house
+   floats on the page. Between two neighboring views, each is drawn on a mesh displaced along
+   precomputed optical flow (house-flow.bin) while they blend, so the house moves from one view
+   into the next instead of dissolving. All textures load up front, one GPU upload per frame. */
 const Turntable=(()=>{
-const VS=`attribute vec3 p;attribute vec2 uv;attribute float e;attribute float rw;uniform float ang,piv,D,tanH,asp;varying vec2 vu;varying float ve;
-void main(){vu=uv;ve=e;float c=cos(ang*rw),s=sin(ang*rw);float z=p.z+piv;vec3 q=vec3(c*p.x+s*z,p.y,-s*p.x+c*z-piv);
- float w=D-q.z;vec2 n=q.xy*D/w/(tanH*D);if(asp>=1.)n.x/=asp;else n.y*=asp;gl_Position=vec4(n,0.,1.);}`;
-const FS=`precision mediump float;uniform sampler2D tex;uniform float alpha;uniform vec3 bg;varying vec2 vu;varying float ve;
-void main(){vec3 c=texture2D(tex,vu).rgb;c=mix(bg,c,ve);gl_FragColor=vec4(c*alpha,alpha);}`;
+const G=41,FS_=16384; /* flow grid and fixed-point scale; must match tools/house_views.py */
+const VS=`attribute vec2 uv;attribute vec2 fl;uniform float k,asp;varying vec2 vu;
+void main(){vu=uv;vec2 q=uv+fl*k;vec2 n=vec2(q.x*2.-1.,1.-q.y*2.);if(asp>=1.)n.x/=asp;else n.y*=asp;gl_Position=vec4(n,0.,1.);}`;
+const FS=`precision mediump float;uniform sampler2D tex;uniform float w;varying vec2 vu;void main(){gl_FragColor=texture2D(tex,vu)*w;}`;
 function create(box,canvas,views,opt){
- const gl=canvas.getContext('webgl',{antialias:true,alpha:false,premultipliedAlpha:true});if(!gl)return null;
+ const gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false});if(!gl)return null;
  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x;};
- const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));['p','uv','e','rw'].forEach((a,i)=>gl.bindAttribLocation(pr,i,a));gl.linkProgram(pr);
+ const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.bindAttribLocation(pr,0,'uv');gl.bindAttribLocation(pr,1,'fl');gl.linkProgram(pr);
  if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
- const U={};['ang','piv','D','tanH','asp','tex','alpha','bg'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
- /* mesh: square image spanning x,y in [-1,1]; back-projected along camera rays so angle 0 reproduces the image exactly */
- const D=5,N=90,vb=.555,vr=.665,Zr=.62,piv=.34,over=1.05;
- const P=[],UV=[],E=[],RW=[];for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){const u=i/N,v=j/N,x=(u-.5)*2,y=(.5-v)*2;
-  const ramp=Math.min(1,Math.max(0,(v-vb)/(vr-vb))),ell=Math.sqrt(Math.max(0,1-Math.pow((u-.5)/.49,2)));const z=Zr*ramp*(v>vr?1:ell*.85+.15*ramp);
-  const k=(D-z)/D;P.push(x*k,y*k,z);UV.push(u,v);const ed=Math.min(u,1-u,v,1-v);E.push(Math.min(1,ed/.05));
-  const inx=1-Math.min(1,Math.max(0,(Math.abs(u-.5)-.43)/.06)),iny=1-Math.min(1,Math.max(0,(v-.69)/.12)),top=Math.min(1,Math.max(0,(v-.1)/.08));RW.push(Math.max(0,inx*iny*top));}
- const I=[];for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=j*(N+1)+i,b=a+1,c=a+N+1,d=c+1;I.push(a,c,b,b,c,d);}
+ const U={};['k','asp','tex','w'].forEach(k=>U[k]=gl.getUniformLocation(pr,k));
  const buf=(d,t)=>{const b=gl.createBuffer();gl.bindBuffer(t||gl.ARRAY_BUFFER,b);gl.bufferData(t||gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return b;};
- const bP=buf(new Float32Array(P)),bU=buf(new Float32Array(UV)),bE=buf(new Float32Array(E)),bR=buf(new Float32Array(RW)),bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER),NI=I.length;
- /* textures: load lazily, keep a few in GPU memory */
- const imgs=views.map(()=>null),tex=new Map();
- function img(i){if(!imgs[i]){const im=new Image();im.decoding='async';im.src=views[i].f;imgs[i]=im;im.onload=()=>{dirty=true;};}return imgs[i];}
- function texture(i){if(tex.has(i)){const t=tex.get(i);tex.delete(i);tex.set(i,t);return t;}const im=img(i);if(!im.complete||!im.naturalWidth)return null;
-  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  tex.set(i,t);if(tex.size>5){const k=tex.keys().next().value;gl.deleteTexture(tex.get(k));tex.delete(k);}return t;}
- const A=views.map(v=>v.a),n=views.length;
- function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,a0,a1,t];}return [0,1,A[0],A[1],th];}
- const bg=opt.bg||[.949,.918,.882];let dirty=true;
+ const UV=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++)UV.push(i/(G-1),j/(G-1));
+ const I=[];for(let j=0;j<G-1;j++)for(let i=0;i<G-1;i++){const a=j*G+i,b=a+1,c=a+G,d=c+1;I.push(a,c,b,b,c,d);}
+ const bU=buf(new Float32Array(UV)),bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER),NI=I.length,n=views.length;
+ /* flow: for each k, k→k+1 then k+1→k. Until it arrives (or if it fails) the views simply blend. */
+ const zero=buf(new Float32Array(G*G*2));let flows=null,flowDone=!opt.flow;
+ if(opt.flow)fetch(opt.flow).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>{const a=new Int16Array(ab),sz=G*G*2;if(a.length!==n*2*sz)return;
+  flows=[];for(let m=0;m<n*2;m++){const f=new Float32Array(sz);for(let q=0;q<sz;q++)f[q]=a[m*sz+q]/FS_;flows.push(buf(f));}}).catch(()=>{}).finally(()=>{flowDone=true;dirty=true;});
+ /* textures: fetch every view now, nearest to the front first; upload at most one per frame */
+ const tex=views.map(()=>null),queue=[];let dirty=true;
+ const order=[0];for(let s=1;order.length<n;s++){order.push(s%n);if(order.length<n)order.push((n-s)%n);}
+ order.forEach(i=>{const im=new Image();im.decoding='async';im.src=views[i].f;(im.decode?im.decode():new Promise((ok,no)=>{im.onload=ok;im.onerror=no;})).then(()=>queue.push([i,im])).catch(()=>{});});
+ function upload(){if(!queue.length)return;queue.sort((x,y)=>order.indexOf(x[0])-order.indexOf(y[0]));const [i,im]=queue.shift();
+  const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
+  const pot=!(im.naturalWidth&(im.naturalWidth-1))&&!(im.naturalHeight&(im.naturalHeight-1));if(pot)gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,pot?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  tex[i]=t;dirty=true;}
+ const A=views.map(v=>v.a);
+ function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,(t-a0)/(a1-a0)];}return [0,1,0];}
+ const layer=(t,fl,k,w)=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.bindBuffer(gl.ARRAY_BUFFER,fl);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.uniform1f(U.k,k);gl.uniform1f(U.w,w);gl.drawElements(gl.TRIANGLES,NI,gl.UNSIGNED_SHORT,0);};
+ /* returns true once the frame shows exactly what was asked for */
  function draw(th){
-  const [i0,i1,a0,a1,t]=pair(th),f=(t-a0)/(a1-a0),w=f<.5?0:1,mix=Math.min(1,Math.max(0,(f-.4)/.2)),m=mix*mix*(3-2*mix);
-  // preload neighbors
-  img(i0);img(i1);img((i1+1)%n);img((i0-1+n)%n);
-  const t0=texture(i0),t1=texture(i1);
-  gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(bg[0],bg[1],bg[2],1);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
-  gl.uniform1f(U.piv,piv);gl.uniform1f(U.D,D);gl.uniform1f(U.tanH,1/(D*over));gl.uniform1f(U.asp,canvas.width/canvas.height);gl.uniform3fv(U.bg,bg);gl.uniform1i(U.tex,0);
-  gl.bindBuffer(gl.ARRAY_BUFFER,bP);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
-  gl.bindBuffer(gl.ARRAY_BUFFER,bU);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
-  gl.bindBuffer(gl.ARRAY_BUFFER,bE);gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,1,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,bR);gl.enableVertexAttribArray(3);gl.vertexAttribPointer(3,1,gl.FLOAT,false,0,0);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bI);gl.activeTexture(gl.TEXTURE0);
-  const lim=17*Math.PI/180,rad=d=>Math.max(-lim,Math.min(lim,d*Math.PI/180));
-  const layers=[[t0,-(t-a0),1],[t1,(a1-t),m]];
-  if(!t1)layers[1][2]=0;if(!t0){layers[0][2]=0;layers[1][2]=t1?1:0;}
-  gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-  for(const [tx,d,al] of layers){if(!tx||al<=0)continue;gl.bindTexture(gl.TEXTURE_2D,tx);gl.uniform1f(U.ang,rad(d));gl.uniform1f(U.alpha,al);gl.drawElements(gl.TRIANGLES,NI,gl.UNSIGNED_SHORT,0);}
-  return !!(t0&&t1);
+  const [k,j,f]=pair(th),ta=tex[k],tb=tex[j];if(!ta&&!tb)return false;
+  gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
+  gl.uniform1f(U.asp,canvas.width/canvas.height);gl.uniform1i(U.tex,0);gl.activeTexture(gl.TEXTURE0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,bU);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(1);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bI);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
+  if(ta&&tb){const s=f*f*(3-2*f);
+   if(s<1)layer(ta,flows?flows[2*k]:zero,f,1-s);
+   if(s>0)layer(tb,flows?flows[2*k+1]:zero,1-f,s);
+   return true;}
+  layer(ta||tb,zero,0,1);return false;
  }
  /* interaction */
- let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,vis=true,last=0,ready=false;const t0=performance.now();
+ let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,vis=true,last=0,ready=false,t0=0;
  function size(){const dpr=Math.min(window.devicePixelRatio||1,2),r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));dirty=true;}
- function frame(ts){const t=(ts-t0)/1000,dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
-  if(!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=.94;}else if(idle&&!opt.reduced()){target=Math.sin(t*.22)*34;}}
-  const prev=th;th+=(target-th)*Math.min(1,dt*6);if(Math.abs(th-prev)>.001)dirty=true;
-  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready){ready=true;box.classList.add('ready');}}
+ function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;upload();
+  if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=.94;}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
+  /* follow the pointer closely; drift back into the idle sway gently */
+  const prev=th;let step=(target-th)*Math.min(1,dt*(idle?1.6:7));if(idle)step=Math.max(-50*dt,Math.min(50*dt,step));th+=step;if(Math.abs(th-prev)>.001)dirty=true;
+  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&flowDone){ready=true;t0=ts;box.classList.add('ready');}}
   raf=vis?requestAnimationFrame(frame):0;}
  box.addEventListener('pointerdown',e=>{drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
  box.addEventListener('pointermove',e=>{if(!drag)return;const w=box.clientWidth||400;target=drag.t-(e.clientX-drag.x)/w*200;const now=performance.now();vel=-(e.clientX-drag.px)/w*200/Math.max(1,(now-drag.pt)/16.7);drag.px=e.clientX;drag.pt=now;});
- const up=()=>{if(!drag)return;drag=null;box.classList.remove('drag');clearTimeout(idleT);idleT=setTimeout(()=>{idle=true;vel=0;},4500);};
+ /* after a pause, resume the sway from wherever the house was left, the short way round */
+ function rest(){clearTimeout(idleT);idleT=setTimeout(()=>{const w=360*Math.round(th/360);th-=w;target=th;vel=0;idle=true;t0=performance.now()-Math.asin(Math.max(-1,Math.min(1,th/34)))/.22*1000;},4500);}
+ const up=()=>{if(!drag)return;drag=null;box.classList.remove('drag');rest();};
  box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
- box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;e.preventDefault();idle=false;box.classList.add('used');target+=k;clearTimeout(idleT);idleT=setTimeout(()=>idle=true,4500);});
+ box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;e.preventDefault();idle=false;box.classList.add('used');target+=k;rest();});
  new ResizeObserver(size).observe(box);size();
  new IntersectionObserver(es=>{vis=es[0].isIntersecting&&!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}}).observe(box);
  document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}});
  raf=requestAnimationFrame(frame);
- return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw};
+ return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw,ready:()=>ready&&tex.every(Boolean)&&!!flows};
 }
 return {create};
 })();
