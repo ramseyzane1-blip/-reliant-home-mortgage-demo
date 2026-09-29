@@ -597,11 +597,6 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 .quote{display:flex;gap:10px;align-items:flex-start;padding:14px 16px;border:1px solid var(--line);border-radius:12px;margin-bottom:14px;cursor:pointer}
 .quote input{accent-color:var(--forest);width:20px;height:20px;margin-top:2px}
 /* walk-through */
-.ds{position:fixed;inset:0;z-index:70;background:#070a08;opacity:0;transition:opacity .9s ease;touch-action:none;user-select:none;-webkit-user-select:none}
-.ds.on{opacity:1}
-body.ds-covered>:not(.ds){visibility:hidden} /* nothing to paint under the opaque walk */
-.ds.out{opacity:0;transition:opacity .8s ease}
-.ds-view{position:absolute;inset:0;overflow:hidden}
 /* the short step inside (Walk in js/engines.js): two photos, transforms and opacity only */
 .wk{position:absolute;inset:0;overflow:hidden;background:#070a08}
 .wk-img{position:absolute;max-width:none;will-change:transform,opacity;backface-visibility:hidden}
@@ -612,14 +607,6 @@ body.ds-covered>:not(.ds){visibility:hidden} /* nothing to paint under the opaqu
 .wk-house{display:block;width:clamp(72px,9vw,100px);height:auto;margin:0 auto 14px;overflow:visible;fill:none;stroke:#f3dcae;stroke-width:2.4;
   stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 10px rgba(0,0,0,.55))}
 .wk-house path{stroke-dasharray:1;stroke-dashoffset:1}
-.ds-ui{position:absolute;left:0;right:0;bottom:calc(7% + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:18px;text-align:center;color:#fff;padding-inline:20px;pointer-events:none}
-.ds-cap{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,3.4rem);line-height:1.06;text-shadow:0 2px 14px rgba(0,0,0,.6);margin:0;opacity:0;color:#fff;will-change:opacity}
-.ds-cap small{display:block;font-family:var(--ui);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:#f3dcae;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
-.ds-actions{display:grid;gap:10px;justify-items:center;pointer-events:auto;opacity:0;transition:opacity .8s;will-change:opacity}
-.ds-actions.show{opacity:1}
-.ds :focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 6px rgba(0,0,0,.55)} /* reads over the dark porch and the bright room */
-.ds-top{position:absolute;right:18px;top:calc(18px + env(safe-area-inset-top,0px));display:flex;gap:8px;z-index:3}
-.ds-top button{background:rgba(0,0,0,.5);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:.86rem}
 /* motion stays short and optional */
 @media (prefers-reduced-motion:reduce){.btn,.arr,.path .pi,header,.mbar,.tz-bar i{transition:none}.btn-primary:hover,.btn-white:hover,.btn-go:hover .arr,.path:hover .arr{transform:none}}
 /* skip link and screen-reader-only text */
@@ -667,3 +654,19 @@ summary.disc:hover .disc-h{text-decoration:underline;text-underline-offset:3px}
 summary.disc:focus-visible{outline:3px solid var(--forest);outline-offset:4px}
 details.card>summary.disc{margin:-4px 0}
 @media (prefers-reduced-motion:reduce){.disc-h svg{transition:none}}
+
+/* pre-qualification submitted: a check draws itself and the result cards ease in, once */
+.res-check{display:block;margin:0 0 14px;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.res-check circle{stroke:var(--good);stroke-width:2.5;opacity:.25}
+.res-check path{stroke:var(--good);stroke-width:4;stroke-dasharray:40;stroke-dashoffset:0}
+.fresh .res-check path{animation:resdraw .55s .15s cubic-bezier(.3,.7,.4,1) both}
+.fresh .res-check circle{animation:resfade .4s both}
+.fresh .res-hero>:not(.res-check),.fresh .demo-note,.fresh .grid2>div>*,.fresh>.fine{animation:resin .5s cubic-bezier(.2,.7,.3,1) both}
+.fresh .res-hero>:not(.res-check){animation-delay:.25s}
+.fresh .demo-note{animation-delay:.35s}
+.fresh .grid2>div>:nth-child(1){animation-delay:.42s}.fresh .grid2>div>:nth-child(2){animation-delay:.5s}.fresh .grid2>div>:nth-child(3){animation-delay:.58s}
+.fresh>.fine{animation-delay:.6s}
+@keyframes resdraw{from{stroke-dashoffset:40}to{stroke-dashoffset:0}}
+@keyframes resfade{from{opacity:0}}
+@keyframes resin{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){.fresh *,.fresh>*{animation:none!important}}

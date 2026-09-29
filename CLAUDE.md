@@ -29,7 +29,7 @@ demo/site/js/config.js      Supabase URL + publishable key, demo flag
 demo/site/js/util.js        $, usd, pmt, esc, reduced(), store (localStorage wrapper)
 demo/site/js/data.js        TEAM, REVIEWS, loan programs (P), GLOSS, POSTS, LEGAL
 demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
-demo/site/js/engines.js     Turntable (hero, live 3D with three.js) and Walk (walk-through)
+demo/site/js/engines.js     Turntable (hero, live 3D with three.js)
 demo/site/js/vendor/        three-hero.min.js: three.js r186, only what the hero uses
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
@@ -60,9 +60,8 @@ audit/                      client audit: slide deck (index.html), written repor
   "our Middletown office".
 - **Financing, not real estate:** communicate it through what the site shows (loan steps,
   payments, rates), not with "we don't sell homes" disclaimers.
-- **Photos only in the 3D pieces.** The AI renders appear in the hero turntable and the
-  walk-through, nowhere else. The one other kind of photo is the team's real headshots
-  (`images/team/`), which carry the family feel.
+- **No stock or AI photos.** The house appears only as the hero's 3D model. The one kind of photo
+  is the team's real headshots (`images/team/`), which carry the family feel.
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
@@ -71,12 +70,10 @@ audit/                      client audit: slide deck (index.html), written repor
   the pre-qualification results, so nothing covers them; a modal for the other forms).
 - Blog and newsletter are merged into "The Reliant Letter" on About us.
 
-**Proposed, pending client sign-off:** the hero turntable now shows a 3D model of the same house
-(rendered in Blender, see below) instead of the AI renders, so it can turn a full 360° without
-ghosting. The walk-through still uses the AI renders; the model matches them closely (siding,
-trim, roof, windows, portico, glazed green door with sidelights and lanterns) but not exactly
-(for example, round portico columns instead of square). Renders still appear only in the two 3D
-pieces.
+**Proposed, pending client sign-off:** the hero turntable shows a 3D model of the house (built in
+Blender, see below) instead of the client's AI renders, so it can turn a full 360°. The model
+matches the renders closely (siding, trim, roof, windows, portico, glazed green door with
+sidelights and lanterns) but not exactly (for example, round portico columns instead of square).
 
 ## Content sources
 
@@ -127,7 +124,7 @@ September 2026 audit of the original site.
 - **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
 - NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
 
-## The hero turntable and the walk-through (`js/engines.js`)
+## The hero turntable (`js/engines.js`)
 
 **Turntable** (hero): a real 3D model of the house, drawn live in the page with three.js, so it
 turns smoothly at any angle with no frames to switch between (client pick, September 2026; the
@@ -187,33 +184,23 @@ and `python3 tools/blender/fetch_assets.py` once), then
 a minute, for checking. See `tools/README.md`. The picture pipeline (`house_scene.py frames`,
 `depth`, `tools/house_views.py`) is kept for renders; the page no longer uses it.
 
-**Walk** (after the pre-qualification is submitted; client pick, September 2026, replacing the longer
-WebGL walk with the knock): about 4 seconds. A slow push into the front door (`images/door.jpg`), the
-door brightening into warm light as it dissolves (from 1.05s) into the living room with the fireplace
-(`images/inside-2.jpg`, still easing in), then "Welcome home, [name]" with a house outline drawing
-itself and a soft sweep of light, and "See my results" (focused) at 3.5s. Two photos, CSS transforms
-and opacity only, run by the Web Animations API on the compositor, so it stays smooth on any phone.
-Each photo covers the screen with its anchor (the door, the fireplace) as near the center as covering
-allows, and scales about the anchor. Timeline: `T` in `Walk` in `js/engines.js`. Sound is synthesized
-in `doorAudio()` in `app.js` (porch air, the latch and the door swing during the push, the fire inside);
-`Walk` hands it timed cues through `opts.cue`. The Sound and Skip buttons, Escape, a route change
-(Back, a link) and "See my results" end it and show the results; with `prefers-reduced-motion` it is
-skipped. Test hooks on `window.__walk`: `seek(t)` (show the frame at t seconds), `render(t)`, `time()`,
-`stop()`. Checks: `tools/walk_checks.py` (reduced motion, focus, Escape, route change, sound toggle
-and audio context lifecycle, keyboard focus ring and Enter, 390/1280 light/dark screenshots).
-
-The earlier versions are in git history: the WebGL walk with depth reliefs and a synthesized knock
-(before this change on `main`), and an AI video knock (Seedance 2.0, branch `claude/knock-ai-video`
-at c03840c), which the client dropped as too costly for what it added.
+**After the pre-qualification** (client pick, September 2026): submitting goes straight to the
+results, which open with a short confirmation: a green check draws itself (.55s), then "Pre-qualification
+complete / Welcome home, [name]." and the result cards ease in one after another (about half a
+second in all; `.fresh` and `res*` keyframes in `css/site.css`), and focus moves to the heading. No
+overlay, sound or photos, nothing to skip; with `prefers-reduced-motion` everything shows at once.
+It replaced a door walk-through (a push into the front door and a dissolve into the living room,
+and before that a WebGL walk with a synthesized knock, and an AI video knock on branch
+`claude/knock-ai-video`); they are in git history.
 
 ## Known issues / next up: make the 3D smooth
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. Done: the hero turntable is a real 3D model rendered from every angle (see above).
-2. Done: the walk-through is a short CSS animation (a push into the door, a dissolve to the room,
-   the welcome), smooth on any device.
-3. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
+1. Done: the hero turntable is a live 3D model (see above).
+2. Done: the door walk-through after the pre-qualification is gone; the results open with a short
+   confirmation instead.
+3. Keep `prefers-reduced-motion` behavior: no auto motion.
 
 ## Supabase
 
@@ -236,10 +223,10 @@ the project; greaterpurposeweb.com is the account's existing domain.
 ## Testing
 
 `tools/smoke_test.py` checks the hero turntable (the 3D model loads, turns when dragged), walks every page at 390px (no sideways scroll allowed), completes the
-pre-qualification including an Edit from the review step, renders walk-through frames and
-takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
+pre-qualification including an Edit from the review step, checks the results open with their
+confirmation and focused heading, and takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
 hermetic). Run it before pushing visual changes, with `pip install playwright==1.56.0` (matches the
-pre-installed Chromium). For the walk-through also run `tools/walk_checks.py`.
+pre-installed Chromium).
 
 ## Accessibility & quality bar
 
