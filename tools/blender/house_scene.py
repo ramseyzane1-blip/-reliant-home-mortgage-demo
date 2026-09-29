@@ -3,6 +3,8 @@
     python3 tools/blender/house_scene.py preview [angle] [res] [out.png] [samples]   one test frame
     python3 tools/blender/house_scene.py angles RES OUTPREFIX SAMPLES A1 A2 ...       several test angles
     python3 tools/blender/house_scene.py frames N OUTDIR [res] [samples]             N frames around the house
+    python3 tools/blender/house_scene.py depth RES OUTDIR ROT1 ROT2 ...             depth (EXR) at those rotations
+    python3 tools/blender/house_scene.py ringdepth RES OUT.exr                      depth of the ring alone
     ZOOM="lens,x,z" before any of them renders a close-up (longer lens, shifted camera).
 
 Needs the `bpy` package (pip install bpy). Everything is built in code so the model stays
@@ -1112,6 +1114,30 @@ if __name__ == '__main__':
             P.rotation_euler = (0, 0, math.radians(float(a)))
             C.scene.render.filepath = '%s_%s.png' % (pre, a)
             bpy.ops.render.render(write_still=True)
+    elif mode == 'depth':         # depth only, for the turntable's 3D reprojection: depth res outdir rot1 rot2 ...
+        res, outdir = int(args[1]), args[2]
+        os.makedirs(outdir, exist_ok=True)
+        P = build(res, 1)
+        sc = C.scene; sc.cycles.use_denoising = False; sc.cycles.max_bounces = 0; sc.cycles.transparent_max_bounces = 16
+        sc.view_layers[0].use_pass_z = True; sc.view_layers[0].pass_alpha_threshold = 0   # glass, leaves and grass edges count
+        sc.render.image_settings.media_type = 'MULTI_LAYER_IMAGE'; sc.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'; sc.render.image_settings.color_depth = '32'
+        for a in args[3:]:
+            fp = os.path.join(outdir, 'depth_%s.exr' % a)
+            if os.path.exists(fp): continue
+            P.rotation_euler = (0, 0, math.radians(float(a)))
+            sc.render.filepath = fp
+            bpy.ops.render.render(write_still=True)
+            print('depth', a, flush=True)
+    elif mode == 'ringdepth':     # depth of the ring alone (it does not turn): ringdepth res out.exr
+        res, out = int(args[1]), args[2]
+        build(res, 1)
+        sc = C.scene; sc.cycles.use_denoising = False; sc.cycles.max_bounces = 0
+        for ob in D.objects:
+            if ob.type != 'CAMERA' and ob.name != 'ring': ob.hide_render = True
+        sc.view_layers[0].use_pass_z = True; sc.view_layers[0].pass_alpha_threshold = 0
+        sc.render.image_settings.media_type = 'MULTI_LAYER_IMAGE'; sc.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'; sc.render.image_settings.color_depth = '32'
+        sc.render.filepath = out
+        bpy.ops.render.render(write_still=True)
     elif mode == 'frames':
         n, outdir = int(args[1]), args[2]
         res = int(args[3]) if len(args) > 3 else 768

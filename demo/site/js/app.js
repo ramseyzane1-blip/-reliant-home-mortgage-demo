@@ -370,10 +370,10 @@ function renderPros(){const p=PROS[proK];$('proPanel').innerHTML=`<div class="gr
   <div style="display:grid;gap:12px"><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><p class="fine">Demo layout. Reliant adds the partners they already refer clients to.</p></div></div>`;}
 
 /* ---------- hero: the model home, turnable ---------- */
-const HOUSE_VIEWS=[0,10,20,30,40,45,50,55,60,65,70,75,80,85,90,95,100,110,120,125,130,135,140,150,160,165,170,180,190,200,210,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,330,340,350].map((a,i)=>{const p=String(i).padStart(3,'0');return {f:`images/turn/turn-${p}.webp?v=d35d0ecb`,s:`images/turn/sm/turn-${p}.webp?v=d35d0ecb`,a};});
+const HOUSE_VIEWS=[0,10,20,30,40,45,50,55,60,65,70,75,80,85,90,95,100,110,120,125,130,135,140,150,160,165,170,180,190,200,210,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,330,340,350].map((a,i)=>{const p=String(i).padStart(3,'0');return {f:`images/turn/turn-${p}.webp?v=9a4e0336`,s:`images/turn/sm/turn-${p}.webp?v=9a4e0336`,a};});
 (()=>{const box=$('hphoto'),front=box.querySelector('.hp-fallback');
  const still=()=>{box.classList.add('static');box.removeAttribute('tabindex');box.setAttribute('aria-label','Model of a family home.');};   /* no WebGL: a still picture */
- try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:{front:'images/turn/flow-front.bin?v=d35d0ecb',rest:'images/turn/flow-rest.bin?v=d35d0ecb'},fixed:{f:'images/turn/fixed.webp?v=d35d0ecb',s:'images/turn/sm/fixed.webp?v=d35d0ecb'},front,lost:still});if(!tt)still();window.__turntable=tt;}catch(e){still();}})();
+ try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,depth:{front:'images/turn/depth-front.bin?v=9a4e0336',rest:'images/turn/depth-rest.bin?v=9a4e0336'},fixed:{f:'images/turn/fixed.webp?v=9a4e0336',s:'images/turn/sm/fixed.webp?v=9a4e0336'},front,lost:still});if(!tt)still();window.__turntable=tt;}catch(e){still();}})();
 
 /* ---------- knock, the door opens, walk inside ---------- */
 let soundOn=true;
