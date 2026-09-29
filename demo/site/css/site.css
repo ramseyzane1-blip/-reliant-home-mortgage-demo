@@ -511,13 +511,17 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 .wk-beyond{background-repeat:no-repeat;filter:brightness(.92)}
 .wk-pers{perspective:1600px;perspective-origin:0% 50%}
 .wk-leaf{position:absolute;inset:0;transform-origin:0 50%;transform-style:preserve-3d;background-repeat:no-repeat}
+.wk-glow{position:absolute;left:0;top:0;pointer-events:none;opacity:0;background-repeat:no-repeat}
+i.wk-glow{inset:0}
 .wk-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,.75));opacity:0}
-.wk-edge{position:absolute;top:0;bottom:0;right:0;width:22px;background:linear-gradient(90deg,#16301f,#24452f);transform-origin:100% 50%;transform:rotateY(90deg)}
+.wk-edge{position:absolute;top:0;bottom:0;right:0;width:22px;background:linear-gradient(90deg,#0c1c12,#15291c);transform-origin:100% 50%;transform:rotateY(90deg)}
+.wk-gap{position:absolute;background:linear-gradient(90deg,rgba(255,214,150,0),rgba(255,226,180,.95) 70%,rgba(255,214,150,.4));opacity:0;pointer-events:none}
 .wk-spill{position:absolute;background:radial-gradient(ellipse at 50% 0,rgba(255,196,120,.55),rgba(255,196,120,0) 68%);mix-blend-mode:screen;opacity:0;pointer-events:none}
 .wk-warm{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(255,190,110,.18),rgba(255,190,110,0) 60%);mix-blend-mode:screen;opacity:0;pointer-events:none}
 .ds-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 58%,rgba(0,0,0,.45) 100%)}
 .ds-ui{position:absolute;left:0;right:0;bottom:calc(7% + env(safe-area-inset-bottom,0px));display:grid;justify-items:center;gap:18px;text-align:center;color:#fff;padding-inline:20px;pointer-events:none}
 .ds-cap{font-family:var(--display);font-size:clamp(1.9rem,4.4vw,3.4rem);line-height:1.06;text-shadow:0 6px 40px rgba(0,0,0,.7);margin:0;opacity:0;color:#fff}
+.ds-cap .kk{display:inline-block;opacity:0}
 .ds-cap small{display:block;font-family:var(--ui);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;color:#f3dcae;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,.6)}
 .ds-actions{display:grid;gap:10px;justify-items:center;pointer-events:auto;opacity:0;transition:opacity .8s}
 .ds-actions.show{opacity:1}

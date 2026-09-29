@@ -76,7 +76,11 @@ Drag, arrow keys, or idle sway around the front.
 **Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
 camera follows the door (outside) then the fireplace (inside); each image takes over when it
 has enough resolution for the current distance. The door leaf is a CSS 3D quad hinged on the
-left, with the open-door render showing through the doorway. Two soft synthesized knocks.
+left, with the open-door render showing through the doorway. The door sequence: three knocks
+(each nudges the camera and the door), the hall light warms the door glass, footsteps, the lock
+turns, the door cracks open with a line of light, then swings wide on an underdamped spring.
+All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks, footsteps, deadbolt,
+latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`.
 It ends in a look-around (mouse, drag or arrows) until the visitor clicks "See my results".
 Timeline constants are in `T` inside `Walk.play`.
 

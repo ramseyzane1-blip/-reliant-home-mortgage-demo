@@ -84,7 +84,7 @@ const SHOTS={
   {f:'images/approach-2.jpg',wh:W1448,a:[640,302,809,693]},
   {f:'images/approach-3.jpg',wh:W1448,a:[628,255,817,719]},
   {f:'images/approach-4.jpg',wh:W1448,a:[562,167,875,839]},
-  {f:'images/door.jpg',wh:[1350,1165],a:[503,97,899,969]}],
+  {f:'images/door.jpg',wh:[1350,1165],a:[503,97,899,969],glass:[330,120,1080,900]}],
  open:{f:'images/door-open.jpg',wh:W1448,door:[505,92,915,925],fire:[711,499,826,598]},
  inside:[
   {f:'images/door-open.jpg',wh:W1448,a:[711,499,826,598]},
@@ -95,25 +95,38 @@ const SHOTS={
  left:{f:'images/look-left.jpg',wh:W1448,a:[1046,448,1256,602]},
  right:{f:'images/look-right.jpg',wh:W1448,a:[304,458,498,630]}};
 const files=()=>{const s=new Set();SHOTS.approach.forEach(x=>s.add(x.f));SHOTS.inside.forEach(x=>s.add(x.f));[SHOTS.open,SHOTS.left,SHOTS.right].forEach(x=>s.add(x.f));return [...s];};
-const cache={};
-function preload(){return Promise.all(files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>res(i));};i.onerror=()=>res(null);i.src=f;}))));}
+const cache={},imgs={};
+function preload(){return Promise.all(files().map(f=>cache[f]||(cache[f]=new Promise(res=>{const i=new Image();i.decoding='async';i.onload=()=>{(i.decode?i.decode():Promise.resolve()).catch(()=>{}).then(()=>{imgs[f]=i;res(i);});};i.onerror=()=>res(null);i.src=f;}))));}
 const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),seg=(t,a,b)=>cl((t-a)/(b-a)),ss=x=>x*x*(3-2*x),eio=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,lerp=(a,b,t)=>a+(b-a)*t;
 const cx=r=>(r[0]+r[2])/2,cy=r=>(r[1]+r[3])/2,rw=r=>r[2]-r[0];
+/* Someone switches the hall light on: a warm wash over the door glass. The mask keeps only the
+   bright orange pixels (the lit glass), at half size. onLeaf picks the glass in the door leaf
+   (it swings with the door) or the sidelights around it. */
+function glowCanvas(s,onLeaf){const img=imgs[s.f];if(!img)return null;
+ try{const k=.5,W=Math.round(s.wh[0]*k),H=Math.round(s.wh[1]*k),c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');g.drawImage(img,0,0,W,H);const d=g.getImageData(0,0,W,H),p=d.data,r=s.a.map(v=>v*k),q=s.glass.map(v=>v*k);
+  for(let y=0,i=0;y<H;y++)for(let x=0;x<W;x++,i+=4){const leaf=x>=r[0]&&x<r[2]&&y>=r[1]&&y<r[3],box=x>=q[0]&&x<q[2]&&y>=q[1]&&y<q[3];
+   let m=0;if(box&&leaf===onLeaf){const R=p[i]/255,G=p[i+1]/255,B=p[i+2]/255;m=cl((R-B-.16)/.22)*cl(((R+G+B)/3-.33)/.3);}
+   p[i]=255;p[i+1]=205;p[i+2]=140;p[i+3]=m*255;}
+  g.putImageData(d,0,0);return c;}catch(e){return null;}}
 
 function play(root,opts){
  /* ---- DOM ---- */
  const stage=document.createElement('div');stage.className='wk-stage';root.appendChild(stage);
  function layer(shot,extra){const d=document.createElement('div');d.className='wk-l';d.style.width=shot.wh[0]+'px';d.style.height=shot.wh[1]+'px';
   const im=document.createElement('img');im.src=shot.f;im.alt='';im.width=shot.wh[0];im.height=shot.wh[1];d.appendChild(im);if(extra)extra(d);stage.appendChild(d);d.style.opacity=0;return d;}
- let leaf,shade,spill;
+ let leaf,shade,spill,gap,glowLeaf,glowSide;
  function doorRig(d){const s=SHOTS.approach[4],o=SHOTS.open,r=s.a,w=rw(r),h=r[3]-r[1];
   const beyond=document.createElement('div');beyond.className='wk-beyond';Object.assign(beyond.style,{left:r[0]+'px',top:r[1]+'px',width:w+'px',height:h+'px'});
   const sx=w/rw(o.door),sy=h/(o.door[3]-o.door[1]);Object.assign(beyond.style,{backgroundImage:`url(${o.f})`,backgroundSize:`${o.wh[0]*sx}px ${o.wh[1]*sy}px`,backgroundPosition:`${-o.door[0]*sx}px ${-o.door[1]*sy}px`});
   const pers=document.createElement('div');pers.className='wk-pers';Object.assign(pers.style,{left:r[0]+'px',top:r[1]+'px',width:w+'px',height:h+'px'});
   leaf=document.createElement('div');leaf.className='wk-leaf';Object.assign(leaf.style,{backgroundImage:`url(${s.f})`,backgroundSize:`${s.wh[0]}px ${s.wh[1]}px`,backgroundPosition:`${-r[0]}px ${-r[1]}px`});
+  const lg=glowCanvas(s,true);if(lg){glowLeaf=document.createElement('i');glowLeaf.className='wk-glow';Object.assign(glowLeaf.style,{backgroundImage:`url(${lg.toDataURL()})`,backgroundSize:`${s.wh[0]}px ${s.wh[1]}px`,backgroundPosition:`${-r[0]}px ${-r[1]}px`});leaf.appendChild(glowLeaf);}
   shade=document.createElement('i');shade.className='wk-shade';leaf.appendChild(shade);const edge=document.createElement('i');edge.className='wk-edge';leaf.appendChild(edge);pers.appendChild(leaf);
+  glowSide=glowCanvas(s,false);if(glowSide){glowSide.className='wk-glow';Object.assign(glowSide.style,{width:s.wh[0]+'px',height:s.wh[1]+'px'});d.appendChild(glowSide);}
   spill=document.createElement('i');spill.className='wk-spill';Object.assign(spill.style,{left:(r[0]-w*.35)+'px',top:(r[3]-6)+'px',width:(w*1.7)+'px',height:(h*.3)+'px'});
-  d.appendChild(beyond);d.appendChild(pers);d.appendChild(spill);}
+  gap=document.createElement('i');gap.className='wk-gap';Object.assign(gap.style,{left:(r[2]-30)+'px',top:r[1]+'px',width:'40px',height:h+'px'}); // warm light in the crack along the latch side
+  d.appendChild(beyond);d.appendChild(gap);d.appendChild(pers);d.appendChild(spill);}
  const warm=document.createElement('i');warm.className='wk-warm';root.appendChild(warm);
  const app=SHOTS.approach.map((s,i)=>({s,el:layer(s,i===4?doorRig:null)}));
  const ins=SHOTS.inside.map(s=>({s,el:layer(s)}));
@@ -133,26 +146,36 @@ function play(root,opts){
  function hide(list){list.forEach(L=>{L.el.style.opacity=0;L.el.style.visibility='hidden';});}
 
  /* ---- timeline (seconds) ---- */
- const T={app0:.5,app1:6.4,knock:[7.1,7.55],open0:8.3,open1:10.7,xf0:10.2,xf1:11.4,in0:11.2,in1:15.4,cap:14.9,done:15.8};
+ /* arrive, three raps, the hall light comes on, footsteps, the lock turns, the door cracks open,
+    a beat, then someone swings it wide */
+ const T={app0:.5,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in0:12,in1:16.2,cap:15.7,done:16.6};
+ const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
+ const OPEN=72,CRACK=6;
+ function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
+  // a hand on the door: speeds up, then eases out with a slight settle (an underdamped spring from rest)
+  const u=t-T.swing,w=4.2,z=.8,wd=w*Math.sqrt(1-z*z);return OPEN-(OPEN-CRACK)*Math.exp(-z*w*u)*(Math.cos(wd*u)+z*w/wd*Math.sin(wd*u));}
+ function rap(t){let j=0;T.knock.forEach(k=>{if(t>=k){const d=t-k;j+=Math.exp(-d*30)*Math.cos(d*55);}});return j;} // each knock nudges the camera and the door, then settles
  let A0,A1,I1,t0=0,stopped=false,explore=false,capState='',p=0,pt=0,py=0,pty=0,lastMove=0,drag=null;
  function layout(){vw=root.clientWidth;vh=root.clientHeight;A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(SHOTS.approach[4],SHOTS.approach[4].a,1);
   const J=SHOTS.inside[4];I1=natural(J,J.a,1.05);}
  layout();addEventListener('resize',layout);
- let doorOut=null;
  function render(t){
   const bob=Math.sin(t*Math.PI*2*.9)*2.2,sway=Math.sin(t*Math.PI*.9)*1.6,br=Math.sin(t*.8)*1.2+Math.sin(t*1.9)*.6;
   // approach + door
   if(t<T.xf1){
-   const u=eio(seg(t,T.app0,T.app1)),walkAmt=Math.sin(Math.PI*seg(t,T.app0,T.app1));
-   const push=1+.05*ss(seg(t,T.app1,T.open1))+.07*eio(seg(t,T.open0+.8,T.xf1));
+   const u=eio(seg(t,T.app0,T.app1)),walkAmt=Math.sin(Math.PI*seg(t,T.app0,T.app1)),j=rap(t);
+   const lean=.014*ss(seg(t,T.knock[0]-.4,T.knock[0]-.05))-.01*ss(seg(t,T.knock[2]+.25,T.knock[2]+1));
+   const push=(1+.025*ss(seg(t,T.app1,T.crack))+lean+.07*eio(seg(t,T.swing+.35,T.xf1)))*(1+.0035*j);
    const W=Math.exp(lerp(Math.log(A0.w),Math.log(A1.w*1.13),u))*push;
-   const x=lerp(A0.x,A1.x,u)+sway*walkAmt+br*.4,y=lerp(A0.y,A1.y,u)+bob*walkAmt+br*.3;
+   const x=lerp(A0.x,A1.x,u)+sway*walkAmt+br*.4-.8*j,y=lerp(A0.y,A1.y,u)+bob*walkAmt+br*.3+1.6*j;
    chain(app,W,x,y,Math.log(1.12));
-   const Ld=app[4];const sc=W/rw(Ld.s.a);doorOut={W,x,y,sc};
-   const op=eio(seg(t,T.open0,T.open1));leaf.style.transform=`rotateY(${op*72}deg)`;shade.style.opacity=(op*.62).toFixed(3);spill.style.opacity=(op*.9).toFixed(3);
-   warm.style.opacity=(op*.35).toFixed(3);
+   const th=doorAngle(t),op=th/OPEN;leaf.style.transform=`rotateY(${(th+.35*j).toFixed(3)}deg)`;
+   shade.style.opacity=(.42*(1-Math.cos(th*Math.PI/180))/(1-Math.cos(OPEN*Math.PI/180))).toFixed(3);
+   spill.style.opacity=(.9*Math.min(1,Math.sin(th*Math.PI/180)/Math.sin(OPEN*Math.PI/180))).toFixed(3);warm.style.opacity=(op*.35).toFixed(3);
+   gap.style.opacity=(ss(seg(th,.2,CRACK))*(1-ss(seg(th,14,40)))).toFixed(3);
+   const lit=ss(seg(t,T.light,T.light+.16));if(glowSide)glowSide.style.opacity=(lit*.55).toFixed(3);if(glowLeaf)glowLeaf.style.opacity=(lit*.55).toFixed(3);
    const fx=ss(seg(t,T.xf0,T.xf1));
-   if(fx>0){const o=SHOTS.open,Lo=ins[0];const Wd=W*(rw(o.door)/rw(Ld.s.a));const scO=Wd/rw(o.door);
+   if(fx>0){const o=SHOTS.open,Lo=ins[0];const Wd=W*(rw(o.door)/rw(app[4].s.a));const scO=Wd/rw(o.door);
     // place the open-door image on its doorway so it lines up with the door we just opened
     const r=place(Lo,scO,x,y,o.door,fx);Lo._t=r;}
    else hide([ins[0]]);
@@ -175,10 +198,11 @@ function play(root,opts){
    }else{chain(ins,W,x,y,Math.log(1.1));hide([lookL,lookR]);}
    warm.style.opacity=(.35*(1-seg(t,T.xf1,T.in1))).toFixed(3);
   }
-  // knocks
-  T.knock.forEach((k,i)=>{if(t>=k&&!render['k'+i]){render['k'+i]=1;opts.knock&&opts.knock();}});
-  // captions
-  if(t<T.open1){setCap('a',opts.capA);opts.cap.style.opacity=(seg(t,T.app1-.4,T.app1+.3)*(1-seg(t,T.open0+.6,T.open0+1.3))).toFixed(3);}
+  // sounds: each cue is handed over a moment early with its exact delay, so it lands on the frame it belongs to
+  cues.forEach((c,i)=>{if(t>=c[0]-.06&&!fired.has(i)){fired.add(i);opts.cue&&opts.cue(c[1],c[2]||0,Math.max(0,c[0]-t));}});
+  // captions: "Knock," and "knock." land on the first two knocks
+  if(t<T.open1){setCap('a',opts.capA);opts.cap.style.opacity=(seg(t,T.app1-.4,T.app1+.3)*(1-seg(t,T.crack+.3,T.crack+1))).toFixed(3);
+   opts.cap.querySelectorAll('.kk').forEach((w,i)=>{const v=ss(seg(t,T.knock[i]-.02,T.knock[i]+.22));w.style.opacity=v.toFixed(3);w.style.transform=`translateY(${((1-v)*6).toFixed(2)}px)`;});}
   else{setCap('b',opts.capB);opts.cap.style.opacity=seg(t,T.cap,T.cap+.9).toFixed(3);}
   if(t>=T.done&&!render.shown){render.shown=1;opts.onDone&&opts.onDone();}
  }
