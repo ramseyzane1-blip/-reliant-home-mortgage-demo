@@ -69,7 +69,7 @@ async def main():
         if 'Up to' not in await pg.evaluate("document.getElementById('results').textContent"): errs.append('results show no affordability estimate')
         if await pg.evaluate('!!window.__walk'):
             await pg.evaluate('__walk.stop()')
-            for t in [1.0, 4.5, 7.3, 9.8, 10.6, 13.6, 18.0]:
+            for t in [.5, 1.4, 2.4, 3.9]:
                 await pg.evaluate(f'__walk.render({t})'); await pg.wait_for_timeout(250)
                 await pg.screenshot(path=f'{OUT}/walk_{t}.png')
         await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1800)
