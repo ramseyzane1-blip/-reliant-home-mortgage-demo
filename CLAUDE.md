@@ -33,6 +33,7 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 ```
@@ -55,6 +56,7 @@ tools/smoke_test.py         Playwright end-to-end test
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
+  Both are self-hosted and preloaded, with size-matched fallback faces (no layout shift on swap).
 - **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice (inline on
   the pre-qualification results, so nothing covers them; a modal for the other forms).
 - Blog and newsletter are merged into "The Reliant Letter" on About us.

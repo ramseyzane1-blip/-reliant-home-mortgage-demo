@@ -1,9 +1,18 @@
 /* Layout: crisp white and cool neutral for clarity, Reliant forest green for every action, sand only as a quiet accent from the logo swoosh. Plain-English content organized by what the visitor is trying to do */
+/* Fonts are self-hosted (Latin subset from Google Fonts, SIL OFL, see fonts/OFL-*.txt) and preloaded in
+   index.html, so no third-party stylesheet blocks the first paint. The fallback faces are sized to the
+   webfonts' metrics (measured against Arial/Times-compatible Liberation fonts) so text barely moves when
+   the webfont swaps in. */
+@font-face{font-family:"DM Serif Display";font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/dm-serif-display.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"DM Serif Display";font-style:italic;font-weight:400;font-display:swap;src:url(../fonts/dm-serif-display-italic.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Public Sans";font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/public-sans.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"DM Serif Fallback";src:local("Times New Roman"),local("TimesNewRomanPSMT"),local("Liberation Serif");size-adjust:110.2%;ascent-override:94%;descent-override:30.4%;line-gap-override:0%}
+@font-face{font-family:"Public Sans Fallback";src:local("Arial"),local("ArialMT"),local("Liberation Sans"),local("Helvetica");size-adjust:104.9%;ascent-override:90.6%;descent-override:21.5%;line-gap-override:0%}
 :root{
   --bg:#ffffff; --alt:#f2f5f3; --surface:#ffffff; --tint:#e7efea; --ink:#10201a; --muted:#46564d; --line:#dbe3de;
   --forest:#1c4f33; --forest-h:#153d27; --on-forest:#ffffff; --accent-ink:#1c4f33; --head:#1c4f33; --sand:#c3b69c; --sand-soft:#f3efe6; --star:#b8862b; --good:#2f7a50; --warn:#a2652a;
-  --display:"DM Serif Display", Georgia, "Times New Roman", serif;
-  --ui:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display:"DM Serif Display", "DM Serif Fallback", Georgia, "Times New Roman", serif;
+  --ui:"Public Sans", "Public Sans Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
