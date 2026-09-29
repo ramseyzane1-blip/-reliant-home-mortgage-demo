@@ -1,5 +1,5 @@
 /* ================= Turntable: drag the model home around 360 degrees =================
-   A 3D model of the house (tools/blender/house_scene.py) rendered as a 360-degree turn (55 frames),
+   A 3D model of the house (tools/blender/house_scene.py) rendered as a 360-degree turn (144 frames, 2.5 degrees apart),
    with a transparent background so the house floats on the page. Each frame comes with its depth
    (images/turn/depth-*.bin, from Blender), so it is drawn as a relief and turned in 3D to any angle
    between frames: things move with their real parallax (a tree trunk in front of a wall) and
@@ -114,7 +114,11 @@ function create(box,canvas,views,opt){
  /* every frame stays on the GPU (a spin that has to wait for a frame shows as a jump); phones decode
     them a little smaller so all of them fit: 672px x 55 frames = 95 MB, 512px = 55 MB on devices
     reporting under 4 GB */
- const POOL=n,TEXMAX=navigator.deviceMemory&&navigator.deviceMemory<4?512:matchMedia('(pointer: coarse)').matches?672:960;
+ const low=navigator.deviceMemory&&navigator.deviceMemory<4,touch=matchMedia('(pointer: coarse)').matches;
+ const TEXMAX=low?512:touch?672:960,BUDGET=(low?50:touch?90:160)*1048576;
+ /* the frames kept on the GPU: as many of the nearest as fit the budget (at 960px about 43, at
+    672px about 50); a frame not in yet is covered by the nearest one that is, turned in 3D */
+ const pool=()=>Math.max(12,Math.min(n,Math.floor(BUDGET/(4*(texSize||TEXMAX)**2))));
  const A=views.map(v=>v.a),adist=(i,th)=>Math.abs(((A[i]-th)%360+540)%360-180);
  /* use the copy the fallback <img> already loaded (so frame 0 is not fetched twice); before it has chosen, pick by size: phones get the 768px copies */
  const small=()=>{const s=opt.front&&opt.front.currentSrc;return s?s.indexOf('/sm/')>=0&&texSize<=768:texSize<=768;};
@@ -131,12 +135,12 @@ function create(box,canvas,views,opt){
  function fetchRest(){if(allFetched||asleep)return;allFetched=true;
   if(opt.depth&&!depRest){depRest=true;fetchDepth(opt.depth.rest,()=>{});}
   /* frames beyond the pool only go into the HTTP cache, so turning to them later needs no network */
-  if(!warmed&&POOL<n){warmed=true;byDist(cur).slice(POOL).forEach(i=>fetch(url(i),{priority:'low'}).then(r=>r.blob()).catch(()=>{}));}}
+  if(!warmed&&pool()<n){warmed=true;byDist(cur).slice(pool()).forEach(i=>fetch(url(i),{priority:'low'}).then(r=>r.blob()).catch(()=>{}));}}
  function startFetch(){if(started||!texSize)return;started=true;if(opt.depth)fetchDepth(opt.depth.front,()=>{depFront=true;});want();}
  /* keep asking for what the current view needs, nearest first (covers evicted frames and failed
     downloads): until the hero is ready only the front and its two neighbors */
- function want(){if(!started||asleep)return;fetchFixed();const R=ready?40:12;let live=0;for(let i=0;i<n;i++)if(tex[i]||busy[i]||dec[i])live++;
-  for(const i of nearFirst()){if(adist(i,cur)<=R||(allFetched&&(tex[i]||live<POOL))){if(!tex[i]&&!busy[i]&&!dec[i])live++;fetchImg(i);}}}
+ function want(){if(!started||asleep)return;fetchFixed();const R=ready?40:3,P=pool();let live=0;for(let i=0;i<n;i++)if(tex[i]||busy[i]||dec[i])live++;
+  for(const i of nearFirst()){if(adist(i,cur)<=R||(allFetched&&(tex[i]||live<P))){if(!tex[i]&&!busy[i]&&!dec[i])live++;fetchImg(i);}}}
  function sleep(){if(asleep||lost||!started)return;asleep=true;texGen++;ready=false;box.classList.remove('ready');
   for(let i=0;i<N;i++){if(tex[i])gl.deleteTexture(tex[i]);tex[i]=null;gen[i]=0;if(dec[i]&&dec[i].close)dec[i].close();dec[i]=null;}
   if(fx)gl.deleteTexture(fx);fx=null;fxGen=0;allFetched=false;freeFb();th=target=vel=0;idle=true;drag=null;box.classList.remove('drag');
@@ -144,10 +148,10 @@ function create(box,canvas,views,opt){
  function wake(){if(!asleep)return;asleep=false;size();dirty=true;want();}
  function upload(needed){
   let best=-1;for(let i=0;i<N;i++)if(dec[i]&&(best<0||adist(i,cur)<adist(best,cur)))best=i;
-  if(best<0||(drag&&needed.indexOf(best)<0))return;
+  if(best<0||(drag&&needed.indexOf(best)<0&&adist(best,cur)>6))return;   /* while dragging, only frames about to be needed */
   let t=tex[best];
   if(!t){const live=[];for(let i=0;i<n;i++)if(tex[i])live.push(i);
-   if(live.length>=POOL){const far=live.reduce((a,b)=>adist(b,cur)>adist(a,cur)?b:a);
+   if(live.length>=pool()){const far=live.reduce((a,b)=>adist(b,cur)>adist(a,cur)?b:a);
     if(adist(far,cur)<=adist(best,cur)){if(dec[best].close)dec[best].close();dec[best]=null;return;}
     t=tex[far];tex[far]=null;gen[far]=0;}
    else t=gl.createTexture();}

@@ -30,7 +30,7 @@ OUT = os.path.join(ROOT, 'demo', 'site', 'images')
 SMALL = 768  # phone copies in turn/sm/
 FIXED_TOL = 6 / 255  # a pixel is fixed if it never differs from the median frame by more than this
 FRONT = 40  # degrees: views this close to the front go in depth-front.bin (loaded with the front frames)
-DGRID = 161  # depth mesh: DGRID x DGRID vertices over the frame (about 6px apart at 960)
+DGRID = 121  # depth mesh: DGRID x DGRID vertices over the frame (8px apart at 960; frames 2.5 degrees apart each turn at most ~1.25)
 # depth-*.bin: b'DEP1', uint16 view count, uint16 DGRID, then per view uint16 index, float32 near,
 # float32 far (meters along the camera axis), then uint8 depth per vertex per view (0 = near,
 # 254 = far, 255 = the ring, which does not turn). Background (no surface) takes the depth of the

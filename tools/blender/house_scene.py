@@ -1049,7 +1049,7 @@ SKY_STRENGTH = float(os.environ.get('SKY_STRENGTH', '.75'))
 SUN_ENERGY = float(os.environ.get('SUN_ENERGY', '3.2'))
 
 
-def lighting_camera(res, samples=64):
+def lighting_camera(res, samples=64, P=None, ringob=None):
     sc = C.scene
     sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'
     sc.cycles.samples = samples; sc.cycles.use_denoising = True; sc.cycles.denoiser = 'OPENIMAGEDENOISE'
@@ -1073,6 +1073,20 @@ def lighting_camera(res, samples=64):
     s = D.lights.new('sun', 'SUN'); s.energy = SUN_ENERGY; s.color = (1.0, .62, .36); s.angle = math.radians(1.2)
     so = D.objects.new('sun', s); link(so)
     so.rotation_euler = (math.pi / 2 - SUN_EL, 0, SUN_AZ + math.pi / 2)   # lamp shines along -Z
+    if P is not None and ringob is not None and os.environ.get('SUN_TURNS'):   # not used for the frames on the site yet
+        # The sun turns with the house, like walking around a real house on a sunny afternoon, so
+        # every frame has the same light and shadows on the house and the site can turn one frame
+        # into the next in 3D without a jump. (The sky only varies with height, so it looks the
+        # same from every side.) The ring stays still, so it gets its own fixed sun that lights
+        # only the ring and that nothing else shades, and the house's sun ignores the ring.
+        so.parent = P
+        only = D.collections.new('ring_only'); only.objects.link(ringob)
+        excl = D.collections.new('not_ring'); excl.objects.link(ringob)
+        excl.collection_objects[0].light_linking.link_state = 'EXCLUDE'
+        so.light_linking.receiver_collection = excl; so.light_linking.blocker_collection = excl
+        s2 = D.lights.new('ring_sun', 'SUN'); s2.energy = SUN_ENERGY; s2.color = s.color; s2.angle = s.angle
+        so2 = D.objects.new('ring_sun', s2); link(so2); so2.rotation_euler = so.rotation_euler.copy()
+        so2.light_linking.receiver_collection = only; so2.light_linking.blocker_collection = only
     cam = D.cameras.new('cam'); cam.lens = 80
     co = D.objects.new('cam', cam); link(co); sc.camera = co
     el = math.radians(7); dist = 60
@@ -1091,8 +1105,8 @@ def build(res=768, samples=64):
     M = materials()
     P = D.objects.new('turn', None); link(P)
     PR = protos(M)
-    house(M, P); grounds(M, P, PR); plantings(M, P, PR); ring(M)
-    lighting_camera(res, samples)
+    house(M, P); grounds(M, P, PR); plantings(M, P, PR); rg = ring(M)
+    lighting_camera(res, samples, P, rg)
     return P
 
 
