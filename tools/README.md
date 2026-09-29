@@ -13,7 +13,8 @@
 python3 tools/blender/fetch_assets.py                                  # once
 python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270  # test views (~1 min each)
 python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64         # the turn (~80 min, 4 cores)
-python3 tools/house_views.py /tmp/turn
+python3 tools/blender/house_scene.py angles 960 /tmp/mid/b 64 45 55 65 75 85 95 105 115 125 135 195 225 235 265 275 285 295 305 315
+python3 tools/house_views.py /tmp/turn /tmp/mid                        # in-betweens where 10° ghosted
 ```
 
 `house_views.py` writes into `demo/site/images/turn/`: `fixed.webp` (everything that looks the same
@@ -21,7 +22,7 @@ in every frame, drawn still on top), `turn-NNN.webp` (the frames with those part
 keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
 (768×768 for phones, about 64 KB), `flow.bin` (optical flow between neighboring frames on a
 33×33 grid, forward-backward checked, smoothed where the match is poor and held at zero on the
-fixed parts; int8 with one scale per field: 153 KB, 70 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
+fixed parts; int8 with one scale per field: 234 KB, 110 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
 `js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
 but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.

@@ -79,8 +79,8 @@ placeholders.
 ## The two 3D pieces (`js/engines.js`)
 
 **Turntable** (hero): a real 3D model of the house, built in code in Blender
-(`tools/blender/house_scene.py`) and rendered as a 360° turn: 36 frames, one every 10°, with a
-transparent background so the house, plinth and ring float on the page with no card (client
+(`tools/blender/house_scene.py`) and rendered as a 360° turn: 55 frames, every 10° around the front
+and every 5° on the sides and back (where 10° steps ghosted mid-morph), with a transparent background so the house, plinth and ring float on the page with no card (client
 request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
 model has lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed
 green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
@@ -89,7 +89,7 @@ gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass a
 Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
 `fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
 of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
-each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 153 KB (70 KB as served,
+each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 234 KB (110 KB as served,
 brotli). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
 
 In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along
@@ -100,11 +100,11 @@ on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile,
 `sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
 hero is about to scroll into view: then the flow and the 9 frames the idle sway uses (front
 ±40°), and the rest once the hero is ready or the visitor starts turning. On a throttled phone
-profile the hero is interactive after about 550 KB at 3.7 s (the old set: 2.4 MB at 13.7 s).
+profile the hero is interactive after about 650 KB at 4.6 s (the old set: 2.4 MB at 13.9 s).
 Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
 the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
-on screen is missing; the decoded copy is released after upload, so all 36 on the GPU take about
-74 MB on phones. Devices reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the
+on screen is missing; the decoded copy is released after upload. Touch devices keep at most 36 on the GPU (about 74 MB) and re-fetch the rest from the
+HTTP cache. Devices reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the
 16 nearest and re-fetch others from the HTTP cache. Failed frames retry with backoff. Drag, arrow
 keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
 without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
@@ -114,7 +114,9 @@ To change the house: edit `house_scene.py`, preview with
 `python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
 and `python3 tools/blender/fetch_assets.py` once), render with
 `python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU
-cores), then run `python3 tools/house_views.py /tmp/turn`. See `tools/README.md`.
+cores) plus the 5° in-betweens with `angles 960 /tmp/mid/b 64 <Blender rotations>` (the current set:
+45 55 65 75 85 95 105 115 125 135 195 225 235 265 275 285 295 305 315), then run
+`python3 tools/house_views.py /tmp/turn /tmp/mid`. See `tools/README.md`.
 
 **Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
 a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
