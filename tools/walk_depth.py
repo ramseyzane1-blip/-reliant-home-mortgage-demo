@@ -18,7 +18,7 @@ import cv2, numpy as np, onnxruntime as ort
 
 IMG = os.path.join(os.path.dirname(__file__), '..', 'demo', 'site', 'images')
 SHOTS = [  # name, anchor rectangle (same as Walk.SHOTS)
-    ('approach-1', [618, 526, 693, 676]), ('approach-2', [640, 302, 809, 693]), ('approach-3', [628, 255, 817, 719]),
+    ('approach-2', [640, 302, 809, 693]), ('approach-3', [628, 255, 817, 719]),
     ('approach-4', [562, 167, 875, 839]), ('door', [503, 97, 899, 969]), ('door-open', [711, 499, 826, 598]),
     ('inside-1', [721, 369, 849, 479]), ('inside-2', [696, 431, 852, 565]), ('inside-3', [729, 457, 919, 620]),
     ('inside-4', [660, 461, 853, 627])]
