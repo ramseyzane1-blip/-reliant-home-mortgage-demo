@@ -89,7 +89,7 @@ gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass a
 Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
 `fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
 of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
-each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 234 KB (110 KB as served,
+each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 234 KB (104 KB as served,
 brotli). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
 
 In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along

@@ -22,7 +22,7 @@ in every frame, drawn still on top), `turn-NNN.webp` (the frames with those part
 keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
 (768×768 for phones, about 64 KB), `flow.bin` (optical flow between neighboring frames on a
 33×33 grid, forward-backward checked, smoothed where the match is poor and held at zero on the
-fixed parts; int8 with one scale per field: 234 KB, 110 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
+fixed parts; int8 with one scale per field: 234 KB, 104 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
 `js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
 but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
