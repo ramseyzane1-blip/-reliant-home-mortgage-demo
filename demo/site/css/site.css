@@ -101,6 +101,7 @@ header{background:var(--bg);border-bottom:1px solid var(--line);position:sticky;
 .hphoto.ready .hp-fallback{visibility:hidden}
 .hp-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:.8rem;font-weight:600;color:#10201a;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);border-radius:999px;padding:7px 14px;box-shadow:0 4px 14px rgba(16,32,26,.12);pointer-events:none;transition:opacity .5s}
 .hphoto.used .hp-hint{opacity:0}
+.hphoto.static{cursor:default}.hphoto.static .hp-hint{display:none}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;padding-block:36px 44px;gap:32px}.hphoto{justify-self:center;max-width:480px}}
 
 /* sections */

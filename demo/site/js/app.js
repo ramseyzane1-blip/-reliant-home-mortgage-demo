@@ -352,8 +352,8 @@ function renderPros(){const p=PROS[proK];$('proPanel').innerHTML=`<div class="gr
   <div style="display:grid;gap:12px"><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><div class="slotp"><b>Partner name</b><br>Company · Phone · Area served</div><p class="fine">Demo layout. Reliant adds the partners they already refer clients to.</p></div></div>`;}
 
 /* ---------- hero: the model home, turnable ---------- */
-const HOUSE_VIEWS=[{"f": "images/house-00.webp", "a": 0}, {"f": "images/house-01.webp", "a": 14}, {"f": "images/house-02.webp", "a": 25}, {"f": "images/house-03.webp", "a": 36}, {"f": "images/house-04.webp", "a": 90}, {"f": "images/house-05.webp", "a": 135}, {"f": "images/house-06.webp", "a": 180}, {"f": "images/house-07.webp", "a": 225}, {"f": "images/house-08.webp", "a": 270}, {"f": "images/house-09.webp", "a": 318}, {"f": "images/house-10.webp", "a": 340}, {"f": "images/house-11.webp", "a": 348}];
-(()=>{const box=$('hphoto');try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:'images/house-flow.bin'});if(!tt)box.classList.add('static');window.__turntable=tt;}catch(e){box.classList.add('static');}})();
+const HOUSE_VIEWS=Array.from({length:36},(_,i)=>({f:`images/turn/turn-${String(i).padStart(3,'0')}.webp`,a:i*10}));
+(()=>{const box=$('hphoto');try{const tt=Turntable.create(box,$('hcanvas'),HOUSE_VIEWS,{reduced,flow:'images/turn/flow.bin'});if(!tt)box.classList.add('static');window.__turntable=tt;}catch(e){box.classList.add('static');}})();
 
 /* ---------- knock, the door opens, walk inside ---------- */
 let soundOn=true;

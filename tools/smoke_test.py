@@ -23,11 +23,22 @@ async def main():
         errs = []
         pg = await b.new_page(viewport={'width': 1280, 'height': 800})
         pg.on('pageerror', lambda e: errs.append('page: ' + str(e)))
-        pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'fonts.g' not in m.text else None)
+        pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'fonts.g' not in m.text + m.location.get('url', '') else None)
         # keep test submissions out of the real Supabase tables (set SMOKE_REAL_DB=1 to send them)
         if not os.environ.get('SMOKE_REAL_DB'):
             await pg.route('**/rest/v1/**', lambda r: r.fulfill(status=201, body=''))
-        await pg.goto(URL); await pg.wait_for_timeout(2500)
+        await pg.goto(URL)
+        # hero turntable: becomes ready, and dragging turns the house
+        try:
+            await pg.wait_for_function("document.getElementById('hphoto').classList.contains('ready')", timeout=20000)
+        except Exception:
+            errs.append('turntable never became ready')
+        hero = await pg.query_selector('#hphoto'); bb = await hero.bounding_box()
+        before = await hero.screenshot()
+        await pg.mouse.move(bb['x'] + bb['width'] * .3, bb['y'] + bb['height'] / 2); await pg.mouse.down()
+        await pg.mouse.move(bb['x'] + bb['width'] * .7, bb['y'] + bb['height'] / 2, steps=10); await pg.mouse.up()
+        await pg.wait_for_timeout(1200)
+        if await hero.screenshot() == before: errs.append('dragging the turntable did not change it')
         print('turntable:', await pg.evaluate("document.getElementById('hphoto').className"))
         await pg.screenshot(path=f'{OUT}/home.png')
         # pre-qualification: buying path

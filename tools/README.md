@@ -1,19 +1,39 @@
 # Tools
 
-- `smoke_test.py`: end-to-end browser test (see the docstring for how to run it).
+- `smoke_test.py`: end-to-end browser test (see the docstring for how to run it). Use
+  `pip install playwright==1.56.0`, which matches the pre-installed Chromium (chromium-1194).
+- `blender/house_scene.py`: the 3D model of the house behind the hero turntable, built in code
+  and rendered with Blender's Cycles (`pip install bpy`). `blender/fetch_assets.py` downloads the
+  CC0 Poly Haven assets it uses into `blender/assets/` (not committed).
+- `house_views.py`: converts the rendered frames into what the site loads, in one step.
+
+## Regenerating the hero turntable
+
+```bash
+python3 tools/blender/fetch_assets.py                                  # once
+python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270  # test views (~1 min each)
+python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64         # the turn (~80 min, 4 cores)
+python3 tools/house_views.py /tmp/turn
+```
+
+`house_views.py` writes `demo/site/images/turn/turn-NNN.webp` (transparent, 960×960, about 90 KB
+each; the browser resizes them to the canvas), `turn/flow.bin` (optical flow between neighboring
+frames on a 33×33 grid, forward-backward checked and smoothed where the match is poor), and sets
+`HOUSE_VIEWS` in `js/app.js` to the frame count. The house turns; the camera, lights and ring stay
+fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
 
 ## How the 3D images were prepared
 
-All images in `demo/site/images/` are AI-generated renders of a fictional house supplied by
-the client. They are used **only** in the two 3D pieces (the hero turntable and the
-walk-through). Don't use them anywhere else on the site.
+The walk-through images in `demo/site/images/` are AI-generated renders of a fictional house
+supplied by the client; the hero turntable is rendered from a 3D model of the same house (above).
+Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
+Don't use them anywhere else on the site.
 
-- `house-NN.webp` (12 views) and `house-flow.bin`: built by `python3 tools/house_views.py`
-  from the renders in `tools/house-src/` (1100×1100 JPEG, ordered by camera angle; the angles
-  are in `HOUSE_VIEWS` in `js/app.js`, 0° front, 90° right side, 180° back, 270° left side).
-  The script cuts each view out of its cream background (keeping the plinth and ring, dropping
-  floor shadows) and computes optical flow between neighboring views for the morph. The
-  original set had a duplicate render at 318°/327°; it was dropped.
+- `turn/turn-NNN.webp` (36 frames) and `turn/flow.bin`: the hero turntable, rendered from the
+  3D model in `tools/blender/house_scene.py` (Blender, Cycles) and converted by
+  `tools/house_views.py`. The model uses CC0 assets from Poly Haven (trees, scanned textures,
+  a sunset HDRI, a patio set); `tools/blender/fetch_assets.py` downloads them into
+  `tools/blender/assets/`, which is not committed.
 - `approach-1…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
   door slab.

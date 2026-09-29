@@ -33,10 +33,11 @@ demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.png
-                            house-NN.webp cut-outs + house-flow.bin for the turntable
+                            turn/turn-NNN.webp (Blender 360° turn) + turn/flow.bin for the hero
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
-tools/house_views.py        builds the turntable cut-outs and flow from tools/house-src/
+tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
+tools/house_views.py        turns the Blender frames into turn/*.webp + turn/flow.bin
 ```
 
 ## Decisions the client has made (don't undo these)
@@ -52,8 +53,8 @@ tools/house_views.py        builds the turntable cut-outs and flow from tools/ho
   "our Middletown office".
 - **Financing, not real estate:** communicate it through what the site shows (loan steps,
   payments, rates), not with "we don't sell homes" disclaimers.
-- **Photos only in the 3D pieces.** The AI renders appear in the hero turntable and the
-  walk-through, nowhere else.
+- **Photos only in the 3D pieces.** Rendered images appear in the hero turntable (the 3D
+  model) and the walk-through (AI renders), nowhere else.
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
@@ -70,13 +71,27 @@ placeholders.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 12 renders around the house, cut out of their studio background so the
-house, plinth and ring float on the page with no card (client request). Between neighboring
-views each image is drawn on a 41×41 WebGL mesh displaced along precomputed optical flow
-(`images/house-flow.bin`) while the two blend across the whole interval, so the house moves
-into the next view instead of flashing. All textures load up front, one GPU upload per frame.
-Drag, arrow keys, or idle sway around the front. Rebuild the images and flow with
-`python3 tools/house_views.py`.
+**Turntable** (hero): a real 3D model of the house, built in code in Blender
+(`tools/blender/house_scene.py`) and rendered as a 360° turn: 36 frames, one every 10°, with a
+transparent background so the house, plinth and ring float on the page with no card (client
+request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
+model has lap-board siding, real window openings with lit rooms, curtains and lamps, a shingle
+roof with gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and
+shrubs. In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced
+along precomputed optical flow (`images/turn/flow.bin`) while they blend, so the turn is
+continuous at any speed. The 9 frames the idle sway uses (front ±40°) load first and the rest
+after page load. Each frame is decoded off the main thread at the canvas's pixel size (no shimmer,
+about 75 MB of GPU memory on phones) and uploaded one per animation frame after the first paint;
+uploads pause during a drag unless the frame on screen is missing. Devices reporting under 4 GB
+of memory keep only the 16 nearest frames on the GPU. Drag, arrow keys (with a focus ring), or
+idle sway around the front; reduced motion turns the sway off; without WebGL the front frame
+shows as a still image.
+
+To change the house: edit `house_scene.py`, preview with
+`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 15 150` (needs `pip install bpy` and
+`python3 tools/blender/fetch_assets.py` once), then render
+`python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU cores)
+and run `python3 tools/house_views.py /tmp/turn`.
 
 **Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
 a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
