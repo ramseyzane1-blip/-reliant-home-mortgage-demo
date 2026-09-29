@@ -29,19 +29,20 @@ demo/site/js/config.js      Supabase URL + publishable key, demo flag
 demo/site/js/util.js        $, usd, pmt, esc, reduced(), store (localStorage wrapper)
 demo/site/js/data.js        TEAM, REVIEWS, loan programs (P), GLOSS, POSTS, LEGAL
 demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
-demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
+demo/site/js/engines.js     Turntable (hero, live 3D with three.js) and Walk (walk-through)
+demo/site/js/vendor/        three-hero.min.js: three.js r186, only what the hero uses
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
 demo/site/images/           3D renders only (see tools/README.md) + logo.webp, logo-dark.webp (from tools/make_logo.py)
                             team/<name>.webp (160px face) and <name>-lg.webp (480px): the real staff
                             headshots from relianthomemtg.com/staff (the original site's own photos)
-                            turn/turn-NNN.webp (Blender 360° turn) + turn/depth-*.bin for the hero
+                            model/ (the hero's live 3D model: glb + baked webp textures, see below)
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
 demo/site/brand/            favicon (32 + 192px PNG, the duck), apple-touch-icon, share.png (1200×630 link preview, no renders); all from tools/make_logo.py
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py
-tools/house_views.py        turns the Blender frames into turn/*.webp + turn/depth-*.bin
+tools/blender/web_model.py  makes the web version of the model (baked lighting); tools/pack_web_model.py packs it
 tools/site_audit.js         page-by-page audit of any site (used for audit/)
 audit/                      client audit: slide deck (index.html), written report, PDFs, evidence
 ```
@@ -128,76 +129,63 @@ September 2026 audit of the original site.
 
 ## The hero turntable and the walk-through (`js/engines.js`)
 
-**Turntable** (hero): a real 3D model of the house, built in code in Blender
-(`tools/blender/house_scene.py`) and rendered as a 360° turn: 144 frames, one every 2.5° (with 10°
-steps the lighting and shadows, which do not turn with the house, jumped visibly between frames), with a transparent background so the house, plinth and ring float on the page with no card (client
-request). The house and plinth turn; the ring, camera and golden-hour lighting stay fixed. The
-model has lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed
-green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
-gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and shrubs.
+**Turntable** (hero): a real 3D model of the house, drawn live in the page with three.js, so it
+turns smoothly at any angle with no frames to switch between (client pick, September 2026; the
+earlier versions turned 55, then 144 pre-rendered pictures and ticked or flickered between them;
+they are in git history). The model is built in code in Blender (`tools/blender/house_scene.py`):
+lap-board siding, real window openings with lit rooms, curtains and lamps, the glazed green front
+door with sidelights and lanterns from the walk-through renders, a shingle roof with gutters, Poly
+Haven (CC0) scanned trees and textures, and Geometry Nodes grass and shrubs. It floats on the page
+with no card (client request); the house and plinth turn, the ring stays still.
 
-Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
-`fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
-of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
-each; `sm/`, 768px copies for phones, about 64 KB each; each frame's depth from Blender on a
-121×121 mesh in two files, `depth-front.bin` (the 33 views within ±40° of the front: 483 KB, 112 KB
-as served, brotli) and `depth-rest.bin` (the other 111: 1.6 MB, 382 KB as served).
-`HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
+The full scene is far too heavy for a browser (305,000 grass blades, tree crowns of 20 million
+polygons each), so `tools/blender/web_model.py` makes a web version and bakes Blender's own
+lighting (Cycles: the golden-hour sun, the sky, bounce light, soft shadows, the lit rooms) into its
+textures, saved through the renders' color look (AgX, its look and exposure). The page only paints
+the baked result (`MeshBasicMaterial`, no lights), so it looks close to the renders and costs little
+to draw. The lighting turns with the house, like walking around a real house on a sunny afternoon.
+Parts (`images/model/`, all with a `?v=` content version, `MODEL_V` in `js/app.js`):
+- `house.glb` + `house.webp`: the house, patio set, simplified tree trunks and the dark crown
+  cores, joined, unwrapped into one 2048px atlas and baked (75k triangles).
+- `ground.webp`: the lawn disc baked flat (top-down UVs): the grass blades' green under the light
+  that falls on the lawn, and the plain ground where no grass grows. Its alpha marks where grass
+  grows; the page stacks 12 "shell" layers over the disc that keep the blades reaching their height,
+  so the lawn has depth at this low camera and stops at the walk and beds.
+- `cards.glb` + `twigs.webp`: every leafy twig of the crowns and shrubs (and the scanned trees' own
+  leaves) as one card showing a photo of that twig (10 twig photos in one atlas), with baked light
+  per card corner (26k cards). Color = vertex light x photo detail, graded to the renders' foliage
+  (`Color(2.43,2.57,1.10)` in the engine).
+- `ring.glb` + `ring.webp` (the ring, baked on its own, does not turn), `panes.glb` (the window glass,
+  drawn as a faint warm reflection).
+- `still.webp` (+ `sm/` 768px): the live model's own front view, shown until the model is in and
+  without WebGL, so the hand-over is invisible. Preloaded with the page (the Largest Contentful Paint).
 
-In the browser each frame is a relief: a mesh with its real depth, turned in 3D about the house's
-axis to the exact angle (the camera matches `house_scene.py`), so things move with their real
-parallax (a trunk in front of a wall) and nothing shows twice. This replaced an optical-flow morph
-whose blends doubled trunks and columns and went soft between frames, which read as flicker when
-spinning (frame-to-frame sharpness change in a fast spin: 3.0%, was 12%; slow: 3.4%, was 5.5%).
-Frames are sampled with a 9-tap Catmull-Rom (bicubic) filter, so a slightly turned frame is about
-as crisp as one shown exactly (with linear filtering the picture sharpened each time the turn
-passed a frame). Next to a depth jump the mesh stretches across what the turn uncovers; there
-(marked in the stencil) the other frame is drawn over it, fading in over the first 0.5° of
-turning. Between two frames, each frame's turned picture is drawn offscreen and the two are mixed
-across the middle 30% of the step (they line up, so the mix does not ghost); nearer a frame, that
-frame alone. The
-ring does not turn: its pixels are found with a render of the ring alone and kept still. The house
-never turns faster than 110°/s however hard it is flicked. The fixed layer goes on top, still
-(drawn only over the tiles where it has content). The front frame and the fixed layer
-are preloaded with the page as two stacked `<img>`s (the Largest Contentful Paint on desktop and
-on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile, was 3.8 s), with
-`sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
-hero is about to scroll into view: then the front depth and the two frames next to the front
-(the hero is ready once those are in), then the rest of the 33 frames the idle sway uses (front
-±40°), then the rest of the depth and the frames once those are in or the visitor starts turning.
-Until a frame is in, the nearest frame that is in is turned to the angle instead. A depth that
-lands while its frame is on screen waits until the turn moves on, so nothing pops. On a
-throttled phone profile the hero is interactive after about 630 KB at 4.2 s.
-Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
-the canvas grows a lot) and upload one per animation frame, during a drag only frames within 6°;
-the decoded copy is released after upload. The GPU keeps as many of the nearest frames as fit a
-budget (160 MB desktop, about 43 frames at 960px; 90 MB on phones, which decode at most 672px;
-50 MB and 512px on devices reporting under 4 GB, `navigator.deviceMemory`, Chromium only); the
-others are fetched into the HTTP cache, and a frame not in yet is covered by the nearest one
-turned in 3D, so a spin never holds or jumps (0% of frames in a fast phone spin). The drawing is
-heavier than the old morph (up to four 29k-triangle mesh passes a frame, bicubic sampling), easy
-for any GPU, slow in software rendering.
-About a second after the hero is well out of view (scrolled away, another page, or
-the walk-through, which also puts it to sleep directly) it releases every texture and its
-drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
-(ready in about 0.2 s). Failed frames retry with backoff. Drag, arrow
-keys (with a focus ring), or idle sway: whenever nobody is holding it, the house swings ±38° around
-the front, one full back-and-forth every 14 s (`AMP`, `W`). A fraction of a second after a drag
-coasts to a stop (1.5 s after arrow keys) it takes over from wherever the house is, starting at
-zero speed and easing back to the front, so there is no pause and no jerk; it runs on animation
-time, so a paused tab resumes where it was. Reduced motion turns the sway off;
-without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
-drops the drag and keyboard hints.
+The engine (`Turntable` in `js/engines.js`) loads `js/vendor/three-hero.min.js` (three.js r186 with
+only what the hero uses, plus GLTFLoader and the meshopt decoder: 626 KB, 131 KB as served) with a
+dynamic import once the hero is about to scroll into view, then all parts at once (about 2.9 MB); it
+draws nothing and the still picture stays until every part is in. Camera as in the renders: 60 m
+away, 7 degrees up, 80mm lens. Per frame: 17 draw calls, about 144k triangles. Edge smoothing (MSAA)
+only on screens under 1.5x density; drawing resolution is the screen's, capped at 2x, and steps
+down (not below 1x) if frames stay slower than about 45 fps while it moves. On a throttled phone
+profile (1.6 Mbps) the whole model is in after about 18 s (the still shows meanwhile); the picture
+version it replaced loaded 11.8 MB for a full turn. About a second after the hero is well out of
+view it frees every texture and geometry on the GPU (0 of each), and they are uploaded again on
+return. Drag (inertia, at most 160 degrees a second), arrow keys (with a focus ring), or the idle
+sway: whenever nobody is holding it, the house swings +-38 degrees around the front, 14 s a full
+swing (`AMP`, `W`); a fraction of a second after a drag coasts to a stop (1.5 s after arrow keys)
+it takes over from wherever the house is, starting at zero speed and easing back to the front.
+Reduced motion turns the sway off. Without WebGL, or if the context is lost, the still stays and the
+hero drops the drag and keyboard hints. Test hooks on `window.__turntable`: `ready()`, `angle()`,
+`set(a)`, `draw(a)`, `sleep()`, `asleep()`, `info()` (draw calls, triangles, textures).
 
-To change the house: edit `house_scene.py`, preview with
-`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
-and `python3 tools/blender/fetch_assets.py` once), render with
-`python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64` (about 80 minutes on 4 CPU
-cores) plus every other 2.5° step with `angles 960 /tmp/mid/b 64 <Blender rotations>` (the 108
-rotations that are multiples of 2.5° but not of 10°, about 2.3 min each), the depth of every frame
-with `depth 960 /tmp/depth <all 144 rotations>` (about 15 s each) and `ringdepth 960
-/tmp/depth/ring.exr`, then run `python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth`
-(needs `pip install OpenEXR`). See `tools/README.md`.
+To change the house: edit `house_scene.py` (preview with
+`python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270`; needs `pip install bpy`
+and `python3 tools/blender/fetch_assets.py` once), then
+`python3 tools/blender/web_model.py /tmp/web 2048 32` (about 20 minutes on 4 CPU cores; needs
+`pip install OpenEXR`) and `python3 tools/pack_web_model.py /tmp/web` (needs node for
+`@gltf-transform/cli`, and playwright for the still). `HOUSE_ONLY=1` bakes only the house, in about
+a minute, for checking. See `tools/README.md`. The picture pipeline (`house_scene.py frames`,
+`depth`, `tools/house_views.py`) is kept for renders; the page no longer uses it.
 
 **Walk** (after the pre-qualification is submitted; client pick, September 2026, replacing the longer
 WebGL walk with the knock): about 4 seconds. A slow push into the front door (`images/door.jpg`), the
@@ -247,7 +235,7 @@ the project; greaterpurposeweb.com is the account's existing domain.
 
 ## Testing
 
-`tools/smoke_test.py` checks the hero turntable (loads with its depth, turns when dragged), walks every page at 390px (no sideways scroll allowed), completes the
+`tools/smoke_test.py` checks the hero turntable (the 3D model loads, turns when dragged), walks every page at 390px (no sideways scroll allowed), completes the
 pre-qualification including an Edit from the review step, renders walk-through frames and
 takes screenshots. It fails on any console or page error (third-party font CSS is stubbed so it is
 hermetic). Run it before pushing visual changes, with `pip install playwright==1.56.0` (matches the
