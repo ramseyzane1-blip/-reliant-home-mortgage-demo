@@ -5,35 +5,37 @@
 - `blender/house_scene.py`: the 3D model of the house behind the hero turntable, built in code
   and rendered with Blender's Cycles (`pip install bpy`). `blender/fetch_assets.py` downloads the
   CC0 Poly Haven assets it uses into `blender/assets/` (not committed).
-- `house_views.py`: converts the rendered frames into what the site loads, in one step.
+- `blender/web_model.py`: the web version of the model for the live 3D hero, with Blender's
+  lighting baked into its textures; `pack_web_model.py` compresses it into `demo/site/images/model/`.
+- `house_views.py`: converts rendered frames into a picture turntable (the earlier hero; unused now).
 - `site_audit.js`: measures any site page by page in a real browser (weight, requests, SEO basics,
   axe-core WCAG checks, phone-width checks, screenshots). Used for the audit in `audit/`.
 - `export_pdfs.js`: exports the audit deck and report to PDF.
 
-## Regenerating the hero turntable
+## Regenerating the hero's 3D model
 
 ```bash
 python3 tools/blender/fetch_assets.py                                  # once
 python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270  # test views (~1 min each)
-python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64         # the turn (~80 min, 4 cores)
-python3 tools/blender/house_scene.py angles 960 /tmp/mid/b 64 <the 108 rotations on the 2.5° grid that are not multiples of 10>   # ~2.3 min each
-python3 tools/blender/house_scene.py depth 960 /tmp/depth <all 144 Blender rotations>   # depth (~15 s each)
-python3 tools/blender/house_scene.py ringdepth 960 /tmp/depth/ring.exr # the ring alone (it stays still)
-python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth             # needs pip install OpenEXR
-python3 tools/house_views.py depth /tmp/depth                          # only the depth, for the frames on the site
+python3 tools/blender/web_model.py /tmp/web 2048 32                    # bake the web model (~20 min, 4 cores; pip install OpenEXR)
+HOUSE_ONLY=1 python3 tools/blender/web_model.py /tmp/web 2048 16       # just the house, ~1 min, for checking
+python3 tools/pack_web_model.py /tmp/web                               # compress into demo/site/images/model/ (node + playwright)
 ```
 
-`house_views.py` writes into `demo/site/images/turn/`: `fixed.webp` (everything that looks the same
-in every frame, drawn still on top), `turn-NNN.webp` (the frames with those parts cut out,
-keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
-(768×768 for phones, about 64 KB), `depth-front.bin` and `depth-rest.bin` (each frame's depth
-from the Cycles Z pass, median-filtered, sampled on a 121×121 mesh, uint8 between that frame's
-near and far; background takes the depth of the nearest surface, and 255 marks the ring, found by
-comparing with the ring rendered alone. The front file holds the views within `FRONT` = 40° of
-the front and loads with the front frames, 112 KB brotli; the rest loads later, 382 KB brotli).
-The page turns each frame in 3D with it. It stamps a `?v=` content version on those URLs in `index.html` and
-`js/app.js` and sets `HOUSE_VIEWS` to the frame count. The house turns; the camera, lights and ring stay
-fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
+`web_model.py` builds the scene with `house_scene.py` and writes: `house.glb` + `house.png` (the
+house, patio set, simplified trunks and crown cores joined, smart-UV unwrapped, Cycles COMBINED bake
+into one atlas, saved through the scene's view transform so the colors match the renders),
+`ground.png` (the lawn disc baked top-down: blade green x the light on the lawn where grass grows,
+the ground as rendered elsewhere; alpha = where grass grows), `cards.glb` + `twigs.png` (every
+leafy twig as a card with a photo of the twig; light baked per card corner into 4x4 px cells of a
+lighting image, then written as vertex colors), `ring.glb` + `ring.png`, `panes.glb`. Things it
+works around in Blender 5.0: `view_layer.objects` misses some objects (it uses `scene.objects`);
+a lighting-only DIFFUSE bake right after another bake crashes (the lawn's light is a COMBINED bake
+of the disc painted white); a transparent point bakes no light (the cards are solid for their own
+light bake, see-through for shadows); faces pointing inward bake black (normals are recalculated).
+`pack_web_model.py` compresses the glbs with Meshopt (16-bit positions, 14-bit UVs), converts the
+textures to WebP, photographs the live model's front view on the page for `still.webp`, and
+stamps a `?v=` content version in `index.html` and `js/app.js` (`MODEL_V`).
 
 ## How the 3D images were prepared
 
@@ -42,9 +44,9 @@ supplied by the client; the hero turntable is rendered from a 3D model of that h
 Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
 Don't use them anywhere else on the site.
 
-- `turn/turn-NNN.webp` (144 frames, 2.5° apart) and `turn/depth-*.bin`: the hero turntable, rendered from the
-  3D model in `tools/blender/house_scene.py` (Blender, Cycles) and converted by
-  `tools/house_views.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
+- `model/`: the hero's live 3D model, made from the 3D model in `tools/blender/house_scene.py`
+  (Blender, Cycles lighting baked in) by `tools/blender/web_model.py` and
+  `tools/pack_web_model.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
   siding, roof, stone and grass textures, a patio set); `tools/blender/fetch_assets.py`
   downloads them into `tools/blender/assets/`, which is not committed.
 - `door.jpg` and `inside-2.jpg`: the walk-through (a push into the door, a dissolve to the living
