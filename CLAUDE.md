@@ -181,7 +181,11 @@ About a second after the hero is well out of view (scrolled away, another page, 
 the walk-through, which also puts it to sleep directly) it releases every texture and its
 drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
 (ready in about 0.2 s). Failed frames retry with backoff. Drag, arrow
-keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
+keys (with a focus ring), or idle sway: whenever nobody is holding it, the house swings ±38° around
+the front, one full back-and-forth every 14 s (`AMP`, `W`). A fraction of a second after a drag
+coasts to a stop (1.5 s after arrow keys) it takes over from wherever the house is, starting at
+zero speed and easing back to the front, so there is no pause and no jerk; it runs on animation
+time, so a paused tab resumes where it was. Reduced motion turns the sway off;
 without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
 drops the drag and keyboard hints.
 

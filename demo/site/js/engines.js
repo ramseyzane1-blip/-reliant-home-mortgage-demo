@@ -223,7 +223,15 @@ function create(box,canvas,views,opt){
   return exact&&(!opt.fixed||!!fx);
  }
  /* interaction */
- let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,inView=false,vis=false,last=0,ready=false,t0=0;
+ let th=0,target=0,vel=0,drag=null,idle=true,raf=0,inView=false,vis=false,last=0,ready=false,calm=0,pinned=false;
+ /* Idle sway: whenever nobody is holding it, the house swings back and forth around the front,
+    th = c + A sin(ph): A eases up from 0 and the center c eases from wherever the house was left
+    to the front, both with zero speed at the start, so taking over from a drag never jerks.
+    Driven by animation time, so a paused tab resumes where it was. */
+ const AMP=38,W=2*Math.PI/14;   /* degrees; one full back-and-forth every 14 s */
+ let sc=0,sc0=0,sa=0,sph=0,st=0,sT=2;
+ const ease=x=>x<=0?0:x>=1?1:x*x*(3-2*x);
+ function enterIdle(){const w=360*Math.round(th/360);th-=w;target=th;vel=0;idle=true;calm=0;sc0=sc=th;sa=0;sph=0;st=0;sT=Math.max(2.5,Math.abs(th)/20);}
  const MAXV=110;   /* degrees per second: the house never turns faster than this, however hard it is flicked */
  function size(){if(asleep)return;const dpr=Math.min(window.devicePixelRatio||1,2),r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));dirty=true;
   if(r.width<=0)return;const want_=Math.max(256,Math.min(TEXMAX,canvas.width));
@@ -232,26 +240,29 @@ function create(box,canvas,views,opt){
  function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);want();upload([pr_[0],pr_[1]]);
   for(let x=pend.length-1,m=ready?4:99;x>=0&&m>0;x--){const i=pend[x][0];if(!ready||(i!==pr_[0]&&i!==pr_[1])){deps[i]=pend[x][1]();pend.splice(x,1);dirty=true;m--;}}
   if(ready&&!allFetched&&A.every((a,i)=>tex[i]||adist(i,0)>40))fetchRest();
-  if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=Math.pow(.94,dt*60);}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
-  /* follow the pointer closely; drift back into the idle sway gently */
-  const prev=th,cap=(idle?50:MAXV)*dt;let step=(target-th)*Math.min(1,dt*(idle?1.6:7));step=Math.max(-cap,Math.min(cap,step));th+=step;if(Math.abs(th-prev)>.001)dirty=true;
+  const prev=th;
+  if(ready&&idle&&!opt.reduced()){st+=dt;sph+=W*dt;sa=AMP*ease(st/2.5);sc=sc0*(1-ease(st/sT));th=target=sc+sa*Math.sin(sph);}
+  else{if(ready&&!drag&&Math.abs(vel)>.02){target+=vel*dt*60;vel*=Math.pow(.94,dt*60);}
+   /* follow the pointer closely */
+   const cap=MAXV*dt;let step=(target-th)*Math.min(1,dt*7);step=Math.max(-cap,Math.min(cap,step));th+=step;
+   /* let go and settled for a moment: back to the sway */
+   if(ready&&!drag&&!idle&&!pinned&&Math.abs(vel)<=.02&&Math.abs(target-th)<1){calm+=dt;if(calm>.2)enterIdle();}else calm=0;}
+  if(Math.abs(th-prev)>.001)dirty=true;
   if(Math.abs(target-th)>60){const c=target-th-Math.sign(target-th)*60;target-=c;if(drag)drag.t-=c;}   /* a hard flick does not wind up: the house stays within 60 degrees of where it is headed */
-  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&tex[1%n]&&tex[n-1]&&depFront){ready=true;t0=ts;box.classList.add('ready');}}
+  if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&tex[1%n]&&tex[n-1]&&depFront){ready=true;if(idle)enterIdle();box.classList.add('ready');}}
   raf=vis&&!lost?requestAnimationFrame(frame):0;}
  const run=()=>{vis=inView&&!document.hidden;if(vis)wake();if(vis&&!raf&&!lost){last=0;raf=requestAnimationFrame(frame);}};
- box.addEventListener('pointerdown',e=>{clearTimeout(idleT);wake();fetchRest();drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
+ box.addEventListener('pointerdown',e=>{wake();fetchRest();pinned=false;target=th;drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
  box.addEventListener('pointermove',e=>{if(!drag)return;const w=box.clientWidth||400;target=drag.t-(e.clientX-drag.x)/w*200;const now=performance.now();vel=-(e.clientX-drag.px)/w*200/Math.max(1,(now-drag.pt)/16.7);drag.px=e.clientX;drag.pt=now;});
- /* after a pause, resume the sway from wherever the house was left, the short way round */
- function rest(){clearTimeout(idleT);idleT=setTimeout(()=>{if(drag)return;const w=360*Math.round(th/360);th-=w;target=th;vel=0;idle=true;t0=performance.now()-Math.asin(Math.max(-1,Math.min(1,th/34)))/.22*1000;},4500);}
- const up=()=>{if(!drag)return;drag=null;box.classList.remove('drag');rest();};
+ const up=()=>{if(!drag)return;drag=null;calm=0;box.classList.remove('drag');};
  box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
- box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;wake();fetchRest();e.preventDefault();idle=false;box.classList.add('used');target+=k;rest();});
+ box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;wake();fetchRest();e.preventDefault();if(idle)target=th;idle=false;pinned=false;calm=-1.5;box.classList.add('used');target+=k;});
  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;box.classList.remove('ready');if(opt.lost)opt.lost();});
  new ResizeObserver(size).observe(box);size();
  new IntersectionObserver(es=>{inView=es[0].isIntersecting;run();}).observe(box);
  new IntersectionObserver(es=>{clearTimeout(sleepT);if(es[0].isIntersecting){wake();size();startFetch();}else sleepT=setTimeout(sleep,1000);},{rootMargin:'400px 0px'}).observe(box);
  document.addEventListener('visibilitychange',run);
- return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw,ready:()=>ready,angle:()=>th,
+ return {set(a){target=th=a;idle=false;pinned=true;vel=0;dirty=true;draw(a);},draw,ready:()=>ready,angle:()=>th,
   sleep(){clearTimeout(sleepT);sleep();},asleep:()=>asleep,depths:()=>deps.filter(Boolean).length};
 }
 return {create};
