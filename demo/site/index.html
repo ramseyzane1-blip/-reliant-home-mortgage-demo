@@ -424,8 +424,8 @@
   </div></section>
   <section class="band" id="letter"><div class="wrap grid2" style="align-items:start">
     <div class="sec-head" style="margin:0"><p class="eyebrow">The Reliant Letter</p><h2>One email a month from our team</h2><p>Rate news, local market notes and plain-English homebuying tips. Our monthly newsletter and blog, in one place.</p>
-      <form class="card" data-form="Reliant Letter signup" style="margin-top:12px">
-        <div class="row2"><div class="field"><label for="nl-name">First name</label><input class="in" id="nl-name"></div><div class="field"><label for="nl-email">Email</label><input class="in" id="nl-email" type="email"></div></div>
+      <form class="card" data-form="Reliant Letter signup" style="margin-top:12px" novalidate>
+        <div class="row2"><div class="field"><label for="nl-name">First name</label><input class="in" id="nl-name" autocomplete="given-name"></div><div class="field"><label for="nl-email">Email</label><input class="in" id="nl-email" type="email" autocomplete="email" spellcheck="false" data-req aria-describedby="nl-email-err"><p class="err" id="nl-email-err" hidden></p></div></div>
         <button class="btn btn-primary" type="submit">Subscribe</button><p class="fine" style="margin-top:10px">Unsubscribe anytime.</p></form></div>
     <div><p class="flabel" style="margin-bottom:12px">Recent letters</p><div class="letter-list" id="posts"></div><p class="fine" style="margin-top:14px">Demo: suggested starter topics. The current blog has one welcome post.</p></div>
   </div></section>
@@ -444,8 +444,9 @@
     <p class="lede">Call, stop by, or send a question. A licensed loan officer will get back to you.</p>
   </div></div>
   <section class="band" style="padding-top:36px"><div class="wrap grid2">
-    <form class="card" data-form="Question">
-      <div class="row2"><div class="field"><label for="c-name">Name</label><input class="in" id="c-name"></div><div class="field"><label for="c-phone">Phone or email</label><input class="in" id="c-phone"></div></div>
+    <form class="card" data-form="Question" novalidate>
+      <div class="row2"><div class="field"><label for="c-name">Name</label><input class="in" id="c-name" autocomplete="name" data-req aria-describedby="c-name-err"><p class="err" id="c-name-err" hidden></p></div><div class="field"><label for="c-phone">Phone or email</label><input class="in" id="c-phone" spellcheck="false" data-req aria-describedby="c-phone-err c-phone-why"><p class="err" id="c-phone-err" hidden></p></div></div>
+      <p class="fine" id="c-phone-why" style="margin:-6px 0 14px">We only use it to answer your question.</p>
       <div class="field"><label for="c-who">Who would you like to hear from?</label><select class="in" id="c-who"></select></div>
       <div class="field"><label for="c-msg">Your question</label><textarea class="in" id="c-msg" rows="4"></textarea></div>
       <button class="btn btn-primary" type="submit">Send my question</button>

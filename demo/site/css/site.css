@@ -590,7 +590,7 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 .rv .r:first-child{border-top:0}
 .rv dt{color:var(--muted);font-size:.9rem}
 .rv dd{margin:0;font-weight:600}
-.rv .ed{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:700;cursor:pointer;font-size:.88rem}
+.rv .ed{background:none;border:0;padding:12px 10px;margin:-12px -10px;color:var(--accent-ink);font-weight:700;cursor:pointer;font-size:.88rem}
 :root[data-theme="dark"] .rv .ed{color:var(--head)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rv .ed{color:var(--head)}}
 @media (max-width:560px){.rv .r{grid-template-columns:1fr auto}.rv dt{grid-column:1/-1}}
