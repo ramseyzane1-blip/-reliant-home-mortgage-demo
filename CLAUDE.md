@@ -72,40 +72,42 @@ September 2026 audit of the original site.
 
 ## The two 3D pieces (`js/engines.js`)
 
-**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with a
-simple depth model (house plane, lawn sloping toward the viewer, a per-vertex weight that
-keeps the outer ring fixed), rotated up to ±17° and cross-dissolved with the next view.
-Drag, arrow keys, or idle sway around the front.
+**Turntable** (hero): 13 renders around the house. Each view is drawn on a WebGL mesh with its
+own depth relief (`images/house-depth.bin`, made by `tools/turntable_depth.py`; real depth on the
+house and plinth, the ring and backdrop stay flat), rotated up to ±22° and cross-dissolved with the
+next view in a narrow window at the midpoint. Until the depth loads it uses the old simple model
+(house plane, sloped lawn, ±17°). All textures load up front and upload one per frame after the
+first paint, resized to 1024 off the main thread and mipmapped. Drag, arrow keys, or idle sway
+around the front.
 
-**Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
-camera follows the door (outside) then the fireplace (inside); each image takes over when it
-has enough resolution for the current distance (inside, as a fixed .6s fade, one shot at a time).
-In the look-around, the side views switch in with a short fade instead of resting half-blended. The door leaf is a CSS 3D quad hinged on the
-left, with the open-door render showing through the doorway. The door sequence: three knocks
-(each nudges the camera and the door), the hall light warms the door glass, footsteps, the lock
-turns, the door cracks open with a line of light, then swings wide on an underdamped spring.
-All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks, footsteps, deadbolt,
-latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`.
-It ends in a look-around (mouse, drag or arrows) until the visitor clicks "See my results".
-Timeline constants are in `T` inside `Walk.play`.
+**Walk** (after the pre-qualification is submitted): WebGL, one canvas. Each render is a 3D relief:
+a mesh with per-vertex depth from Depth Anything V2 (`images/walk-depth.bin`, made by
+`tools/walk_depth.py`), normalized so the shot's anchor (door or fireplace) is at depth 1. The camera
+follows the anchor; zooming in is turned into walking forward through the relief (`DOLLY`), and
+walking bob, breathing and the pointer move the head (real parallax). Each shot enters exactly as
+rendered. Handoffs: a shot waits until it is sharp and the camera has lined it up (the camera steers
+so both shots can put the anchor on the same pixel, which matters on tall phones), then it is
+revealed from the anchor outward while the outgoing shot keeps dollying to the depth where it best
+matches (`THRU`, fit to SIFT matches). Exposure is graded like one camera (`CORR`, `NATIVE`). The door
+leaf is a perspective quad hinged on the left, with the open-door render in the doorway. The door
+sequence: three knocks (each nudges the camera and the door), the hall light warms the door glass,
+footsteps, the lock turns, the door cracks open with a line of light, then swings wide on an
+underdamped spring. All sound is synthesized in `doorAudio()` in `app.js` (porch air, knocks,
+footsteps, deadbolt, latch, door swing, fire inside); `Walk` hands it timed cues through `opts.cue`.
+It ends in a look-around in the last room (mouse, drag or arrows turn the view and move the head)
+until the visitor clicks "See my results". Timeline constants are in `T` inside `Walk.play`.
+Without WebGL the walk is skipped.
 
 ## Known issues / next up: make the 3D smooth
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. **Turntable textures.** Upload all 13 textures up front, one per frame after first paint,
-   instead of on demand (the texImage2D hitch during a drag is the main stutter). Resize
-   renders to 1024×1024 so they can mipmap.
-2. **Optical-flow morphing instead of cross-dissolves.** Precompute dense flow between
-   neighboring views offline (OpenCV `DISOpticalFlow`, forward-backward consistency check,
-   smoothed to a ~65×65 grid) and store it as a small binary file. In the shader, displace
-   the mesh of view A by `t·flow(A→B)` and view B by `(1−t)·flow(B→A)` while blending. This
-   turns ghosting into motion. The front views (10–15° apart) will morph well; sides and
-   back are ~45° apart, so damp the flow where consistency is poor.
-3. **Move the walk to WebGL.** Scaling large DOM layers that contain CSS 3D children forces
-   re-rasterization every frame. Render every shot as a textured quad on one canvas, draw the
-   door leaf as a real perspective quad, and apply the same flow morphing at each handoff
-   (align the pair by their anchor rectangles first, then compute flow on the overlap).
+1. Done: turntable textures up front, 1024 + mipmaps.
+2. Done for the walk: depth reliefs, steering, center-out handoffs and one exposure grade. What is
+   left there comes from the renders themselves (for example, the porch lantern differs between
+   approach shots); fixing that needs consistent re-renders. The turntable now uses depth too;
+   its side and back views are 45° apart, so a short blend remains right at each midpoint.
+3. Done: the walk is WebGL.
 4. Keep `prefers-reduced-motion` behavior: no auto motion; the walk is skipped.
 
 ## Supabase
