@@ -86,12 +86,17 @@ September 2026 audit of the original site.
 
 ## How the site leads to the pre-qualification
 
-- **Home, top to bottom:** hero (one button, a real Google review under it, the office phone
-  under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
+- **Home, top to bottom:** hero (one button, "About 2 minutes. No credit check." under it, a real
+  Google review and the office phone under that) → "What brings you here?" → **Try your numbers**
   (price and down payment sliders; the estimate uses the same math as the results page, and
-  its button carries both numbers into the pre-qualification) → how it works → the team →
-  reviews → closing band. At 1440×900 the top of the "at a glance" strip shows on the first screen,
-  so the page never looks finished there.
+  its button carries both numbers into the pre-qualification) → how it works (no button of its own) →
+  the team with three Google reviews in the same section → closing band. Kept deliberately calm:
+  research on visual complexity (Tuch et al. 2012) and NN/g's homepage guidelines say busy pages and
+  repeated elements lower trust, so the team initials appear once (in the team section), not in the
+  hero or footer.
+- **Color:** green is for actions (buttons, sliders, progress). Cards and placeholders are neutral
+  (white or warm sand in light mode, warm charcoal `#151412`-`#2a2823` in dark mode, never green-tinted).
+  The light closing band is the one green block.
 - **Closing band:** its headline fits the page and its button presets the pre-qualification
   goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
 - **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
