@@ -465,13 +465,13 @@ function drawQ(){
   const qn=V.slice(0,qi+1).filter(x=>x.type==='choice'||x.type==='range').length,grp=(GROUPS.find(g=>g[1].includes(s.id))||[''])[0];
   if(s.type==='choice'){step=`${grp} · Question ${qn} of ${nQs()}`;body=`<div class="opts${s.big?' lg':''}">${s.opts.map(o=>`<button class="opt" aria-pressed="${ans[s.id]===o[0]}" data-v="${esc(o[0])}"><b>${esc(o[0])}</b>${o[1]?`<small>${esc(o[1])}</small>`:''}</button>`).join('')}</div>`;}
   else if(s.type==='range'){step=`${grp} · Question ${qn} of ${nQs()}`;body=`<div class="wiz-range"><input class="wiz-val num" type="text" inputmode="decimal" autocomplete="off" aria-label="${esc(s.lab)}, type an amount"><input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${ans[s.id]}" aria-label="${esc(s.q)}"><div class="fine" style="display:flex;justify-content:space-between;margin-top:6px"><span>${s.fmt(s.min)}</span><span>${s.fmt(s.max)}</span></div></div>`;}
-  else if(s.type==='contact'){step='Almost done';body=`<form novalidate><div class="row2"><div class="field"><label for="pq-name">First name</label><input class="in" id="pq-name" autocomplete="given-name" value="${esc(ans.name||'')}"></div>
-      <div class="field"><label for="pq-phone">Phone</label><input class="in" id="pq-phone" type="tel" autocomplete="tel" value="${esc(ans.phone||'')}"></div></div>
-      <p class="fine pq-why">Phone or email is enough. A loan officer from our Middletown office will use it to go over your results.</p>
-      <div class="field"><label for="pq-email">Email</label><input class="in" id="pq-email" type="email" autocomplete="email" value="${esc(ans.email||'')}"></div>
+  else if(s.type==='contact'){step='Almost done';body=`<form novalidate><div class="row2"><div class="field"><label for="pq-name">First name</label><input class="in" id="pq-name" autocomplete="given-name" value="${esc(ans.name||'')}" aria-describedby="pq-name-err"><p class="err" id="pq-name-err" hidden></p></div>
+      <div class="field"><label for="pq-phone">Phone</label><input class="in" id="pq-phone" type="tel" autocomplete="tel" value="${esc(ans.phone||'')}" aria-describedby="pq-phone-err pq-why"><p class="err" id="pq-phone-err" hidden></p></div></div>
+      <p class="fine pq-why" id="pq-why">Phone or email is enough. A loan officer from our Middletown office will use it to go over your results.</p>
+      <div class="field"><label for="pq-email">Email</label><input class="in" id="pq-email" type="email" autocomplete="email" spellcheck="false" value="${esc(ans.email||'')}" aria-describedby="pq-email-err pq-why"><p class="err" id="pq-email-err" hidden></p></div>
       <div class="field"><label for="pq-lo">Who would you like to work with?</label><select class="in" id="pq-lo"><option value="">Whoever's available first</option>${TEAM.map((t,i)=>`<option value="${i}" ${(ans.lo===String(i)||(ans.lo===undefined&&preferLO===i))?'selected':''}>${t.n}</option>`).join('')}</select></div>
       <label class="quote" for="pq-quote"><input type="checkbox" id="pq-quote" ${ans.quote?'checked':''}><span><b>Include a personal rate quote</b><br><span class="fine">Your loan officer will quote today's rate for your situation.</span></span></label>
-      <p class="err" id="pqErr" hidden></p><p class="fine">We'll only use this to send your results and follow up about your loan. No credit check.</p></form>`;}
+      <p class="err" id="pqErr" role="alert" hidden></p><p class="fine">We'll only use this to send your results and follow up about your loan. No credit check.</p></form>`;}
   else {step='Last step';body=`<p class="muted" style="margin:-10px 0 18px">Make sure everything looks right. Tap Edit to change an answer.</p>${reviewHTML(true)}<p class="secure"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>No credit check. Licensed in Ohio, Kentucky and Indiana, NMLS #2292251.</p>`;}
   const pct=Math.max(6,Math.round(100*Math.pow(qi/(V.length-1),.7)));
   const nav=s.type==='range'?`<button class="btn btn-primary" data-w="next">${editing?'Save and review →':'Continue →'}</button>`:s.type==='contact'?`<button class="btn btn-primary" data-w="toreview">Review my answers →</button>`:s.type==='review'?`<button class="btn btn-primary btn-lg" data-w="submit">See my results →</button>`:'<span class="fine">Pick one to continue</span>';
@@ -484,7 +484,12 @@ function drawQ(){
       if(!isFinite(v))v=ans[s.id];v=Math.min(s.max,Math.max(s.min,v));ans[s.id]=v;r.value=v;fillRange(r);show(v);});
     o.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();o.dispatchEvent(new Event('change'));nextQ();}});
     show(ans[s.id]);}
-  if(s.type==='contact')W.querySelector('form').addEventListener('submit',e=>{e.preventDefault();toReview();});
+  if(s.type==='contact'){W.querySelector('form').addEventListener('submit',e=>{e.preventDefault();toReview();});
+    // check phone and email when the visitor leaves the field; clear the message as soon as they fix it
+    // (not while a wizard button is being pressed: a message appearing then would push the button out from under the pointer)
+    let pressing=false;W.querySelector('.wiz-nav').addEventListener('pointerdown',()=>{pressing=true;setTimeout(()=>pressing=false,600);});
+    ['pq-phone','pq-email'].forEach(id=>{const el=$(id);el.addEventListener('blur',e=>{if(pressing||(e.relatedTarget&&e.relatedTarget.closest('.wiz-nav')))return;if(el.value.trim())checkField(id);});el.addEventListener('input',()=>{if(el.getAttribute('aria-invalid'))checkField(id,true);});});
+    $('pq-name').addEventListener('input',()=>fieldErr('pq-name',''));}
 }
 const idxOf=id=>vis().findIndex(s=>s.id===id);
 function nextQ(){const V=vis();if(editing){const r=idxOf('review');const nx=V[qi+1];
@@ -492,21 +497,45 @@ function nextQ(){const V=vis();if(editing){const r=idxOf('review');const nx=V[qi
     if(nx&&(nx.type==='choice'||nx.type==='range')&&ans[nx.id]===undefined){qi++;drawQ();return;}
     editing=false;qi=r;drawQ();return;}
   if(qi<V.length-1){qi++;drawQ();}}
-function toReview(){saveContact();if(!ans.name){showErr('Please add your first name so your loan officer knows who to ask for.');return;}
-  if(!ans.phone&&!ans.email){showErr('Please add a phone number or email so we can send your results.');return;}editing=false;qi=idxOf('review');drawQ();$('wiz').scrollIntoView({behavior:smooth(),block:'start'});}
+/* contact checks: any common phone format works ("513.555.0100", "+1 513 555 0100"); it is saved as (513) 555-0100 */
+const digits=v=>v.replace(/\D/g,'');
+const phoneOk=v=>{const d=digits(v);return d.length===10||(d.length===11&&d[0]==='1');};
+const fmtPhone=v=>{let d=digits(v);if(d.length===11)d=d.slice(1);return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;};
+const emailOk=v=>/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v);
+const MSG={'pq-name':'Please add your first name so your loan officer knows who to ask for.',
+  'pq-phone':'That phone number looks incomplete. Please use all 10 digits, like 513-555-0100.',
+  'pq-email':'That email address looks incomplete. It should look like name@example.com.'};
+function fieldErr(id,m){const el=$(id),e=$(id+'-err');if(!el||!e)return;e.textContent=m;e.hidden=!m;if(m)el.setAttribute('aria-invalid','true');else el.removeAttribute('aria-invalid');}
+function checkField(id,quiet){const el=$(id),v=el.value.trim();let ok=true;
+  if(id==='pq-phone'&&v){ok=phoneOk(v);if(ok&&!quiet)el.value=fmtPhone(v);}
+  if(id==='pq-email'&&v)ok=emailOk(v);
+  fieldErr(id,ok?'':MSG[id]);return ok;}
+function toReview(){const e=$('pqErr');e.hidden=true;
+  const bad=[];if(!$('pq-name').value.trim()){fieldErr('pq-name',MSG['pq-name']);bad.push('pq-name');}
+  ['pq-phone','pq-email'].forEach(id=>{if(!checkField(id))bad.push(id);});
+  if(!$('pq-phone').value.trim()&&!$('pq-email').value.trim()){showErr('Please add a phone number or email so we can send your results.');bad.push('pq-phone');}
+  saveContact();if(bad.length){$(bad[0]).focus();return;}
+  editing=false;qi=idxOf('review');drawQ();$('wiz').scrollIntoView({behavior:smooth(),block:'start'});}
 $('wiz').addEventListener('click',e=>{
   const o=e.target.closest('.opt');if(o){if(busy)return;busy=true;const s=vis()[qi];ans[s.id]=o.dataset.v;$('wiz').querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',x===o));setTimeout(()=>{busy=false;nextQ();},170);return;}
   const ed=e.target.closest('[data-edit]');if(ed){editing=ed.dataset.edit!=='contact';qi=idxOf(ed.dataset.edit);drawQ();return;}
   const w=e.target.closest('[data-w]');if(!w)return;
   if(w.dataset.w==='back'&&qi>0){saveContact();editing=false;qi--;drawQ();}else if(w.dataset.w==='next')nextQ();else if(w.dataset.w==='toreview')toReview();else if(w.dataset.w==='submit')submitPQ();});
 function saveContact(){if(!$('pq-name'))return;ans.name=$('pq-name').value.trim();ans.phone=$('pq-phone').value.trim();ans.email=$('pq-email').value.trim();ans.lo=$('pq-lo').value;ans.quote=$('pq-quote').checked;}
-let pqSave=null;
+let pqRow=null,submitting=false;
+/* The save runs while the door opens. The demo notice sits inline under the welcome (nothing covers the
+   results); if the save times out or fails, it says so and offers to try again or call. */
+function savePQ(){const n=$('pqNoteText'),a=$('pqRetry');if(a)a.hidden=true;
+  DB.insert('reliant_prequal',pqRow).then(r=>{if(!$('pqNoteText'))return;
+    if(r&&r.ok){$('pqNoteText').textContent='This is a demo. Your answers were saved to the demo database. On the live site, they go straight to your loan officer.';return;}
+    $('pqNoteText').textContent=(r&&r.reason==='timeout'?'Saving your answers is taking too long.':'Your answers didn\'t reach our office.')+' Your results below are still here. Try again, or call our Middletown office at (513) 783-4018.';
+    $('pqRetry').hidden=false;});}
 function submitPQ(){
+  if(submitting)return;submitting=true;const sb=$('wiz').querySelector('[data-w=submit]');if(sb){sb.disabled=true;sb.textContent='Opening your results…';}
   renderResults();
-  const byId=Object.fromEntries(vis().map(s=>[s.id,s])),answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
-  pqSave=DB.insert('reliant_prequal',{goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote});
-  // the demo notice sits inline under the welcome, so nothing covers the results the visitor just earned
-  pqSave.then(r=>{const n=$('pqNoteText');if(n&&r&&r.ok)n.textContent='This is a demo. Your answers were saved to the demo database. On the live site, they go straight to your loan officer.';});
+  const answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
+  pqRow={goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote};
+  savePQ();
   playDoor(ans.name,()=>{$('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;window.scrollTo(0,0);
     const h=$('results').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}});}
 function showErr(m){const e=$('pqErr');e.textContent=m;e.hidden=false;}
@@ -526,7 +555,7 @@ function renderResults(){
     big=(d<=0?'↓ ':'↑ ')+usd(Math.abs(d))+'<span style="font-size:1.1rem">/mo</span>';sub='Estimated monthly change';note=`New loan of ${usd(newLoan)} (${ltv.toFixed(0)}% of your home's value) at an example ${ex.toFixed(3)}%, about 1% under your current rate. Principal and interest only.`+(ltv>80&&cash?' Most cash-out programs cap near 80% of value, so a HELOC may fit better.':'');}
   const recs=[...new Set(r)].slice(0,3),lo=ans.lo?[+ans.lo]:[];
   $('results').innerHTML=`<div class="res-hero"><p class="eyebrow">Pre-qualification complete</p><h1>Welcome home, ${esc(a.name)}.</h1><p class="muted" style="max-width:34em;font-size:1.08rem">Here's where you stand. ${lo.length===1?esc(TEAM[lo[0]].n.split(' ')[0])+' will':'A loan officer from our Middletown office will'} reach out to go over your numbers${wantQuote?' and your personal rate quote':' and today\'s rates'}.</p></div>
-    <div class="demo-note" role="status"><span class="badge">Demo site</span><p id="pqNoteText">This is a demo. On the live site, your answers go straight to your loan officer.</p><details><summary>See what your loan officer receives</summary><pre>${esc(summaryLines().join('\n'))}</pre></details></div>
+    <div class="demo-note" role="status"><span class="badge">Demo site</span><p id="pqNoteText">This is a demo. Saving your answers to the demo database…</p><button class="btn btn-line" id="pqRetry" hidden>Try again</button><details><summary>See what your loan officer receives</summary><pre>${esc(summaryLines().join('\n'))}</pre></details></div>
     <div class="grid2" style="align-items:start"><div style="display:grid;gap:18px">
       <div class="est"><span class="eyebrow">${sub}</span><div class="big num">${big}</div><p>${esc(note)}</p></div>
       <div class="card"><p class="flabel" style="margin-bottom:10px">Loans worth talking about</p><div class="rec">${recs.map((s,k)=>{const p=PBY[s];return `<div class="recitem" data-open="${k===0}"><button aria-expanded="${k===0}"><span><b>${esc(p.n)}</b><small>${esc(p.sum)}</small></span><span class="pm" aria-hidden="true">＋</span></button><div class="more" ${k===0?'':'hidden'}><ul class="checks">${p.fit.map(x=>`<li><span class="mk">✓</span>${esc(x)}</li>`).join('')}</ul><a class="linkish" href="#program-${s}">More about ${esc(p.n)} →</a></div></div>`;}).join('')}</div></div></div>
@@ -539,7 +568,8 @@ function renderResults(){
       <details class="card"><summary class="flabel" style="cursor:pointer">Your answers</summary><div style="margin-top:14px">${reviewHTML(false)}</div><p style="margin-top:14px"><button class="linkish" id="redo">Change my answers</button></p></details></div></div>
     <p class="fine" style="text-align:center;margin-top:24px">Estimates only. Not a loan offer, approval or commitment to lend.</p>`;
   $('results').querySelectorAll('.recitem>button').forEach(b=>b.addEventListener('click',()=>{const it=b.parentElement,o=it.dataset.open!=='true';it.dataset.open=o;b.setAttribute('aria-expanded',o);it.querySelector('.more').hidden=!o;}));
-  $('redo').onclick=()=>{$('pqHead').hidden=false;$('pqForm').hidden=false;$('pqResults').hidden=true;qi=0;drawQ();window.scrollTo(0,0);};
+  $('pqRetry').onclick=savePQ;
+  $('redo').onclick=()=>{submitting=false;$('pqHead').hidden=false;$('pqForm').hidden=false;$('pqResults').hidden=true;qi=0;drawQ();window.scrollTo(0,0);};
 }
 
 /* ---------- home: payment teaser. Its numbers carry into the pre-qualification ---------- */

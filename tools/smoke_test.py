@@ -35,7 +35,11 @@ async def main():
         await pg.evaluate("location.hash='#start'"); await pg.wait_for_timeout(400)
         for sel in ['.opt'] * 3 + ['[data-w=next]'] * 2 + ['.opt'] * 4:
             await pg.click(f'#wiz {sel}'); await pg.wait_for_timeout(260)
-        await pg.fill('#pq-name', 'Test'); await pg.fill('#pq-phone', '513-555-0100')
+        # an incomplete phone number keeps the visitor on the contact step with a message
+        await pg.fill('#pq-name', 'Test'); await pg.fill('#pq-phone', '555-01')
+        await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(200)
+        if not await pg.evaluate("!document.getElementById('pq-phone-err').hidden"): errs.append('incomplete phone was accepted')
+        await pg.fill('#pq-phone', '513-555-0100')
         await pg.click('#wiz [data-w=toreview]'); await pg.wait_for_timeout(300)
         await pg.click('#wiz [data-edit=credit]'); await pg.wait_for_timeout(200)
         await pg.click('#wiz .opt >> nth=0'); await pg.wait_for_timeout(400)
