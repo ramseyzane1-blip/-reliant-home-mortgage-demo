@@ -32,12 +32,12 @@ demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
 demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
-demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+demo/site/images/           3D renders only (see tools/README.md) + logo.webp, logo-dark.webp (from tools/make_logo.py)
                             team/<name>.webp (160px face) and <name>-lg.webp (480px): the real staff
                             headshots from relianthomemtg.com/staff (the original site's own photos)
                             turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
 demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
-demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
+demo/site/brand/            favicon (32 + 192px PNG, the duck), apple-touch-icon, share.png (1200×630 link preview, no renders); all from tools/make_logo.py
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 tools/blender/              house_scene.py (the 3D model, rendered with Blender) + fetch_assets.py

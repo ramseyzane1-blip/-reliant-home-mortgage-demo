@@ -55,5 +55,9 @@ rectangle.
 
 ## Logo
 
-`logo-dark.png` is made from `logo.png`: the emblem sits on a cream disc and the wordmark is
-recolored light, for dark mode.
+`tools/make_logo.py` makes `logo.webp` and `logo-dark.webp` from the client's logo
+(`tools/brand/logo-source.webp`, transparent background): cropped and sized for the 44px header
+at 3x. The dark copy keeps the emblem as is and recolors the wordmark light.
+It also makes the icons from the duck and swoosh alone (`brand/favicon-32.png` and
+`favicon-192.png`, transparent; `apple-touch-icon.png` on white) and puts the dark-mode logo on
+the link preview `brand/share.png`. Re-running it is safe.
