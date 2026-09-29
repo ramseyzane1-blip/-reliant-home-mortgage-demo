@@ -32,7 +32,9 @@ demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
 demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
-demo/site/images/           3D renders only (see tools/README.md) + logo.png
+demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+demo/site/fonts/            DM Serif Display + Public Sans, self-hosted woff2 (Latin, SIL OFL)
+demo/site/brand/            favicon (SVG + PNG), apple-touch-icon, share.png (1200×630 link preview, no renders)
 supabase/migrations/        tables for submissions
 tools/smoke_test.py         Playwright end-to-end test
 ```
@@ -55,7 +57,9 @@ tools/smoke_test.py         Playwright end-to-end test
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
-- **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice.
+  Both are self-hosted and preloaded, with size-matched fallback faces (no layout shift on swap).
+- **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice (inline on
+  the pre-qualification results, so nothing covers them; a modal for the other forms).
 - Blog and newsletter are merged into "The Reliant Letter" on About us.
 
 ## Content sources
@@ -65,6 +69,23 @@ KY MB855092, IN 2292251), loan officer NMLS numbers, office address and phone, t
 programs, Google reviews, glossary terms. Bios for Christina, Chase and Blaine are
 placeholders (the original site has no bio content). Staff headshots and the team photo are
 placeholders.
+
+## How the site leads to the pre-qualification
+
+- **Home, top to bottom:** hero (one button, a real Google review under it, the office phone
+  under the house) → "at a glance" strip → "What brings you here?" → **Try your numbers**
+  (price and down payment sliders; the estimate uses the same math as the results page, and
+  its button carries both numbers into the pre-qualification) → how it works → the team →
+  reviews → closing band. At 1440×900 the top of the "at a glance" strip shows on the first screen,
+  so the page never looks finished there.
+- **Closing band:** its headline fits the page and its button presets the pre-qualification
+  goal (`CTA` and `ctaFor()` in `app.js`), so refinancers skip the first question.
+- **Pre-qualification:** named stages ("Your plans · Question 1 of 9"), a progress bar that
+  moves faster early and never starts empty, number answers you can type ("250k" works),
+  "your best guess is fine" help, a note that phone or email is enough, and the license
+  line above "See my results". The header button and the phone quick bar hide on this page.
+- **Phone quick bar** (≤760px) slides away while any "Get pre-qualified" button is on screen.
+- NN/g finds scroll-triggered reveal animations slow people down, so the site doesn't use them.
 
 ## The two 3D pieces (`js/engines.js`)
 

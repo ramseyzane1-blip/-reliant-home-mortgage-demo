@@ -32,3 +32,8 @@ walk-through). Don't use them anywhere else on the site.
 The source renders (PNG, ~1.5 MB each) are not in the repo. If you regenerate an image,
 keep the framing, dusk lighting and camera height consistent, and re-measure its anchor
 rectangle.
+
+## Logo
+
+`logo-dark.png` is made from `logo.png`: the emblem sits on a cream disc and the wordmark is
+recolored light, for dark mode.

@@ -3,13 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Reliant Home Mortgage Concept</title>
-<meta name="description" content="Reliant Home Mortgage redesign concept: a family-owned mortgage broker in Middletown, Ohio.">
+<title>Home Loans in Middletown, OH | Reliant Home Mortgage</title>
+<meta name="description" content="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check. Licensed in Ohio, Kentucky and Indiana.">
 <meta name="robots" content="noindex">
-<link rel="icon" href="images/logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Public+Sans:wght@400;500;600;700&display=swap">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1512" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="brand/apple-touch-icon.png">
+<!-- link previews: crawlers don't run the router, so one card for the whole site -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Reliant Home Mortgage">
+<meta property="og:title" content="Home loans, handled like family | Reliant Home Mortgage">
+<meta property="og:description" content="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check.">
+<meta property="og:url" content="https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/">
+<meta property="og:image" content="https://reliant-home-mortgage.greaterpurposeweb.com/demo/site/brand/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Reliant Home Mortgage: Home loans, handled like family. Family-owned mortgage broker in Middletown, Ohio.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="fonts/dm-serif-display.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css">
 <script src="js/config.js" defer></script>
 <script src="js/util.js" defer></script>
@@ -20,11 +34,13 @@
 <script src="js/app.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main" data-skip>Skip to content</a>
+<div id="srLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="demo-bar">Redesign concept. Demo only: forms and calls show a notice instead of sending.</div>
 
 <header>
   <div class="wrap hdr">
-    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo" src="images/logo.png" alt="Reliant Home Mortgage" width="180" height="44"></a>
+    <a class="brand" href="#home" aria-label="Reliant Home Mortgage home"><img class="logo logo-l" src="images/logo.png" alt="Reliant Home Mortgage" width="180" height="44"><img class="logo logo-d" src="images/logo-dark.png" alt="" width="180" height="44"></a>
     <nav class="mainnav" aria-label="Main">
       <a href="#buy" data-nav="buy">Buy a home</a>
       <a href="#refinance" data-nav="refinance">Refinance</a>
@@ -43,38 +59,84 @@
   </nav></div></div>
 </header>
 
-<main>
+<main id="main">
 <!-- ================= HOME ================= -->
-<section class="page" data-page="home" data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
+<section class="page" data-page="home" data-desc="Family-owned mortgage broker in Middletown, Ohio. See what you can afford in about two minutes, with no credit check. Licensed in Ohio, Kentucky and Indiana." data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
   <div class="hero">
     <div class="wrap hero-grid">
-      <div>
+      <div class="hero-copy">
         <p class="eyebrow">Family-owned mortgage broker · Middletown, Ohio</p>
         <h1>Home loans, handled like <em>family.</em></h1>
         <p class="lede">Find out what you can afford in about two minutes. Then a real person from our Middletown office walks you through the rest.</p>
-        <div class="btn-row"><a class="btn btn-primary btn-lg" href="#start">Get pre-qualified</a><a class="linkish" href="#how">See how it works</a></div>
+        <div class="btn-row"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a><a class="linkish" href="#home" data-scroll="how">See how it works</a></div>
         <div class="assure"><span>About 2 minutes</span><span>No Social Security number</span><span>No credit check</span></div>
-        <div class="trust">
-          <div class="faces" data-faces></div>
-          <p>Rather talk it through?<br><button class="num" data-demo="call">Call our Middletown office at (513) 783-4018</button></p>
-        </div>
       </div>
       <div class="hphoto" id="hphoto" tabindex="0" role="img" aria-label="Model of a family home. Drag, or use the arrow keys, to turn it all the way around.">
         <img class="hp-fallback" src="images/house-00.jpg" alt="" width="1100" height="1100">
         <canvas id="hcanvas"></canvas>
         <span class="hp-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Drag to walk around the house</span>
       </div>
+      <div class="hero-trust">
+        <figure class="hq"><span class="stars" role="img" aria-label="5 stars">★★★★★</span><blockquote>“I appreciated how she was transparent and was quick to give me the breakdown of all of the costs involved (closing, appraisal, title, etc.)”</blockquote><figcaption>Boris Chen · Google review · <a class="linkish" href="#reviews">More reviews</a></figcaption></figure>
+        <div class="trust">
+          <div class="faces" data-faces></div>
+          <p>Rather talk it through?<br><button class="num" data-demo="call">Call our Middletown office at <span class="nw">(513) 783-4018</span></button></p>
+        </div>
+      </div>
     </div>
   </div>
+
+  <section class="glance" aria-label="Reliant at a glance">
+    <div class="wrap glance-grid">
+      <div><b>20 loan programs</b><span>FHA, VA, USDA, conventional, jumbo and more</span></div>
+      <div><b>Lenders nationwide</b><span>We shop for your most competitive rate</span></div>
+      <div><b>One loan officer</b><span>From your first question to closing day</span></div>
+      <div><b class="num">OH · KY · IN</b><span>Licensed in three states, NMLS #2292251</span></div>
+    </div>
+  </section>
 
   <section class="band">
     <div class="wrap">
       <div class="sec-head"><p class="eyebrow">Start where you are</p><h2>What brings you here?</h2></div>
       <div class="paths">
-        <a class="path" href="#buy"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><h3>I'm buying a home</h3><p>See which loans fit you, what you can afford and how the process works.</p><em>Buying with Reliant →</em></div></a>
-        <a class="path" href="#refinance"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><h3>I already own a home</h3><p>Find out if refinancing is worth it with a break-even calculator.</p><em>Is refinancing worth it? →</em></div></a>
-        <a class="path" href="#learn"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-5a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h6z"/></svg></span><h3>I'm still learning</h3><p>A short course, how rates work, calculators and a plain-English glossary.</p><em>Start learning →</em></div></a>
+        <a class="path" href="#buy"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></span><h3>I'm buying a home</h3><p>See which loans fit you, what you can afford and how the process works.</p><em>Buying with Reliant <span class="arr" aria-hidden="true">→</span></em></div></a>
+        <a class="path" href="#refinance"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3L20 9"/><path d="M20 4v5h-5"/><path d="M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M4 20v-5h5"/></svg></span><h3>I already own a home</h3><p>Find out if refinancing is worth it with a break-even calculator.</p><em>Is refinancing worth it? <span class="arr" aria-hidden="true">→</span></em></div></a>
+        <a class="path" href="#learn"><div class="pc"><span class="pi"><svg class="ico" viewBox="0 0 24 24"><path d="M4 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H4z"/><path d="M20 5h-5a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h6z"/></svg></span><h3>I'm still learning</h3><p>A short course, how rates work, calculators and a plain-English glossary.</p><em>Start learning <span class="arr" aria-hidden="true">→</span></em></div></a>
       </div>
+    </div>
+  </section>
+
+  <section class="band alt" id="tryit">
+    <div class="wrap tease">
+      <div>
+        <div class="sec-head"><p class="eyebrow">Try your numbers</p><h2>What would a home cost you each month?</h2><p>Move the sliders for a quick estimate. When you pre-qualify, we bring these numbers along and add the loans that fit you.</p></div>
+        <div class="card tease-in">
+          <div class="field"><label for="tz-price">Home price <output id="tz-price-o" class="num"></output></label><input type="range" id="tz-price" min="80000" max="900000" step="5000" value="250000"></div>
+          <div class="field" style="margin:0"><label for="tz-down">Down payment <output id="tz-down-o" class="num"></output></label><input type="range" id="tz-down" min="0" max="30" step="0.5" value="5"></div>
+        </div>
+      </div>
+      <div class="est tease-out">
+        <span class="eyebrow">Estimated monthly payment</span>
+        <div class="big num" id="tz-pay"></div>
+        <div class="tz-bar" aria-hidden="true"><i id="tz-bpi"></i><i></i></div>
+        <div class="tz-legend num"><span><i></i>Principal &amp; interest <b id="tz-pi"></b></span><span><i></i>Taxes &amp; insurance <b id="tz-ti"></b></span></div>
+        <p>Your pre-qualification adds the loans you fit and a real rate from your loan officer.</p>
+        <div><a class="btn btn-white btn-lg btn-go" href="#start" data-goal="buy" data-carry>Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
+        <p class="tz-fine">Example 6.5% 30-year fixed rate with property taxes and homeowners insurance. Mortgage insurance, if any, is extra.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <div class="sec-head center"><p class="eyebrow">How it works</p><h2>Three steps to your keys</h2></div>
+      <div class="steps3">
+        <div class="st"><span class="n">1</span><h3>Pre-qualify</h3><p>Answer a few questions and see what you can afford. About two minutes.</p></div>
+        <div class="st"><span class="n">2</span><h3>Talk with your loan officer</h3><p>We compare your options and quote today's rates for your situation.</p></div>
+        <div class="st"><span class="n">3</span><h3>Apply and close</h3><p>Apply online, and we keep you and your agent updated until closing day.</p></div>
+      </div>
+      <div class="btn-row" style="justify-content:center;margin-top:44px"><a class="btn btn-primary btn-lg btn-go" href="#start">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a></div>
+      <p class="fine" style="text-align:center;margin-top:12px">About 2 minutes. No credit check.</p>
     </div>
   </section>
 
@@ -92,19 +154,7 @@
     </div>
   </section>
 
-  <section class="band" id="how">
-    <div class="wrap">
-      <div class="sec-head center"><p class="eyebrow">How it works</p><h2>Three steps to your keys</h2></div>
-      <div class="steps3">
-        <div class="st"><span class="n">1</span><h3>Pre-qualify</h3><p>Answer a few questions and see what you can afford. About two minutes.</p></div>
-        <div class="st"><span class="n">2</span><h3>Talk with your loan officer</h3><p>We compare your options and quote today's rates for your situation.</p></div>
-        <div class="st"><span class="n">3</span><h3>Apply and close</h3><p>Apply online, and we keep you and your agent updated until closing day.</p></div>
-      </div>
-      <div class="btn-row" style="justify-content:center;margin-top:44px"><a class="btn btn-primary btn-lg" href="#start">Start step 1</a></div>
-    </div>
-  </section>
-
-  <section class="band alt">
+  <section class="band">
     <div class="wrap">
       <div class="sec-head center"><p class="eyebrow">From our clients</p><h2>Neighbors recommend us</h2></div>
       <div class="reviews" data-reviews="3"></div>
@@ -114,17 +164,18 @@
 </section>
 
 <!-- ================= PRE-QUAL ================= -->
-<section class="page" data-page="start" data-title="Get Pre-Qualified in 2 Minutes | Reliant Home Mortgage" hidden>
+<section class="page" data-page="start" data-desc="Answer a few questions and see what you can afford. About two minutes, no Social Security number and no credit check." data-title="Get Pre-Qualified in 2 Minutes | Reliant Home Mortgage" hidden>
   <div class="phead" id="pqHead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Get pre-qualified</div>
     <h1>Let's see where you stand</h1>
     <p class="lede" id="pqLede">A few quick questions, then your results. No Social Security number and no credit check.</p>
   </div></div>
-  <section class="band" style="padding-top:36px" id="pqForm"><div class="wrap pq">
+  <section class="band pq-band" id="pqForm"><div class="wrap pq">
     <div class="wiz" id="wiz"></div>
     <aside class="side">
-      <div class="card"><div class="faces" data-faces style="margin-bottom:12px"></div><h3>A real person reviews every answer</h3><p class="muted" style="margin-top:8px">Your results go to a licensed loan officer in our Middletown office, not a call center.</p></div>
-      <div class="card"><ul class="checks"><li><span class="mk">✓</span>About 2 minutes</li><li><span class="mk">✓</span>No Social Security number</li><li><span class="mk">✓</span>No credit check, no commitment</li><li><span class="mk">✓</span>Your information stays private</li></ul></div>
+      <div class="card"><div class="faces" data-faces style="margin-bottom:12px"></div><h3>A real person reviews every answer</h3><p class="muted" style="margin-top:8px">Your results go straight to a licensed loan officer in our Middletown office.</p></div>
+      <div class="card"><ul class="checks"><li><span class="mk">✓</span>About 2 minutes</li><li><span class="mk">✓</span>No Social Security number</li><li><span class="mk">✓</span>No credit check, no commitment</li><li><span class="mk">✓</span>Your information stays private</li></ul>
+        <p class="fine num" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">Licensed in Ohio, Kentucky and Indiana. NMLS #2292251. <a href="https://nmlsconsumeraccess.org/Home.aspx/SubSearch?searchText=2292251" target="_blank" rel="noopener">Verify us</a></p></div>
       <p class="fine" style="padding-inline:6px">Prefer to talk? <button class="linkish num" data-demo="call">(513) 783-4018</button></p>
     </aside>
   </div></section>
@@ -132,11 +183,11 @@
 </section>
 
 <!-- ================= BUY ================= -->
-<section class="page" data-page="buy" data-title="Buying a Home | Reliant Home Mortgage, Middletown OH" hidden>
+<section class="page" data-page="buy" data-desc="Find the loans that fit you, see how buying a home works, and know your budget before you tour homes." data-title="Buying a Home | Reliant Home Mortgage, Middletown OH" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Buy a home</div>
     <p class="eyebrow">Buying a home</p>
-    <h1>Buy with a plan, not a guess</h1>
+    <h1>Buy with a clear plan</h1>
     <p class="lede">Find the loans that fit your situation, see how the process works, and know your budget before you start touring.</p>
     <div class="jump"><a href="#buy" data-scroll="finder">Loan finder</a><a href="#buy" data-scroll="buysteps">How buying works</a><a href="#loans">Compare all 20 loans</a><a href="#learn">Homebuying 101</a></div>
   </div></div>
@@ -164,7 +215,7 @@
 </section>
 
 <!-- ================= REFINANCE ================= -->
-<section class="page" data-page="refinance" data-title="Refinancing: Is It Worth It? | Reliant Home Mortgage" hidden>
+<section class="page" data-page="refinance" data-desc="Find out if refinancing is worth it with a break-even calculator, and compare refinance options for homeowners." data-title="Refinancing: Is It Worth It? | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Refinance</div>
     <p class="eyebrow">Refinancing</p>
@@ -182,7 +233,7 @@
         <div class="field"><label for="be-cost">Closing costs <output id="be-cost-o" class="num"></output></label><input type="range" id="be-cost" min="0" max="20000" step="250" value="5500"><span class="fine">Often about 2% to 5% of the loan amount.</span></div>
         <div class="field" style="margin:0"><label for="be-stay">Years you plan to stay <output id="be-stay-o" class="num"></output></label><input type="range" id="be-stay" min="1" max="15" step="1" value="7"></div>
       </div>
-      <div class="out" aria-live="polite">
+      <div class="out">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span class="eyebrow">Your break-even point</span><span class="pill" id="be-verdict"></span></div>
         <div class="big num" id="be-months"></div>
         <div class="stats"><div><small>Monthly savings</small><b class="num" id="be-save"></b></div><div><small>Closing costs</small><b class="num" id="be-costs"></b></div><div><small>Net over your stay</small><b class="num" id="be-net"></b></div></div>
@@ -209,7 +260,7 @@
 </section>
 
 <!-- ================= LOANS (all) ================= -->
-<section class="page" data-page="loans" data-title="All Home Loan Options | Reliant Home Mortgage" hidden>
+<section class="page" data-page="loans" data-desc="Compare 20 home loan options side by side, from FHA, VA and USDA loans to jumbo and DSCR loans." data-title="All Home Loan Options | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / All loans</div>
     <h1>Every loan we offer</h1>
@@ -217,7 +268,7 @@
   </div></div>
   <section class="band" style="padding-top:34px"><div class="wrap">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:26px">
-      <div class="chips" id="pchips"><button class="chip" aria-pressed="true" data-cat="">All</button><button class="chip" aria-pressed="false" data-cat="Purchase">Buying</button><button class="chip" aria-pressed="false" data-cat="Refinance">Refinancing</button><button class="chip" aria-pressed="false" data-cat="Specialty">Specialty</button></div>
+      <div class="chips" id="pchips" role="group" aria-label="Filter loans"><button class="chip" aria-pressed="true" data-cat="">All</button><button class="chip" aria-pressed="false" data-cat="Purchase">Buying</button><button class="chip" aria-pressed="false" data-cat="Refinance">Refinancing</button><button class="chip" aria-pressed="false" data-cat="Specialty">Specialty</button></div>
       <input class="in" id="psearch" placeholder="Search loans" aria-label="Search loans" style="max-width:260px">
     </div>
     <div id="cmpPanel" hidden></div>
@@ -225,7 +276,7 @@
   </div></section>
 </section>
 
-<section class="page" data-page="program" data-title="Loan Program | Reliant Home Mortgage" hidden>
+<section class="page" data-page="program" data-desc="How this loan works, who it fits and what to keep in mind." data-title="Loan Program | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / <a href="#loans">All loans</a> / <span id="pd-crumb"></span></div>
     <p class="eyebrow" id="pd-cat"></p>
@@ -238,14 +289,14 @@
       <div class="card"><h3>A good fit if</h3><ul class="checks" id="pd-fit" style="margin-top:16px"></ul></div>
       <div class="card"><h3>Keep in mind</h3><ul class="checks" id="pd-mind" style="margin-top:16px"></ul></div>
     </div>
-    <div class="card" style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><div><h3>See if <span id="pd-name2"></span> fits you</h3><p class="muted">Your pre-qualification suggests the best loans for your answers.</p></div><a class="btn btn-primary" href="#start" id="pd-go">Get pre-qualified</a></div>
+    <div class="card" style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><div><h3>See if this loan fits you</h3><p class="muted">Your pre-qualification suggests the best loans for your answers.</p></div><a class="btn btn-primary" href="#start" id="pd-go">Get pre-qualified</a></div>
     <h3 style="margin:44px 0 14px">Related options</h3>
     <div class="lrows" id="pd-related"></div>
   </div></section>
 </section>
 
 <!-- ================= LEARN ================= -->
-<section class="page" data-page="learn" data-title="Learn: Homebuying 101, Rates, Calculators & Glossary | Reliant Home Mortgage" hidden>
+<section class="page" data-page="learn" data-desc="A short homebuying course, how mortgage rates work, hands-on calculators and a plain-English glossary." data-title="Learn: Homebuying 101, Rates, Calculators & Glossary | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Learn</div>
     <p class="eyebrow">Learn</p>
@@ -258,10 +309,10 @@
 
     <div data-tabpanel="rates" hidden>
       <div class="sec-head" style="margin-bottom:26px"><p class="eyebrow">How rates work</p><h2>What will my rate be?</h2><p>There's no single rate for everyone, so we don't post one that won't match your situation. Here's what moves your rate. Your pre-qualification can include a personal quote.</p></div>
-      <div class="sec-head"><p class="eyebrow">Try your profile</p><h2 style="font-size:1.7rem">What moves your rate</h2><p>Change any factor and watch where you land. This shows direction, not an actual rate.</p></div>
+      <div class="sec-head"><p class="eyebrow">Try your profile</p><h2 style="font-size:1.7rem">What moves your rate</h2><p>Change any factor and watch where you land. This shows which way your rate moves. Your loan officer quotes the actual rate.</p></div>
     <div class="calc">
       <div class="card" id="rfQs"></div>
-      <div class="out" aria-live="polite">
+      <div class="out">
         <span class="eyebrow">Where you'd likely land</span>
         <h3 id="rf-head"></h3>
         <div><div class="meter"><i id="rf-dot"></i></div><div class="meter-lab"><span>Lower rate</span><span>Higher rate</span></div></div>
@@ -294,7 +345,7 @@
             <button role="radio" aria-checked="false" data-t="15"><span>15-year</span><b class="num" id="t15"></b></button>
           </div>
         </div>
-        <div class="out" aria-live="polite">
+        <div class="out">
           <span class="eyebrow">Estimated monthly payment</span>
           <div class="big num" id="pay"></div>
           <div class="stats"><div><small>Principal &amp; interest</small><b class="num" id="pp-pi"></b></div><div><small>Taxes &amp; insurance</small><b class="num" id="pp-ti"></b></div><div><small>Total interest</small><b class="num" id="pp-int"></b></div></div>
@@ -323,7 +374,7 @@
           <div class="gx-tools">
             <input class="in" id="gsearch" placeholder="Search a term, like escrow or PMI" aria-label="Search glossary" style="max-width:480px">
             <div class="gsug"><span class="flabel">Start with these</span><div class="chips" id="gsug"></div></div>
-            <div class="letters" id="letters"></div>
+            <div class="letters" id="letters" role="group" aria-label="Terms by first letter"></div>
           </div>
           <p class="fine" id="gcount" style="margin-top:14px"></p>
           <div class="glist" id="glist"></div>
@@ -335,7 +386,7 @@
 </section>
 
 <!-- ================= LOCAL HELP ================= -->
-<section class="page" data-page="local-help" data-title="Local Homebuyer Help | Reliant Home Mortgage" hidden>
+<section class="page" data-page="local-help" data-desc="Down payment programs, free homebuyer education, property records and trusted local pros for Ohio, Kentucky and Indiana buyers." data-title="Local Homebuyer Help | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Local help</div>
     <p class="eyebrow">Local help</p>
@@ -346,8 +397,8 @@
   <section class="band" id="dirTop" style="padding-top:40px"><div class="wrap dir">
     <div>
       <div class="dtools">
-        <div class="chips" id="dState"></div>
-        <div class="chips" id="dNeed"></div>
+        <div class="chips" id="dState" role="group" aria-label="State"></div>
+        <div class="chips" id="dNeed" role="group" aria-label="What you need"></div>
         <input class="in" id="dSearch" placeholder="Search resources" aria-label="Search resources" style="max-width:340px">
       </div>
       <p class="dcount" id="dCount" aria-live="polite"></p>
@@ -357,13 +408,13 @@
   </div></section>
   <section class="band alt" id="pros"><div class="wrap">
     <div class="sec-head"><p class="eyebrow">Trusted local pros</p><h2>The people our clients rely on</h2><p>We handle your loan. For everything else in the move, here's who does what, when you'll need them, and who we refer. Ask and we'll make an introduction.</p></div>
-    <div class="chips" id="proCats"></div>
+    <div class="chips" id="proCats" role="group" aria-label="Kind of pro"></div>
     <div id="proPanel"></div>
   </div></section>
 </section>
 
 <!-- ================= ABOUT ================= -->
-<section class="page" data-page="about" data-title="About Us | Reliant Home Mortgage, Middletown OH" hidden>
+<section class="page" data-page="about" data-desc="Meet the family-owned team behind Reliant Home Mortgage in Middletown, Ohio, and read reviews from clients and real estate agents." data-title="About Us | Reliant Home Mortgage, Middletown OH" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / About us</div>
     <p class="eyebrow">About us</p>
@@ -374,11 +425,11 @@
   <section class="band" id="bios" style="padding-top:40px"><div class="wrap"><div class="bios" id="biosList"></div></div></section>
   <section class="band alt" id="reviewsSec"><div class="wrap">
     <div class="sec-head"><p class="eyebrow">Google reviews</p><h2>What clients and agents say</h2></div>
-    <div class="chips" id="revfilter" style="margin-bottom:22px"><button class="chip" aria-pressed="true" data-f="">All</button><button class="chip" aria-pressed="false" data-f="Kevin">Mentions Kevin</button><button class="chip" aria-pressed="false" data-f="Jennifer">Mentions Jennifer</button><button class="chip" aria-pressed="false" data-f="agent">From agents</button></div>
+    <div class="chips" id="revfilter" role="group" aria-label="Filter reviews" style="margin-bottom:22px"><button class="chip" aria-pressed="true" data-f="">All</button><button class="chip" aria-pressed="false" data-f="Kevin">Mentions Kevin</button><button class="chip" aria-pressed="false" data-f="Jennifer">Mentions Jennifer</button><button class="chip" aria-pressed="false" data-f="agent">From agents</button></div>
     <div class="reviews" data-reviews="all"></div>
     <div class="card" id="reviewUs" style="margin-top:28px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
       <div><h3>Worked with us? How did we do?</h3><p class="muted" style="margin-top:6px" id="starMsg">Tap a rating.</p><div class="btn-row" id="starBtns" style="margin-top:12px"></div></div>
-      <div class="starpick" id="starpick"></div>
+      <div class="starpick" id="starpick" role="group" aria-label="Your rating"></div>
     </div>
   </div></section>
   <section class="band" id="letter"><div class="wrap grid2" style="align-items:start">
@@ -396,7 +447,7 @@
 </section>
 
 <!-- ================= CONTACT ================= -->
-<section class="page" data-page="contact" data-title="Contact Us | Reliant Home Mortgage" hidden>
+<section class="page" data-page="contact" data-desc="Call, visit or send a question to our Middletown office at 1422 S Breiel Blvd, Middletown, OH 45044." data-title="Contact Us | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Contact</div>
     <h1>We're just down the road</h1>
@@ -419,7 +470,7 @@
 </section>
 
 <!-- ================= APPLY ================= -->
-<section class="page" data-page="apply" data-title="Apply Online | Reliant Home Mortgage" hidden>
+<section class="page" data-page="apply" data-desc="Choose a licensed loan officer to open their secure online application." data-title="Apply Online | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap">
     <div class="crumbs"><a href="#home">Home</a> / Apply</div>
     <h1>Apply with your loan officer</h1>
@@ -428,7 +479,7 @@
   <section class="band" style="padding-top:36px"><div class="wrap"><div class="team" data-team></div></div></section>
 </section>
 
-<section class="page" data-page="legal" data-title="Legal | Reliant Home Mortgage" hidden>
+<section class="page" data-page="legal" data-desc="Legal information for Reliant Home Mortgage LLC." data-title="Legal | Reliant Home Mortgage" hidden>
   <div class="phead"><div class="wrap"><div class="crumbs"><a href="#home">Home</a> / <span id="legal-crumb"></span></div><h1 id="legal-title"></h1></div></div>
   <section class="band" style="padding-top:36px"><div class="wrap" style="max-width:720px;display:grid;gap:14px"><p id="legal-body"></p><p class="fine">Demo placeholder. The full legal text carries over unchanged from the current site.</p></div></section>
 </section>
@@ -436,8 +487,8 @@
 
 <div class="ctaband" id="ctaband"><div class="wrap">
   <p class="eyebrow">Two minutes, no credit check</p>
-  <h2>Know what you can afford before you fall for a house.</h2>
-  <a class="btn btn-white btn-lg" href="#start">Get pre-qualified</a>
+  <h2 id="ctaH">Know what you can afford before you fall for a house.</h2>
+  <a class="btn btn-white btn-lg btn-go" href="#start" id="ctaGo">Get pre-qualified<span class="arr" aria-hidden="true">→</span></a>
   <p class="talkline">or call our Middletown office at <button class="num" data-demo="call">(513) 783-4018</button></p>
 </div></div>
 
@@ -460,7 +511,7 @@
   </div>
 </div></footer>
 
-<div class="mbar" aria-label="Quick actions"><button class="btn btn-line" data-demo="call">Call</button><a class="btn btn-primary" href="#start">Get pre-qualified</a></div>
+<div class="mbar" aria-label="Quick actions"><button class="btn btn-line" data-demo="call" aria-label="Call our Middletown office"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Call</button><a class="btn btn-primary" href="#start">Get pre-qualified</a></div>
 <div class="cmpbar" id="cmpbar" hidden><span id="cmpText"></span><button class="btn btn-white" id="cmpGo">Compare</button><button class="x" id="cmpClear" aria-label="Clear comparison">✕</button></div>
 <div class="pop" id="pop" hidden role="tooltip"></div>
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-box"><span class="badge">Demo site</span><h3 id="modalTitle"></h3><p id="modalBody" class="muted"></p><pre id="modalData" hidden></pre><div class="btn-row" id="modalBtns"></div></div></div>

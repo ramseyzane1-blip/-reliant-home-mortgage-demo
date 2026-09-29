@@ -20,6 +20,15 @@ const LX={
  'dscr-loan':['Often 20% to 25%','Varies','Rental property investors'],
  'land-loans':['Often 20% or more','Varies','Buying land to build later'],
  'doctor-loans':['Low or no down payment','Often no PMI','Physicians and medical professionals']};
+/* sliders fill up to the thumb, and screen readers hear the value as shown ("$250,000"), not the raw number.
+   The value printed in each label is for sight only (aria-hidden), so the slider's name stays short. */
+const rangeOut=r=>(r.labels&&r.labels[0]&&r.labels[0].querySelector('output'))||document.getElementById(r.id+'-o');
+const fillRange=r=>{r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min)*100).toFixed(2)+'%');
+  requestAnimationFrame(()=>{const o=rangeOut(r);if(o&&o.textContent)r.setAttribute('aria-valuetext',o.textContent);});};
+document.addEventListener('input',e=>{if(e.target.type==='range')fillRange(e.target);},true);
+/* calculator results are read out once the visitor pauses, in one short sentence (never on page load) */
+let lastInput=0;['input','click','keydown'].forEach(t=>document.addEventListener(t,()=>{lastInput=Date.now();},true));
+const say=(()=>{let tm;return text=>{if(Date.now()-lastInput>1500)return;clearTimeout(tm);tm=setTimeout(()=>{const l=document.getElementById('srLive');l.textContent='';requestAnimationFrame(()=>l.textContent=text);},700);};})();
 const catName=c=>c==='Purchase'?'Buying':c==='Refinance'?'Refinancing':'Specialty';
 
 /* ---------- demo modal ---------- */
@@ -32,7 +41,10 @@ function demo(title,body,data,btns){
 }
 function closeModal(){$('modal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
 $('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();if(!$('drawer').hidden){$('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');$('burger').focus();}}
+  if(e.key==='Tab'&&!$('modal').hidden){const f=[...$('modal').querySelectorAll('button,a[href]')].filter(x=>x.offsetParent);if(!f.length)return;
+    const i=f.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&(i===f.length-1||i<0)){e.preventDefault();f[0].focus();}}});
 const DEMOS={call:["Call (513) 783-4018","On the live site, this starts a phone call to the Reliant office in Middletown."],email:["Email the team","On the live site, this opens an email to jenb@relianthomemtg.com."],intro:["Introduction requested","On the live site, this sends your request to the Reliant team, and they connect you with the partner by phone or email."]};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-demo]');if(!b)return;e.preventDefault();const d=DEMOS[b.dataset.demo];demo(d[0],d[1]);});
 function extLink(label,url){const a=document.createElement('a');a.className='btn btn-primary';a.href=url;a.target='_blank';a.rel='noopener';a.textContent=label;return a;}
@@ -44,16 +56,15 @@ document.querySelectorAll('form[data-form]').forEach(f=>f.addEventListener('subm
   demo(f.dataset.form+' sent',savedNote(r),lines.join('\n')||'(No details entered)');}));
 
 /* ---------- people ---------- */
-const faceHTML=i=>`<span class="face" title="${TEAM[i].n}">${TEAM[i].i}</span>`;
-const SIL='<svg viewBox="0 0 100 90" aria-hidden="true"><circle cx="50" cy="32" r="20"/><path d="M8 90c3-24 21-36 42-36s39 12 42 36z"/></svg>';
-const portrait=i=>`<div class="portrait">${SIL}<b>${TEAM[i].i}</b><span class="slot-tag">Headshot</span></div>`;
+const faceHTML=i=>`<span class="face f${i}" title="${TEAM[i].n}">${TEAM[i].i}</span>`;
+const portrait=i=>`<div class="portrait"><b>${TEAM[i].i}</b><span class="slot-tag">Headshot</span></div>`;
 document.querySelectorAll('[data-faces]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>faceHTML(i)).join(''));
 document.querySelectorAll('[data-people]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>`<a href="#family" data-bio="${i}">${faceHTML(i)}<span>${t.n.replace('Wheeler-Wellman','W.-Wellman')}</span></a>`).join(''));
 document.querySelectorAll('[data-team]').forEach(el=>el.innerHTML=TEAM.map((t,i)=>`<div class="person">${portrait(i)}<div class="pi"><b>${t.n}</b><span class="role num">Loan Officer · NMLS ${t.nmls}</span><button class="btn btn-primary" data-apply="${i}">Apply with ${t.n.split(' ')[0]}</button></div></div>`).join(''));
 $('biosList').innerHTML=TEAM.map((t,i)=>`<article class="bio" id="bio-${i}">${portrait(i)}<div class="bt">
   <div><h3>${t.n}</h3><p class="muted num">Loan Officer · NMLS ${t.nmls}</p></div><p>${esc(t.bio)}</p>
   <div class="meta">${t.tags.map(x=>`<span>${x}</span>`).join('')}</div>
-  ${t.quote?`<blockquote>"${esc(t.quote)}" <span class="fine">— ${t.qby}, Google review</span></blockquote>`:''}
+  ${t.quote?`<blockquote>"${esc(t.quote)}"<span class="fine qby">${t.qby}, Google review</span></blockquote>`:''}
   ${t.slot?`<p class="fine">Bio slot: add ${t.n.split(' ')[0]}'s years in lending, specialties and hometown.</p>`:''}
   <div class="btn-row"><a class="btn btn-primary" href="#start" data-lo="${i}">Get pre-qualified with ${t.n.split(' ')[0]}</a><button class="btn btn-line" data-apply="${i}">Apply</button></div></div></article>`).join('');
 $('c-who').innerHTML='<option>Anyone on the team</option>'+TEAM.map(t=>`<option>${t.n}</option>`).join('');
@@ -76,7 +87,7 @@ function renderReviews(){document.querySelectorAll('[data-reviews]').forEach(el=
 $('revfilter').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;revFilter=c.dataset.f;$('revfilter').querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));renderReviews();});
 const GURL="https://search.google.com/local/reviews?placeid=ChIJEViXMQNdQIgRb8VN-N0-fS0";
 $('starpick').innerHTML=[1,2,3,4,5].map(n=>`<button aria-label="${n} star${n>1?'s':''}" data-n="${n}">★</button>`).join('');
-$('starpick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const n=+b.dataset.n;$('starpick').querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));$('starBtns').innerHTML='';
+$('starpick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const n=+b.dataset.n;$('starpick').querySelectorAll('button').forEach(x=>{x.classList.toggle('on',+x.dataset.n<=n);x.setAttribute('aria-pressed',+x.dataset.n===n);});$('starBtns').innerHTML='';
   if(n>=4){$('starMsg').textContent='Thank you! Would you share that on Google? It takes about a minute.';$('starBtns').appendChild(extLink('Review us on Google',GURL));}
   else{$('starMsg').textContent="We're sorry it wasn't a great experience. Tell us what happened and our team will follow up personally.";const a=document.createElement('a');a.className='btn btn-primary';a.href='#contact';a.textContent='Tell us what happened';$('starBtns').appendChild(a);}});
 $('posts').innerHTML=POSTS.map(p=>`<article><span class="eyebrow" style="font-size:.68rem">${p[0]}</span><h4>${p[1]}</h4><p class="muted" style="font-size:.93rem">${p[2]}</p></article>`).join('');
@@ -100,7 +111,7 @@ $('cmpGo').onclick=()=>{const L=[...cmp].map(s=>PBY[s]);
   <tr><th>Keep in mind</th>${L.map(p=>`<td>${esc(p.mind[0])}</td>`).join('')}</tr>
   <tr><th></th>${L.map(p=>`<td><a class="linkish" href="#program-${p.s}">Details →</a></td>`).join('')}</tr></tbody></table></div>`;
   $('cmpPanel').hidden=false;$('cmpPanel').scrollIntoView({behavior:smooth(),block:'start'});};
-function renderProgram(s){const p=PBY[s];if(!p)return false;const x=LX[s];$('pd-crumb').textContent=p.n;$('pd-name').textContent=p.n;$('pd-name2').textContent=p.n;$('pd-cat').textContent=catName(p.c)+(p.c==='Specialty'?' loan':'');$('pd-sum').textContent=p.sum;
+function renderProgram(s){const p=PBY[s];if(!p)return false;const x=LX[s];$('pd-crumb').textContent=p.n;$('pd-name').textContent=p.n;$('pd-cat').textContent=catName(p.c)+(p.c==='Specialty'?' loan':'');$('pd-sum').textContent=p.sum;
   $('pd-facts').innerHTML=`<div><small>Down payment</small><b>${esc(x[0])}</b></div><div><small>Mortgage insurance</small><b>${esc(x[1])}</b></div><div><small>Best for</small><b>${esc(x[2])}</b></div>`;
   $('pd-fit').innerHTML=p.fit.map(v=>`<li><span class="mk">✓</span>${esc(v)}</li>`).join('');$('pd-mind').innerHTML=p.mind.map(v=>`<li><span class="mk off">!</span>${esc(v)}</li>`).join('');
   $('pd-go').dataset.goal=p.c==='Refinance'?'refi':'buy';
@@ -114,7 +125,7 @@ const FQ=[
  {id:'credit',q:'How would you describe your credit?',o:['Strong (680+)','Building (under 680)','Not sure']},
  {id:'extra',q:'Anything else? Pick any that apply.',o:['First home','Rural or small town','Home needs repairs','Self-employed','Medical professional','Higher-priced home'],multi:1}];
 const F={mil:'No',down:'Under 5%',credit:'Not sure',extra:new Set(['First home'])};
-$('finderQs').innerHTML=FQ.map(q=>`<div class="qgroup"><span class="flabel">${q.q}</span><div class="chips" data-fq="${q.id}">${q.o.map(o=>`<button class="chip" aria-pressed="${q.multi?F.extra.has(o):F[q.id]===o}">${o}</button>`).join('')}</div></div>`).join('')+'<p class="fine">Your answers stay on this page. Nothing is sent.</p>';
+$('finderQs').innerHTML=FQ.map(q=>`<div class="qgroup"><span class="flabel" id="fq-${q.id}">${q.q}</span><div class="chips" role="group" aria-labelledby="fq-${q.id}" data-fq="${q.id}">${q.o.map(o=>`<button class="chip" aria-pressed="${q.multi?F.extra.has(o):F[q.id]===o}">${o}</button>`).join('')}</div></div>`).join('')+'<p class="fine">Your answers stay on this page. Nothing is sent.</p>';
 $('finderQs').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const g=c.parentElement,id=g.dataset.fq;
   if(id==='extra'){const v=c.textContent;F.extra.has(v)?F.extra.delete(v):F.extra.add(v);c.setAttribute('aria-pressed',F.extra.has(v));}
   else{F[id]=c.textContent;g.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));}
@@ -138,6 +149,7 @@ function renderFinder(){
   const top=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,3);
   $('matches').innerHTML=`<p class="flabel" style="margin-bottom:2px">Your best matches</p>`+top.map((s,k)=>{const p=PBY[s],l=LX[s];return `<div class="mcard${k===0?' top':''}">${k===0?'<span class="pill">Best match</span>':''}<h3>${esc(p.n)}</h3><p class="why">${esc(why[s][0])}</p><div class="facts"><div><small>Down payment</small><span>${esc(l[0])}</span></div><div><small>Mortgage insurance</small><span>${esc(l[1])}</span></div></div><div class="btn-row"><a class="linkish" href="#program-${s}">How ${esc(p.n.replace(/s$/,''))} works →</a></div></div>`;}).join('')+
    `<div class="card" style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;background:var(--alt)"><p style="font-size:.95rem;max-width:26em">Want a loan officer to confirm and add your numbers?</p><a class="btn btn-primary" href="#start" data-goal="buy">Get pre-qualified</a></div>`;
+  say('Best match: '+PBY[top[0]].n+'.');
   const rest=P.filter(p=>p.c==='Purchase'&&!top.includes(p.s));$('otherBuy').innerHTML=rest.map(p=>lrow(p,false)).join('');$('otherSum').textContent=`Other loans for buyers (${rest.length})`;
 }
 
@@ -151,6 +163,7 @@ function breakeven(){
   if(save<=0){$('be-months').textContent='No savings';v.className='pill bad';v.textContent='Not at this rate';}
   else{$('be-months').textContent=months<12?months+' months':(months/12).toFixed(1)+' years';
     if(months<=stay*12*0.5){v.className='pill good';v.textContent='Likely worth it';}else if(months<=stay*12){v.className='pill mid';v.textContent='Borderline';}else{v.className='pill bad';v.textContent='Probably not yet';}}
+  say(save>0?`Break-even in ${$('be-months').textContent}. ${v.textContent}. Saves ${usd(save)} a month.`:'No monthly savings at this rate.');
   // chart
   const W=600,H=210,pl=48,pr=12,pt=14,pb=30,N=stay*12;const vals=[];for(let m=0;m<=N;m++)vals.push(save*m-cost);
   const mn=Math.min(0,...vals),mx=Math.max(0,...vals),sy=v2=>pt+(mx-v2)/((mx-mn)||1)*(H-pt-pb),sx=m=>pl+m/N*(W-pl-pr);
@@ -171,11 +184,11 @@ const RF=[
  {id:'use',label:'Property',o:[['Primary home',0],['Second home',6],['Rental',16]],d:0},
  {id:'pts',label:'Discount points',o:[['None',0],['1 point',-8],['2 points',-15]],d:0}];
 const RFs={credit:1,equity:1,use:0,pts:0};
-$('rfQs').innerHTML=RF.map(f=>`<div class="qgroup"><span class="flabel">${f.label}</span><div class="chips" data-rf="${f.id}">${f.o.map((o,k)=>`<button class="chip" aria-pressed="${RFs[f.id]===k}" data-k="${k}">${o[0]}</button>`).join('')}</div></div>`).join('');
+$('rfQs').innerHTML=RF.map(f=>`<div class="qgroup"><span class="flabel" id="rf-${f.id}">${f.label}</span><div class="chips" role="group" aria-labelledby="rf-${f.id}" data-rf="${f.id}">${f.o.map((o,k)=>`<button class="chip" aria-pressed="${RFs[f.id]===k}" data-k="${k}">${o[0]}</button>`).join('')}</div></div>`).join('');
 $('rfQs').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const g=c.parentElement;RFs[g.dataset.rf]=+c.dataset.k;g.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));rates();});
 function rates(){let s=50;const parts=RF.map(f=>{const [name,v]=f.o[RFs[f.id]];s+=v;return [f.label,name,v];});s=Math.max(4,Math.min(96,s));
   $('rf-dot').style.left=s+'%';
-  $('rf-head').textContent=s<35?'Toward the lower end of the range':s<60?'Around the middle of the range':'Toward the higher end of the range';
+  $('rf-head').textContent=s<35?'Toward the lower end of the range':s<60?'Around the middle of the range':'Toward the higher end of the range';say($('rf-head').textContent+'.');
   $('rf-fx').innerHTML=parts.map(([l,n,v])=>{const w=Math.min(50,Math.abs(v)*2);return `<div><span>${l}</span><span class="bar"><span style="left:${v<0?50-w:50}%;width:${w}%;background:${v<0?'var(--good)':v>0?'var(--warn)':'var(--line)'}"></span></span><em style="color:${v<0?'var(--good)':v>0?'var(--warn)':'var(--muted)'}">${v<0?'Lower':v>0?'Higher':'Neutral'}</em></div>`;}).join('');}
 
 /* ---------- glossary + inline terms ---------- */
@@ -236,7 +249,7 @@ const LESSONS=[
   body:['Your interest rate sets your monthly payment. The {Annual percentage rate (APR)|APR} adds certain fees spread over the loan, so it\'s the better number for comparing offers.',
         '{Discount points|Discount points} let you pay up front for a lower rate. One point costs 1% of your loan amount, and it only pays off if you keep the loan past the break-even point.',
         'Once you\'re under contract, a {Lock-in|rate lock} holds your rate while the loan closes.'],
-  key:['Compare APRs, not just rates','1 point = 1% of the loan amount','Points pay off only if you keep the loan long enough'],
+  key:['Compare APRs as well as rates','1 point = 1% of the loan amount','Points pay off only if you keep the loan long enough'],
   try:'points',q:['On a $200,000 loan, what does one point cost?',['$200','$2,000','$20,000'],1,'Right. One point is 1% of the loan amount.']},
  {t:'Closing costs and closing day',min:4,
   body:['{Closing costs|Closing costs} usually run about 2% to 5% of the loan amount. They cover things like the appraisal, title insurance and lender fees. Some can be negotiated or paid by the seller.',
@@ -276,7 +289,8 @@ function renderLesson(){
    <div class="box"><h4>Check yourself</h4><p style="margin-bottom:12px">${esc(L.q[0])}</p><div class="quiz" id="quiz">${L.q[1].map((o,k)=>`<button data-k="${k}">${esc(o)}</button>`).join('')}<p class="fb" id="fb" aria-live="polite"></p></div></div>
    <div class="lnav"><button class="btn btn-line" data-go="${curLesson-1}" ${curLesson?'':'style="visibility:hidden"'}>← Previous</button>
    ${curLesson<LESSONS.length-1?`<button class="btn btn-primary" id="lessonDone">Mark complete and continue →</button>`:`<button class="btn btn-primary" id="lessonDone">Finish the course</button>`}</div>`;
-  $('lesson').querySelectorAll('input[type=range]').forEach(r=>{const up=()=>{const o=$(r.id+'-o');if(o)o.textContent=FMT[r.dataset.fmt](+r.value);tr.f();};r.addEventListener('input',up);up();});
+  $('lesson').querySelectorAll('label output').forEach(o=>o.setAttribute('aria-hidden','true'));
+  $('lesson').querySelectorAll('input[type=range]').forEach(r=>{fillRange(r);const up=()=>{const o=$(r.id+'-o');if(o)o.textContent=FMT[r.dataset.fmt](+r.value);tr.f();};r.addEventListener('input',up);up();});
   $('lesson').querySelectorAll('[data-cc]').forEach(c=>c.addEventListener('change',tr.f));tr.f();
   $('quiz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=+b.dataset.k,ok=k===L.q[2];$('quiz').querySelectorAll('button').forEach(x=>x.classList.remove('right','wrong'));b.classList.add(ok?'right':'wrong');$('fb').textContent=ok?L.q[3]:'Not quite. Try another answer.';});
   $('lessonDone').onclick=()=>{done.add(curLesson);store.set('rhm-learn',[...done]);if(curLesson<LESSONS.length-1){curLesson++;renderLesson();$('lesson').scrollIntoView({behavior:smooth(),block:'start'});}else{renderLessonNav();
@@ -287,7 +301,10 @@ document.addEventListener('click',e=>{const g=e.target.closest('#lessonNav [data
 
 /* ---------- payment calculator + amortization ---------- */
 let term=30;
-document.querySelectorAll('#terms button').forEach(b=>b.addEventListener('click',()=>{term=+b.dataset.t;document.querySelectorAll('#terms button').forEach(x=>x.setAttribute('aria-checked',x===b));calc();}));
+const termBtns=[...document.querySelectorAll('#terms button')];
+function pickTerm(b){term=+b.dataset.t;termBtns.forEach(x=>{x.setAttribute('aria-checked',x===b);x.tabIndex=x===b?0:-1;});calc();}
+termBtns.forEach((b,i)=>{b.tabIndex=b.getAttribute('aria-checked')==='true'?0:-1;b.addEventListener('click',()=>pickTerm(b));
+  b.addEventListener('keydown',e=>{const d={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(!d)return;e.preventDefault();const n=termBtns[(i+d+termBtns.length)%termBtns.length];pickTerm(n);n.focus();});});
 ['price','down','rate'].forEach(id=>$(id).addEventListener('input',calc));
 function calc(){const price=+$('price').value,dp=+$('down').value,rate=+$('rate').value,loan=price*(1-dp/100),tax=price*0.019/12;
   $('o-price').textContent=usd(price);$('o-down').textContent=dp+'% · '+usd(price*dp/100);$('o-rate').textContent=rate.toFixed(3)+'%';
@@ -298,12 +315,13 @@ function calc(){const price=+$('price').value,dp=+$('down').value,rate=+$('rate'
   let g=`<text x="${pl-6}" y="${pt+8}" text-anchor="end">${usd(mx)}</text><text x="${pl-6}" y="${H-pb}" text-anchor="end">$0</text>`;
   yrs.forEach(([pp,ip],y)=>{const x=pl+y*bw+1,hp=pp/mx*(H-pt-pb),hi=ip/mx*(H-pt-pb);g+=`<rect x="${x}" y="${H-pb-hp}" width="${bw-2}" height="${hp}" style="fill:var(--forest)"/><rect x="${x}" y="${H-pb-hp-hi}" width="${bw-2}" height="${hi}" style="fill:var(--sand)"/>`;});
   [1,Math.round(term/3),Math.round(term*2/3),term].forEach(y=>g+=`<text x="${pl+(y-.5)*bw}" y="${H-8}" text-anchor="middle">Yr ${y}</text>`);
+  say(`Estimated monthly payment ${usd(pi+tax)}. Total interest ${usd(pi*term*12-loan)}.`);
   $('amort').innerHTML=g;const cross=yrs.findIndex(([pp,ip])=>pp>=ip);
   $('amortNote').textContent=`In year 1, ${Math.round(yrs[0][1]/(pi*12)*100)}% of your payments go to interest.`+(cross>0?` From year ${cross+1}, most of each payment pays down your loan.`:' Most of each payment pays down your loan from the start.');}
 function afford(){const inc=+$('af-inc').value,debt=+$('af-debt').value,down=+$('af-down').value,rate=+$('af-rate').value;
   $('af-inc-o').textContent=usd(inc);$('af-debt-o').textContent=usd(debt)+'/mo';$('af-down-o').textContent=usd(down);$('af-rate-o').textContent=rate.toFixed(3)+'%';
   const M=Math.max(0,inc/12*0.43-debt),f=pmt(1,rate,30),price=Math.max(0,(M+f*down)/(f+0.019/12));const lo=Math.round(price*0.9/5000)*5000,hi=Math.round(price/5000)*5000;
-  $('af-price').textContent=hi>0?usd(lo)+' – '+usd(hi):'$0';$('af-pay').textContent='Housing budget about '+usd(M)+'/mo including taxes and insurance.';}
+  $('af-price').textContent=hi>0?usd(lo)+' – '+usd(hi):'$0';$('af-pay').textContent='Housing budget about '+usd(M)+'/mo including taxes and insurance.';say('Estimated price range '+$('af-price').textContent.replace('–','to')+'.');}
 ['af-inc','af-debt','af-down','af-rate'].forEach(id=>$(id).addEventListener('input',afford));
 
 /* ---------- local help ---------- */
@@ -334,7 +352,7 @@ function renderDir(){const list=DIR.filter(d=>(!dS||d[3]===dS||d[3]==='US')&&(!d
     <div class="acts"><a href="${d[2]}" target="_blank" rel="noopener">Visit site ↗</a><button class="save" data-save="${d[0]}" aria-pressed="${!!saved[d[0]]}">${saved[d[0]]?'Saved':'Save to checklist'}</button></div></article>`).join('')||'<p class="muted">Nothing matches. Try fewer filters.</p>';}
 function renderChk(){const ids=Object.keys(saved),n=ids.filter(k=>saved[k]==='done').length;
   $('chkMeta').textContent=ids.length?`${n} of ${ids.length} done`:'Save resources and check them off as you go.';
-  $('chkList').innerHTML=ids.map(k=>{const d=DIR.find(x=>x[0]===k);return d?`<li class="${saved[k]==='done'?'done':''}"><input type="checkbox" data-done="${k}" ${saved[k]==='done'?'checked':''} aria-label="Mark ${esc(d[1])} done"><span>${esc(d[1])}</span><button data-rm="${k}" aria-label="Remove">×</button></li>`:'';}).join('');}
+  $('chkList').innerHTML=ids.map(k=>{const d=DIR.find(x=>x[0]===k);return d?`<li class="${saved[k]==='done'?'done':''}"><input type="checkbox" data-done="${k}" ${saved[k]==='done'?'checked':''} aria-label="Mark ${esc(d[1])} done"><span>${esc(d[1])}</span><button data-rm="${k}" aria-label="Remove ${esc(d[1])}">×</button></li>`:'';}).join('');}
 document.addEventListener('click',e=>{const s=e.target.closest('[data-save]');if(s){const k=s.dataset.save;if(saved[k])delete saved[k];else saved[k]='todo';store.set('rhm-checklist',saved);renderDir();renderChk();}
   const r=e.target.closest('[data-rm]');if(r){delete saved[r.dataset.rm];store.set('rhm-checklist',saved);renderDir();renderChk();}});
 document.addEventListener('change',e=>{const d=e.target.closest('[data-done]');if(!d)return;saved[d.dataset.done]=d.checked?'done':'todo';store.set('rhm-checklist',saved);renderChk();});
@@ -442,24 +460,24 @@ const Q=[
   {id:'goal',lab:'Looking to',type:'choice',big:1,q:'What can we help you with?',opts:[['Buying a home','First home, next home or relocating'],['Refinancing','Lower payment, cash out or a shorter term']]},
   {id:'stage',lab:'Where you are',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you in the process?',opts:[['Just exploring',"Seeing what's possible"],['Looking at homes','Touring and comparing'],['Ready to make an offer','Found the one'],['Under contract','Need financing now']]},
   {id:'first',lab:'First home',when:a=>a.goal==='Buying a home',type:'choice',q:'Is this your first home?',opts:[['Yes, first home'],["No, I've owned before"]]},
-  {id:'price',lab:'Price range',when:a=>a.goal==='Buying a home',type:'range',q:'What price range are you considering?',min:80000,max:900000,step:5000,value:250000,fmt:money},
-  {id:'down',lab:'Down payment',when:a=>a.goal==='Buying a home',type:'range',q:'How much could you put down?',help:'Include savings and any gift funds from family.',min:0,max:100000,step:1000,value:12000,fmt:money},
+  {id:'price',lab:'Price range',when:a=>a.goal==='Buying a home',type:'range',q:'What price range are you considering?',help:'Your best guess is fine. Type a number or use the slider.',min:80000,max:900000,step:5000,value:250000,fmt:money},
+  {id:'down',lab:'Down payment',when:a=>a.goal==='Buying a home',type:'range',q:'How much could you put down?',help:'Include savings and any gift funds from family. Your best guess is fine.',min:0,max:270000,step:1000,value:12000,fmt:money},
+  {id:'area',lab:'Where',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you hoping to buy?',opts:[['In town','Middletown, Hamilton, suburbs'],['Rural or small town','Outside city limits'],['Not sure yet']]},
   {id:'rgoal',lab:'Refinance goal',when:a=>a.goal==='Refinancing',type:'choice',q:'What would you like your refinance to do?',opts:[['Lower my payment'],['Pay off my home sooner'],['Take cash out'],['Consolidate debt'],['Drop mortgage insurance'],['Switch from an ARM to fixed']]},
-  {id:'value',lab:'Home value',when:a=>a.goal==='Refinancing',type:'range',q:'About what is your home worth today?',min:80000,max:900000,step:5000,value:275000,fmt:money},
-  {id:'bal',lab:'Loan balance',when:a=>a.goal==='Refinancing',type:'range',q:'What do you still owe on your mortgage?',min:0,max:800000,step:5000,value:180000,fmt:money},
-  {id:'rate',lab:'Current rate',when:a=>a.goal==='Refinancing',type:'range',q:'What is your current interest rate?',min:2.5,max:10,step:0.125,value:7.25,fmt:v=>v.toFixed(3)+'%'},
+  {id:'value',lab:'Home value',when:a=>a.goal==='Refinancing',type:'range',q:'About what is your home worth today?',help:'Your best guess is fine. Type a number or use the slider.',min:80000,max:900000,step:5000,value:275000,fmt:money},
+  {id:'bal',lab:'Loan balance',when:a=>a.goal==='Refinancing',type:'range',q:'What do you still owe on your mortgage?',help:'Your best guess is fine.',min:0,max:800000,step:5000,value:180000,fmt:money},
+  {id:'rate',lab:'Current rate',when:a=>a.goal==='Refinancing',type:'range',q:'What is your current interest rate?',help:'You can find it on your mortgage statement. A close guess is fine.',min:2.5,max:10,step:0.125,value:7.25,fmt:v=>v.toFixed(3)+'%'},
   {id:'cash',lab:'Cash out',when:a=>a.goal==='Refinancing'&&(a.rgoal==='Take cash out'||a.rgoal==='Consolidate debt'),type:'range',q:'How much cash would you like?',min:5000,max:200000,step:2500,value:30000,fmt:money},
-  {id:'credit',lab:'Credit',type:'choice',q:'How would you describe your credit?',opts:[['Excellent','740 or higher'],['Good','680 to 739'],['Fair','620 to 679'],['Rebuilding','Below 620'],['Not sure',"That's fine"]]},
+  {id:'credit',lab:'Credit',type:'choice',q:'How would you describe your credit?',help:'Your best guess is fine. We won\'t check your credit.',opts:[['Excellent','740 or higher'],['Good','680 to 739'],['Fair','620 to 679'],['Rebuilding','Below 620'],['Not sure',"That's fine"]]},
   {id:'mil',lab:'Military service',type:'choice',q:'Have you served in the military?',help:'Veterans, active duty and some surviving spouses may qualify for VA loans.',opts:[['Yes'],['No']]},
   {id:'work',lab:'Income',when:a=>a.goal==='Buying a home',type:'choice',q:'How do you earn your income?',opts:[['Employed (W-2)'],['Self-employed'],['Retired or fixed income'],['Medical professional']]},
-  {id:'area',lab:'Where',when:a=>a.goal==='Buying a home',type:'choice',q:'Where are you hoping to buy?',opts:[['In town','Middletown, Hamilton, suburbs'],['Rural or small town','Outside city limits'],['Not sure yet']]},
   {id:'age',lab:'62 or older',when:a=>a.goal==='Refinancing',type:'choice',q:'Is any borrower 62 or older?',opts:[['Yes'],['No']]},
   {id:'contact',type:'contact',q:'Where should we send your results?'},
   {id:'review',type:'review',q:'Check your answers'}];
 const ans={quote:true};Q.forEach(s=>{if(s.type==='range')ans[s.id]=s.value;});
 let qi=0,busy=false,wantQuote=false,editing=false;
 const vis=()=>Q.filter(s=>!s.when||s.when(ans));
-const nQs=()=>vis().filter(s=>s.type==='choice'||s.type==='range').length;
+const nQs=()=>{const a=ans.goal?ans:{...ans,goal:'Buying a home'};return Q.filter(s=>(!s.when||s.when(a))&&(s.type==='choice'||s.type==='range')).length;};
 function presetGoal(g){if(!$('pqResults').hidden)return;if(g==='rates'){wantQuote=true;ans.quote=true;return;}ans.goal=g==='refi'?'Refinancing':'Buying a home';qi=1;}
 const GROUPS=[['Your plans',['goal','stage','first','rgoal']],['Your home and loan',['price','down','value','bal','rate','cash','area']],['About you',['credit','mil','work','age']]];
 const fmtAns=s=>s.type==='range'?s.fmt(ans[s.id]):(ans[s.id]||'Not answered');
@@ -469,23 +487,37 @@ function reviewHTML(ed){const byId=Object.fromEntries(vis().map(s=>[s.id,s]));le
     h+=`<section><h4>${g}</h4><dl>${rows.map(i=>{const s=byId[i];return `<div class="r"><dt>${s.lab}</dt><dd>${esc(fmtAns(s))}</dd>${ed?`<button class="ed" data-edit="${i}" aria-label="Edit ${esc(s.lab)}">Edit</button>`:'<span></span>'}</div>`;}).join('')}</dl></section>`;}
   h+=`<section><h4>How we'll reach you</h4><dl>${contactRows().map(([k,v])=>`<div class="r"><dt>${k}</dt><dd>${esc(v)}</dd>${ed?`<button class="ed" data-edit="contact" aria-label="Edit ${k}">Edit</button>`:'<span></span>'}</div>`).join('')}</dl></section></div>`;return h;}
 function drawQ(){
+  const hadFocus=$('wiz').contains(document.activeElement);
   const V=vis();if(qi>=V.length)qi=V.length-1;const s=V[qi];const W=$('wiz');let body='',step='';
-  const qn=V.slice(0,qi+1).filter(x=>x.type==='choice'||x.type==='range').length;
-  if(s.type==='choice'){step=`Question ${qn} of ${nQs()}`;body=`<div class="opts${s.big?' big':''}">${s.opts.map(o=>`<button class="opt" aria-pressed="${ans[s.id]===o[0]}" data-v="${esc(o[0])}"><b>${esc(o[0])}</b>${o[1]?`<small>${esc(o[1])}</small>`:''}</button>`).join('')}</div>`;}
-  else if(s.type==='range'){step=`Question ${qn} of ${nQs()}`;body=`<div class="wiz-range"><output class="num"></output><input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${ans[s.id]}" aria-label="${esc(s.q)}"><div class="fine" style="display:flex;justify-content:space-between;margin-top:6px"><span>${s.fmt(s.min)}</span><span>${s.fmt(s.max)}</span></div></div>`;}
-  else if(s.type==='contact'){step='Almost done';body=`<form novalidate><div class="row2"><div class="field"><label for="pq-name">First name</label><input class="in" id="pq-name" autocomplete="given-name" value="${esc(ans.name||'')}"></div>
-      <div class="field"><label for="pq-phone">Phone</label><input class="in" id="pq-phone" type="tel" autocomplete="tel" value="${esc(ans.phone||'')}"></div></div>
-      <div class="field"><label for="pq-email">Email</label><input class="in" id="pq-email" type="email" autocomplete="email" value="${esc(ans.email||'')}"></div>
+  const qn=V.slice(0,qi+1).filter(x=>x.type==='choice'||x.type==='range').length,grp=(GROUPS.find(g=>g[1].includes(s.id))||[''])[0];
+  if(s.type==='choice'){step=`${grp} · Question ${qn} of ${nQs()}`;body=`<div class="opts${s.big?' lg':''}">${s.opts.map(o=>`<button class="opt" aria-pressed="${ans[s.id]===o[0]}" data-v="${esc(o[0])}"><b>${esc(o[0])}</b>${o[1]?`<small>${esc(o[1])}</small>`:''}</button>`).join('')}</div>`;}
+  else if(s.type==='range'){step=`${grp} · Question ${qn} of ${nQs()}`;body=`<div class="wiz-range"><input class="wiz-val num" type="text" inputmode="decimal" autocomplete="off" aria-label="${esc(s.lab)}, type an amount"><input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${ans[s.id]}" aria-label="${esc(s.q)}"><div class="fine" style="display:flex;justify-content:space-between;margin-top:6px"><span>${s.fmt(s.min)}</span><span>${s.fmt(s.max)}</span></div></div>`;}
+  else if(s.type==='contact'){step='Almost done';body=`<form novalidate><div class="row2"><div class="field"><label for="pq-name">First name</label><input class="in" id="pq-name" autocomplete="given-name" value="${esc(ans.name||'')}" aria-describedby="pq-name-err"><p class="err" id="pq-name-err" hidden></p></div>
+      <div class="field"><label for="pq-phone">Phone</label><input class="in" id="pq-phone" type="tel" autocomplete="tel" value="${esc(ans.phone||'')}" aria-describedby="pq-phone-err pq-why"><p class="err" id="pq-phone-err" hidden></p></div></div>
+      <p class="fine pq-why" id="pq-why">Phone or email is enough. A loan officer from our Middletown office will use it to go over your results.</p>
+      <div class="field"><label for="pq-email">Email</label><input class="in" id="pq-email" type="email" autocomplete="email" spellcheck="false" value="${esc(ans.email||'')}" aria-describedby="pq-email-err pq-why"><p class="err" id="pq-email-err" hidden></p></div>
       <div class="field"><label for="pq-lo">Who would you like to work with?</label><select class="in" id="pq-lo"><option value="">Whoever's available first</option>${TEAM.map((t,i)=>`<option value="${i}" ${(ans.lo===String(i)||(ans.lo===undefined&&preferLO===i))?'selected':''}>${t.n}</option>`).join('')}</select></div>
       <label class="quote" for="pq-quote"><input type="checkbox" id="pq-quote" ${ans.quote?'checked':''}><span><b>Include a personal rate quote</b><br><span class="fine">Your loan officer will quote today's rate for your situation.</span></span></label>
-      <p class="err" id="pqErr" hidden></p><p class="fine">We'll only use this to send your results and follow up about your loan. No credit check.</p></form>`;}
-  else {step='Last step';body=`<p class="muted" style="margin:-10px 0 18px">Make sure everything looks right. Tap Edit to change an answer.</p>${reviewHTML(true)}`;}
-  const pct=Math.round(qi/(V.length-1)*100);
+      <p class="err" id="pqErr" role="alert" hidden></p><p class="fine">We'll only use this to send your results and follow up about your loan. No credit check.</p></form>`;}
+  else {step='Last step';body=`<p class="muted" style="margin:-10px 0 18px">Make sure everything looks right. Tap Edit to change an answer.</p>${reviewHTML(true)}<p class="secure"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>No credit check. Licensed in Ohio, Kentucky and Indiana, NMLS #2292251.</p>`;}
+  const pct=Math.max(6,Math.round(100*Math.pow(qi/(V.length-1),.7)));
   const nav=s.type==='range'?`<button class="btn btn-primary" data-w="next">${editing?'Save and review →':'Continue →'}</button>`:s.type==='contact'?`<button class="btn btn-primary" data-w="toreview">Review my answers →</button>`:s.type==='review'?`<button class="btn btn-primary btn-lg" data-w="submit">See my results →</button>`:'<span class="fine">Pick one to continue</span>';
   W.innerHTML=`<div class="wiz-prog"><span style="width:${pct}%"></span></div><div class="wiz-body"><p class="wiz-step">${step}</p><h2 class="wiz-q">${esc(s.q)}</h2>${s.help?`<p class="muted" style="margin:-12px 0 18px">${esc(s.help)}</p>`:''}${body}
     <div class="wiz-nav"><button class="btn btn-line" data-w="back" ${qi?'':'style="visibility:hidden"'}>← Back</button>${nav}</div></div>`;
-  if(s.type==='range'){const r=W.querySelector('input[type=range]'),o=W.querySelector('output');const up=()=>{ans[s.id]=+r.value;o.textContent=s.fmt(+r.value);};r.addEventListener('input',up);up();}
-  if(s.type==='contact')W.querySelector('form').addEventListener('submit',e=>{e.preventDefault();toReview();});
+  if(hadFocus){const q=W.querySelector('.wiz-q');q.tabIndex=-1;q.focus({preventScroll:true});}
+  if(s.type==='range'){const r=W.querySelector('input[type=range]'),o=W.querySelector('.wiz-val'),show=v=>{o.value=s.fmt(v);r.setAttribute('aria-valuetext',s.fmt(v));};
+    fillRange(r);r.addEventListener('input',()=>{ans[s.id]=+r.value;show(+r.value);});
+    // typing an exact amount: "$250,000", "250k" and "6.75%" all work; out-of-range values are brought inside the range
+    o.addEventListener('change',()=>{const t=o.value.toLowerCase(),k=/\dk\b|\dk$/.test(t)?1e3:/\dm\b|\dm$/.test(t)?1e6:1;let v=parseFloat(t.replace(/[^0-9.]/g,''))*k;
+      if(!isFinite(v))v=ans[s.id];v=Math.min(s.max,Math.max(s.min,v));ans[s.id]=v;r.value=v;fillRange(r);show(v);});
+    o.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();o.dispatchEvent(new Event('change'));nextQ();}});
+    show(ans[s.id]);}
+  if(s.type==='contact'){W.querySelector('form').addEventListener('submit',e=>{e.preventDefault();toReview();});
+    // check phone and email when the visitor leaves the field; clear the message as soon as they fix it
+    // (not while a wizard button is being pressed: a message appearing then would push the button out from under the pointer)
+    let pressing=false;W.querySelector('.wiz-nav').addEventListener('pointerdown',()=>{pressing=true;setTimeout(()=>pressing=false,600);});
+    ['pq-phone','pq-email'].forEach(id=>{const el=$(id);el.addEventListener('blur',e=>{if(pressing||(e.relatedTarget&&e.relatedTarget.closest('.wiz-nav')))return;if(el.value.trim())checkField(id);});el.addEventListener('input',()=>{if(el.getAttribute('aria-invalid'))checkField(id,true);});});
+    $('pq-name').addEventListener('input',()=>fieldErr('pq-name',''));}
 }
 const idxOf=id=>vis().findIndex(s=>s.id===id);
 function nextQ(){const V=vis();if(editing){const r=idxOf('review');const nx=V[qi+1];
@@ -493,23 +525,48 @@ function nextQ(){const V=vis();if(editing){const r=idxOf('review');const nx=V[qi
     if(nx&&(nx.type==='choice'||nx.type==='range')&&ans[nx.id]===undefined){qi++;drawQ();return;}
     editing=false;qi=r;drawQ();return;}
   if(qi<V.length-1){qi++;drawQ();}}
-function toReview(){saveContact();if(!ans.name){showErr('Please add your first name so your loan officer knows who to ask for.');return;}
-  if(!ans.phone&&!ans.email){showErr('Please add a phone number or email so we can send your results.');return;}editing=false;qi=idxOf('review');drawQ();$('wiz').scrollIntoView({behavior:smooth(),block:'start'});}
+/* contact checks: any common phone format works ("513.555.0100", "+1 513 555 0100"); it is saved as (513) 555-0100 */
+const digits=v=>v.replace(/\D/g,'');
+const phoneOk=v=>{const d=digits(v);return d.length===10||(d.length===11&&d[0]==='1');};
+const fmtPhone=v=>{let d=digits(v);if(d.length===11)d=d.slice(1);return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;};
+const emailOk=v=>/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v);
+const MSG={'pq-name':'Please add your first name so your loan officer knows who to ask for.',
+  'pq-phone':'That phone number looks incomplete. Please use all 10 digits, like 513-555-0100.',
+  'pq-email':'That email address looks incomplete. It should look like name@example.com.'};
+function fieldErr(id,m){const el=$(id),e=$(id+'-err');if(!el||!e)return;e.textContent=m;e.hidden=!m;if(m)el.setAttribute('aria-invalid','true');else el.removeAttribute('aria-invalid');}
+function checkField(id,quiet){const el=$(id),v=el.value.trim();let ok=true;
+  if(id==='pq-phone'&&v){ok=phoneOk(v);if(ok&&!quiet)el.value=fmtPhone(v);}
+  if(id==='pq-email'&&v)ok=emailOk(v);
+  fieldErr(id,ok?'':MSG[id]);return ok;}
+function toReview(){const e=$('pqErr');e.hidden=true;
+  const bad=[];if(!$('pq-name').value.trim()){fieldErr('pq-name',MSG['pq-name']);bad.push('pq-name');}
+  ['pq-phone','pq-email'].forEach(id=>{if(!checkField(id))bad.push(id);});
+  if(!$('pq-phone').value.trim()&&!$('pq-email').value.trim()){showErr('Please add a phone number or email so we can send your results.');bad.push('pq-phone');}
+  saveContact();if(bad.length){$(bad[0]).focus();return;}
+  editing=false;qi=idxOf('review');drawQ();$('wiz').scrollIntoView({behavior:smooth(),block:'start'});}
 $('wiz').addEventListener('click',e=>{
   const o=e.target.closest('.opt');if(o){if(busy)return;busy=true;const s=vis()[qi];ans[s.id]=o.dataset.v;$('wiz').querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',x===o));setTimeout(()=>{busy=false;nextQ();},170);return;}
   const ed=e.target.closest('[data-edit]');if(ed){editing=ed.dataset.edit!=='contact';qi=idxOf(ed.dataset.edit);drawQ();return;}
   const w=e.target.closest('[data-w]');if(!w)return;
   if(w.dataset.w==='back'&&qi>0){saveContact();editing=false;qi--;drawQ();}else if(w.dataset.w==='next')nextQ();else if(w.dataset.w==='toreview')toReview();else if(w.dataset.w==='submit')submitPQ();});
 function saveContact(){if(!$('pq-name'))return;ans.name=$('pq-name').value.trim();ans.phone=$('pq-phone').value.trim();ans.email=$('pq-email').value.trim();ans.lo=$('pq-lo').value;ans.quote=$('pq-quote').checked;}
-let pqSave=null;
+let pqRow=null,submitting=false;
+/* The save runs while the door opens. The demo notice sits inline under the welcome (nothing covers the
+   results); if the save times out or fails, it says so and offers to try again or call. */
+function savePQ(){const n=$('pqNoteText'),a=$('pqRetry');if(a)a.hidden=true;
+  DB.insert('reliant_prequal',pqRow).then(r=>{if(!$('pqNoteText'))return;
+    if(r&&r.ok){$('pqNoteText').textContent='This is a demo. Your answers were saved to the demo database. On the live site, they go straight to your loan officer.';return;}
+    $('pqNoteText').textContent=(r&&r.reason==='timeout'?'Saving your answers is taking too long.':'Your answers didn\'t save.')+' Your results below are still here. Try again, or call our Middletown office at (513) 783-4018.';
+    $('pqRetry').hidden=false;});}
 function submitPQ(){
+  if(submitting)return;submitting=true;const sb=$('wiz').querySelector('[data-w=submit]');if(sb){sb.disabled=true;sb.textContent='Opening your results…';}
   renderResults();
-  const byId=Object.fromEntries(vis().map(s=>[s.id,s])),answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
-  pqSave=DB.insert('reliant_prequal',{goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote});
+  const answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
+  pqRow={goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote};
+  savePQ();
   playDoor(ans.name,()=>{if(curPage!=='start'){history.replaceState(null,'','#start');route();} // left mid-walk: the results are still where this ends
     $('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;window.scrollTo(0,0);
-    const h=$('results').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}
-    setTimeout(async()=>{const r=await pqSave;demo('Pre-qualification sent',r&&r.ok?'This is a demo. Your answers were saved to the demo database. On the live site, your loan officer receives:':'This is a demo. On the live site, your loan officer receives:',summaryLines().join('\n'));},1300);});}
+    const h=$('results').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}});}
 function showErr(m){const e=$('pqErr');e.textContent=m;e.hidden=false;}
 function summaryLines(){const byId=Object.fromEntries(vis().map(s=>[s.id,s]));const out=[];
   for(const [g,ids] of GROUPS){const rows=ids.filter(i=>byId[i]);if(!rows.length)continue;out.push(g.toUpperCase());rows.forEach(i=>out.push('  '+byId[i].lab+': '+fmtAns(byId[i])));out.push('');}
@@ -527,9 +584,10 @@ function renderResults(){
     big=(d<=0?'↓ ':'↑ ')+usd(Math.abs(d))+'<span style="font-size:1.1rem">/mo</span>';sub='Estimated monthly change';note=`New loan of ${usd(newLoan)} (${ltv.toFixed(0)}% of your home's value) at an example ${ex.toFixed(3)}%, about 1% under your current rate. Principal and interest only.`+(ltv>80&&cash?' Most cash-out programs cap near 80% of value, so a HELOC may fit better.':'');}
   const recs=[...new Set(r)].slice(0,3),lo=ans.lo?[+ans.lo]:[];
   $('results').innerHTML=`<div class="res-hero"><p class="eyebrow">Pre-qualification complete</p><h1>Welcome home, ${esc(a.name)}.</h1><p class="muted" style="max-width:34em;font-size:1.08rem">Here's where you stand. ${lo.length===1?esc(TEAM[lo[0]].n.split(' ')[0])+' will':'A loan officer from our Middletown office will'} reach out to go over your numbers${wantQuote?' and your personal rate quote':' and today\'s rates'}.</p></div>
+    <div class="demo-note" role="status"><span class="badge">Demo site</span><p id="pqNoteText">This is a demo. Saving your answers to the demo database…</p><button class="btn btn-line" id="pqRetry" hidden>Try again</button><details><summary>See what your loan officer receives</summary><pre>${esc(summaryLines().join('\n'))}</pre></details></div>
     <div class="grid2" style="align-items:start"><div style="display:grid;gap:18px">
       <div class="est"><span class="eyebrow">${sub}</span><div class="big num">${big}</div><p>${esc(note)}</p></div>
-      <div class="card"><p class="flabel" style="margin-bottom:10px">Loans worth talking about</p><div class="rec">${recs.map((s,k)=>{const p=PBY[s];return `<div class="recitem" data-open="${k===0}"><button aria-expanded="${k===0}"><span><b>${esc(p.n)}</b><small>${esc(p.sum)}</small></span><span aria-hidden="true">＋</span></button><div class="more" ${k===0?'':'hidden'}><ul class="checks">${p.fit.map(x=>`<li><span class="mk">✓</span>${esc(x)}</li>`).join('')}</ul><a class="linkish" href="#program-${s}">More about ${esc(p.n)} →</a></div></div>`;}).join('')}</div></div></div>
+      <div class="card"><p class="flabel" style="margin-bottom:10px">Loans worth talking about</p><div class="rec">${recs.map((s,k)=>{const p=PBY[s];return `<div class="recitem" data-open="${k===0}"><button aria-expanded="${k===0}"><span><b>${esc(p.n)}</b><small>${esc(p.sum)}</small></span><span class="pm" aria-hidden="true">＋</span></button><div class="more" ${k===0?'':'hidden'}><ul class="checks">${p.fit.map(x=>`<li><span class="mk">✓</span>${esc(x)}</li>`).join('')}</ul><a class="linkish" href="#program-${s}">More about ${esc(p.n)} →</a></div></div>`;}).join('')}</div></div></div>
     <div style="display:grid;gap:18px">
       <div class="card">${lo.length?`<p class="flabel">Your loan officer</p><div class="lo" style="margin-top:12px">${faceHTML(lo[0])}<div><h3>${TEAM[lo[0]].n}</h3><p class="fine num">NMLS ${TEAM[lo[0]].nmls}</p></div></div>
         <div class="btn-row" style="margin-top:20px"><button class="btn btn-primary" data-apply="${lo[0]}">Apply with ${TEAM[lo[0]].n.split(' ')[0]}</button><button class="btn btn-line num" data-demo="call">Call (513) 783-4018</button></div>`:`<p class="flabel">Your loan officer</p><p style="margin-top:10px">The first available licensed loan officer in our Middletown office will review your answers.</p>
@@ -539,33 +597,73 @@ function renderResults(){
       <details class="card"><summary class="flabel" style="cursor:pointer">Your answers</summary><div style="margin-top:14px">${reviewHTML(false)}</div><p style="margin-top:14px"><button class="linkish" id="redo">Change my answers</button></p></details></div></div>
     <p class="fine" style="text-align:center;margin-top:24px">Estimates only. Not a loan offer, approval or commitment to lend.</p>`;
   $('results').querySelectorAll('.recitem>button').forEach(b=>b.addEventListener('click',()=>{const it=b.parentElement,o=it.dataset.open!=='true';it.dataset.open=o;b.setAttribute('aria-expanded',o);it.querySelector('.more').hidden=!o;}));
-  $('redo').onclick=()=>{$('pqHead').hidden=false;$('pqForm').hidden=false;$('pqResults').hidden=true;qi=0;drawQ();window.scrollTo(0,0);};
+  $('pqRetry').onclick=savePQ;
+  $('redo').onclick=()=>{submitting=false;$('pqHead').hidden=false;$('pqForm').hidden=false;$('pqResults').hidden=true;qi=0;drawQ();window.scrollTo(0,0);};
 }
 
+/* ---------- home: payment teaser. Its numbers carry into the pre-qualification ---------- */
+let carried=false;
+function teaser(){const pr=+$('tz-price').value,dp=+$('tz-down').value,down=pr*dp/100,pi=pmt(pr-down,6.5,30),ti=pr*.019/12,tot=pi+ti;
+  $('tz-price-o').textContent=usd(pr);$('tz-down-o').textContent=dp+'% · '+usd(down);
+  $('tz-pay').innerHTML=usd(tot)+'<span>/mo</span>';$('tz-pi').textContent=usd(pi);$('tz-ti').textContent=usd(ti);$('tz-bpi').style.width=(pi/tot*100).toFixed(1)+'%';say(`Estimated monthly payment ${usd(tot)}.`);}
+['tz-price','tz-down'].forEach(id=>$(id).addEventListener('input',teaser));
+document.addEventListener('click',e=>{if(!e.target.closest('[data-carry]')||!$('pqResults').hidden)return;const pr=+$('tz-price').value;
+  ans.price=pr;ans.down=Math.min(270000,Math.round(pr*+$('tz-down').value/100/1000)*1000);carried=true;});
+
+/* ---------- the closing call to action speaks to the page it's on ---------- */
+const CTA={buy:['Know what you can afford before you fall for a house.','buy'],refinance:['See what a refinance could do for your payment.','refi'],
+  loans:['Find out which of these loans fit you.',''],learn:['Ready to put your own numbers to it?',''],'local-help':['Start with a budget you can plan around.','buy'],
+  about:['Work with a local team that knows you by name.','']};
+function ctaFor(page){let [h,g]=CTA[page]||['Know what you can afford before you fall for a house.',''];
+  if(page==='program'){const p=PBY[location.hash.slice(9)];h='Find out which loans fit you.';g=p&&p.c==='Refinance'?'refi':'buy';}
+  $('ctaH').textContent=h;if(g)$('ctaGo').dataset.goal=g;else delete $('ctaGo').dataset.goal;}
+
 /* ---------- router ---------- */
+const TAB_META={course:['Homebuying 101: A Short Mortgage Course | Reliant Home Mortgage','Six short lessons on budgets, credit, down payments, loan types, rates and closing, with calculators and quick checks.'],
+  rates:['How Mortgage Rates Work | Reliant Home Mortgage','See what moves your mortgage rate, how APR and points work, and when a rate lock helps.'],
+  calculator:['Mortgage Payment and Affordability Calculators | Reliant Home Mortgage','Estimate your monthly payment, see where it goes each year, and work out a price range from your income.'],
+  glossary:['Mortgage Glossary in Plain English | Reliant Home Mortgage','Forty mortgage terms explained in plain English, with examples and why each one matters.']};
 const TABS={learn:'course',course:'course',rates:'rates',calculator:'calculator',glossary:'glossary'};
 const ALIAS={purchase:'buy',programs:'loans',rates:'learn',calculator:'learn',glossary:'learn',course:'learn','local-resources':'local-help',professionals:'local-help',pros:'local-help',blog:'about',newsletter:'about',letter:'about',team:'about',family:'about',reviews:'about','review-us':'about'};
 const SCROLL={professionals:'pros',pros:'pros',blog:'letter',newsletter:'letter',letter:'letter',reviews:'reviewsSec','review-us':'reviewUs'};
 let curPage='home';
+let routed=false;
 function route(){
+  const prevPage=curPage,focusWasHidden=!document.activeElement||document.activeElement===document.body||!!document.activeElement.closest('.page[hidden]');
   let h=decodeURIComponent(location.hash.slice(1))||'home',page=ALIAS[h]||h;
   if(h.startsWith('program-'))page=renderProgram(h.slice(8))?'program':'loans';
   if(LEGAL[h]){page='legal';$('legal-title').textContent=LEGAL[h][0];$('legal-crumb').textContent=LEGAL[h][0];$('legal-body').textContent=LEGAL[h][1];}
   let sec=document.querySelector(`.page[data-page="${page}"]`);if(!sec){sec=document.querySelector('.page[data-page="home"]');page='home';}
-  curPage=page;document.querySelectorAll('.page').forEach(p=>p.hidden=p!==sec);
+  curPage=page;document.body.dataset.page=page;document.querySelectorAll('.page').forEach(p=>p.hidden=p!==sec);
   if(page==='learn'){const tab=TABS[h]||'course';document.querySelectorAll('[data-tabpanel]').forEach(p=>p.hidden=p.dataset.tabpanel!==tab);document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===tab));if(tab==='course')renderLesson();if(tab==='glossary'){renderGloss();renderGDetail();}}
   if(page==='start')Walk.preload();
-  if(page==='start'&&$('pqResults').hidden){drawQ();$('pqLede').textContent=wantQuote?'A few quick questions, then your results and a personal rate quote from your loan officer.':'A few quick questions, then your results. No Social Security number and no credit check.';}
-  document.title=sec.dataset.title;
+  if(page==='start'&&$('pqResults').hidden){drawQ();$('pqLede').textContent=wantQuote?'A few quick questions, then your results and a personal rate quote from your loan officer.':carried?'We brought along your price and down payment. A few more questions, then your results. No credit check.':'A few quick questions, then your results. No Social Security number and no credit check.';}
+  // each page (and each Learn tab, legal page and loan) gets its own title and description
+  let title=sec.dataset.title,desc=sec.dataset.desc;
+  if(page==='learn'&&TAB_META[TABS[h]||'course']){[title,desc]=TAB_META[TABS[h]||'course'];}
+  if(page==='legal'){title=LEGAL[h][0]+' | Reliant Home Mortgage';desc=LEGAL[h][1];}
+  if(page==='program'){const p=PBY[h.slice(8)];if(p)desc=p.n+': '+p.sum;}
+  document.title=title;document.querySelector('meta[name=description]').setAttribute('content',desc||'');
   const nav={program:'',loans:'',start:'',contact:'',apply:''}[page]??page;document.querySelectorAll('.mainnav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===nav));
-  $('ctaband').hidden=['start','contact','apply'].includes(page);updateCmp();hidePop();
+  $('ctaband').hidden=['start','contact','apply'].includes(page);ctaFor(page);updateCmp();hidePop();
   $('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');
   if(SCROLL[h])pendingScroll=SCROLL[h];
   const target=pendingScroll;pendingScroll=null;
   if(target&&$(target))requestAnimationFrame(()=>$(target).scrollIntoView({block:'start'}));else window.scrollTo(0,0);
+  // move focus to where the visitor landed, so keyboard and screen reader users start there too (never on first load)
+  if(routed){const t=target&&$(target),hd=t?(t.querySelector('h2,h1')||t):sec.querySelector('h1');
+    if(hd&&(t||page!==prevPage||focusWasHidden)){hd.tabIndex=-1;hd.focus({preventScroll:true});}}
+  routed=true;
 }
 addEventListener('hashchange',route);
+(()=>{if(!('IntersectionObserver' in window))return;const seen=new Set(),io=new IntersectionObserver(es=>{es.forEach(e=>e.isIntersecting?seen.add(e.target):seen.delete(e.target));document.body.classList.toggle('cta-in-view',seen.size>0);});
+  document.querySelectorAll('main a.btn-primary[href="#start"],main .btn-go,#ctaGo').forEach(el=>io.observe(el));})();
+addEventListener('scroll',()=>document.querySelector('header').classList.toggle('scrolled',scrollY>8),{passive:true});
 $('burger').addEventListener('click',()=>{const o=$('drawer').hidden;$('drawer').hidden=!o;$('burger').setAttribute('aria-expanded',o);});
 
-renderReviews();renderPrograms();renderFinder();breakeven();rates();renderGloss();renderGDetail();calc();afford();renderDir();renderChk();renderPros();
+renderReviews();renderPrograms();renderFinder();breakeven();rates();renderGloss();renderGDetail();calc();afford();renderDir();renderChk();renderPros();teaser();
+document.querySelectorAll('label output').forEach(o=>o.setAttribute('aria-hidden','true'));
+document.querySelectorAll('input[type=range]').forEach(fillRange);
+// skip link: straight to the current page's heading
+document.querySelector('[data-skip]').addEventListener('click',e=>{e.preventDefault();const h=document.querySelector('.page:not([hidden]) h1');if(h){h.tabIndex=-1;h.focus();}});
 route();
