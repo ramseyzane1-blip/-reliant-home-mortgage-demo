@@ -32,7 +32,7 @@ demo/site/js/glossary-data.js  GX (example / why / related / lesson) + GSUG
 demo/site/js/engines.js     Turntable (hero, WebGL) and Walk (walk-through)
 demo/site/js/db.js          DB.insert(table,row) via Supabase REST
 demo/site/js/app.js         everything else: pages, tools, pre-qual, router
-demo/site/images/           3D renders only (see tools/README.md) + logo.png, logo-dark.png
+demo/site/images/           3D renders only (see tools/README.md) + logo.webp, logo-dark.webp (from tools/make_logo.py)
                             team/<name>.webp (160px face) and <name>-lg.webp (480px): the real staff
                             headshots from relianthomemtg.com/staff (the original site's own photos)
                             turn/turn-NNN.webp (Blender 360° turn) + turn/flow-*.bin for the hero
