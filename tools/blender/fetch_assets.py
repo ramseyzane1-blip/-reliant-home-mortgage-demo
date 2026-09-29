@@ -6,10 +6,8 @@ import json, os, subprocess, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'assets')
-MODELS = ['jacaranda_tree', 'tree_small_02', 'island_tree_01', 'outdoor_table_chair_set_01', 'planter_pot_clay', 'shrub_02', 'shrub_04']
-TEXTURES = {'grey_roof_01': '2k', 'weathered_plank_siding': '2k', 'stone_wall_04': '1k', 'concrete_pavers': '1k',
-            'leafy_grass': '2k', 'bark_brown_02': '1k'}
-HDRI = 'belfast_sunset_puresky'
+MODELS = ['tree_small_02', 'outdoor_table_chair_set_01']
+TEXTURES = {'grey_roof_01': '2k', 'weathered_plank_siding': '2k', 'stone_wall_04': '1k', 'leafy_grass': '2k'}
 
 
 def get(url, dest):
@@ -38,8 +36,6 @@ def main():
             if key in f and res in f[key]:
                 fmt = 'jpg' if 'jpg' in f[key][res] else 'png'
                 get(f[key][res][fmt]['url'], os.path.join(OUT, 'textures', t, f'{name}.{fmt}'))
-    h = files(HDRI)['hdri']['2k']['hdr']
-    get(h['url'], os.path.join(OUT, 'hdri', HDRI + '.hdr'))
 
 
 if __name__ == '__main__':

@@ -1,7 +1,9 @@
 """Procedural model of the Reliant model home, rendered as a 360-degree turntable.
 
-    python3 tools/blender/house_scene.py preview [angle]     one test frame -> scratch png
-    python3 tools/blender/house_scene.py frames N OUTDIR     N frames around the house
+    python3 tools/blender/house_scene.py preview [angle] [res] [out.png] [samples]   one test frame
+    python3 tools/blender/house_scene.py angles RES OUTPREFIX SAMPLES A1 A2 ...       several test angles
+    python3 tools/blender/house_scene.py frames N OUTDIR [res] [samples]             N frames around the house
+    ZOOM="lens,x,z" before any of them renders a close-up (longer lens, shifted camera).
 
 Needs the `bpy` package (pip install bpy). Everything is built in code so the model stays
 consistent from every angle: a two-story colonial with a one-and-a-half story side wing,

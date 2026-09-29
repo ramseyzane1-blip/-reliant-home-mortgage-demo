@@ -53,13 +53,20 @@ tools/house_views.py        turns the Blender frames into turn/*.webp + turn/flo
   "our Middletown office".
 - **Financing, not real estate:** communicate it through what the site shows (loan steps,
   payments, rates), not with "we don't sell homes" disclaimers.
-- **Photos only in the 3D pieces.** Rendered images appear in the hero turntable (the 3D
-  model) and the walk-through (AI renders), nowhere else.
+- **Photos only in the 3D pieces.** The AI renders appear in the hero turntable and the
+  walk-through, nowhere else.
 - **Look:** crisp white with cool gray sections, Reliant forest green (#1c4f33, from the
   logo wordmark) for every action, sand (#c3b69c, from the logo swoosh) as a quiet accent.
   No gold buttons (reads as money-focused). DM Serif Display headings, Public Sans body.
 - **Demo behavior:** forms save to Supabase and then show a "this is a demo" notice.
 - Blog and newsletter are merged into "The Reliant Letter" on About us.
+
+**Proposed, pending client sign-off:** the hero turntable now shows a 3D model of the same house
+(rendered in Blender, see below) instead of the AI renders, so it can turn a full 360° without
+ghosting. The walk-through still uses the AI renders; the model matches them closely (siding,
+trim, roof, windows, portico, glazed green door with sidelights and lanterns) but not exactly
+(for example, round portico columns instead of square). Renders still appear only in the two 3D
+pieces.
 
 ## Content sources
 
@@ -79,20 +86,29 @@ model has lap-board siding, real window openings with lit rooms, curtains and la
 green front door with sidelights and lanterns from the walk-through renders, a shingle roof with
 gutters, Poly Haven (CC0) scanned trees and textures, and Geometry Nodes grass and shrubs.
 
-Files (`images/turn/`): `turn-NNN.webp` 960px, about 90 KB each (3.2 MB for all 36);
-`sm/turn-NNN.webp` 768px for phones, about 57 KB each (2.1 MB); `flow.bin` 157 KB (73 KB as
-served, brotli). `HOUSE_VIEWS` in `js/app.js` lists them; `tools/house_views.py` writes all of it.
+Files (`images/turn/`, all with a `?v=` content version so caches never mix renders):
+`fixed.webp` (19 KB), the parts that look the same in every frame (most of the ring and the front
+of the round plinth); `turn-NNN.webp`, the frames with those parts cut out, 960px, about 89 KB
+each; `sm/`, 768px copies for phones, about 64 KB each; `flow.bin` 153 KB (70 KB as served,
+brotli). `HOUSE_VIEWS` in `js/app.js` lists the frames; `tools/house_views.py` writes all of it.
 
 In the browser, each pair of neighboring frames is drawn on a 33×33 WebGL mesh displaced along
-precomputed optical flow while they blend, so the turn is continuous at any angle. Nothing
-downloads until the hero is about to scroll into view; then the flow and the 9 frames the idle
-sway uses (front ±40°), and the rest once the hero is ready or the visitor starts turning. On a
-throttled phone the hero is interactive after about 480 KB (the old set needed 2.4 MB first).
-Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size and upload one
-per animation frame, never during a drag unless the frame on screen is missing. Devices reporting
-under 4 GB keep only the 16 nearest frames on the GPU. Drag, arrow keys (with a focus ring), or
-idle sway around the front; reduced motion turns the sway off; without WebGL the front frame
-shows as a still image and the drag hint is hidden.
+precomputed optical flow while they blend; the fixed layer goes on top, still (drawn only over
+the tiles where it has content), so the ring never ghosts. The front frame and the fixed layer
+are preloaded with the page as two stacked `<img>`s (the Largest Contentful Paint on desktop and
+on phones where the hero shows above the fold: about 1.0 s on a slow-4G profile, was 3.8 s), with
+`sizes` set so the browser picks the same copy the canvas uses. Everything else waits until the
+hero is about to scroll into view: then the flow and the 9 frames the idle sway uses (front
+±40°), and the rest once the hero is ready or the visitor starts turning. On a throttled phone
+profile the hero is interactive after about 550 KB at 3.7 s (the old set: 2.4 MB at 13.7 s).
+Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
+the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
+on screen is missing; the decoded copy is released after upload, so all 36 on the GPU take about
+74 MB on phones. Devices reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the
+16 nearest and re-fetch others from the HTTP cache. Failed frames retry with backoff. Drag, arrow
+keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
+without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero
+drops the drag and keyboard hints.
 
 To change the house: edit `house_scene.py`, preview with
 `python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270` (needs `pip install bpy`
@@ -149,7 +165,7 @@ the project; greaterpurposeweb.com is the account's existing domain.
 
 ## Testing
 
-`tools/smoke_test.py` walks every page at 390px (no sideways scroll allowed), completes the
+`tools/smoke_test.py` checks the hero turntable (loads with its flow, turns when dragged), walks every page at 390px (no sideways scroll allowed), completes the
 pre-qualification including an Edit from the review step, renders walk-through frames and
 takes screenshots. Run it before pushing visual changes.
 

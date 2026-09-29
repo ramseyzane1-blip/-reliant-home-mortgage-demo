@@ -16,25 +16,28 @@ python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64         # the tu
 python3 tools/house_views.py /tmp/turn
 ```
 
-`house_views.py` writes `demo/site/images/turn/turn-NNN.webp` (transparent, 960×960, about 90 KB
-each), `turn/sm/turn-NNN.webp` (768×768 for phones, about 57 KB), `turn/flow.bin` (optical flow
-between neighboring frames on a 33×33 grid, forward-backward checked and smoothed where the match
-is poor, int8 with a scale per pair: 157 KB, 73 KB brotli), and sets `HOUSE_VIEWS` in `js/app.js`
-to the frame count. `GRID=49` or `65` morphs a little better but costs frame time. The house turns; the camera, lights and ring stay
+`house_views.py` writes into `demo/site/images/turn/`: `fixed.webp` (everything that looks the same
+in every frame, drawn still on top), `turn-NNN.webp` (the frames with those parts cut out,
+keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
+(768×768 for phones, about 64 KB), `flow.bin` (optical flow between neighboring frames on a
+33×33 grid, forward-backward checked, smoothed where the match is poor and held at zero on the
+fixed parts; int8 with one scale per field: 153 KB, 70 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
+`js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
+but costs frame time. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
 
 ## How the 3D images were prepared
 
 The walk-through images in `demo/site/images/` are AI-generated renders of a fictional house
-supplied by the client; the hero turntable is rendered from a 3D model of the same house (above).
+supplied by the client; the hero turntable is rendered from a 3D model of that house (above; a close match, not exact).
 Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
 Don't use them anywhere else on the site.
 
 - `turn/turn-NNN.webp` (36 frames) and `turn/flow.bin`: the hero turntable, rendered from the
   3D model in `tools/blender/house_scene.py` (Blender, Cycles) and converted by
-  `tools/house_views.py`. The model uses CC0 assets from Poly Haven (trees, scanned textures,
-  a sunset HDRI, a patio set); `tools/blender/fetch_assets.py` downloads them into
-  `tools/blender/assets/`, which is not committed.
+  `tools/house_views.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
+  siding, roof, stone and grass textures, a patio set); `tools/blender/fetch_assets.py`
+  downloads them into `tools/blender/assets/`, which is not committed.
 - `approach-1…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
   door slab.

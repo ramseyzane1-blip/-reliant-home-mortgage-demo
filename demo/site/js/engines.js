@@ -7,6 +7,9 @@ const Turntable=(()=>{
 const VS=`attribute vec2 uv;attribute vec2 fl;uniform float k,asp;varying vec2 vu;
 void main(){vu=uv;vec2 q=uv+fl*k;vec2 n=vec2(q.x*2.-1.,1.-q.y*2.);if(asp>=1.)n.x/=asp;else n.y*=asp;gl_Position=vec4(n,0.,1.);}`;
 const FS=`precision mediump float;uniform sampler2D tex;uniform float w;varying vec2 vu;void main(){gl_FragColor=texture2D(tex,vu)*w;}`;
+/* views: [{f: 960px url, s: 768px url, a: degrees}]; opt: {reduced(), flow: url, fixed: {f, s} (the
+   parts that never move: most of the ring, the front of the plinth), front: the fallback <img> (its
+   choice of copy is reused), lost(): WebGL went away} */
 function create(box,canvas,views,opt){
  const gl=canvas.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false});if(!gl)return null;
  const sh=(t,s)=>{const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(x));return x;};
@@ -20,6 +23,24 @@ function create(box,canvas,views,opt){
   const I=[];for(let j=0;j<G-1;j++)for(let i=0;i<G-1;i++){const a=j*G+i,b=a+1,c=a+G,d=c+1;I.push(a,c,b,b,c,d);}
   bU=buf(new Float32Array(UV));bI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER);NI=I.length;zero=buf(new Float32Array(G*G*2));}
  mesh(2);
+ /* one plain quad for a frame shown as is */
+ const qU=buf(new Float32Array([0,0,1,0,0,1,1,1])),qI=buf(new Uint16Array([0,2,1,1,2,3]),gl.ELEMENT_ARRAY_BUFFER),qZ=buf(new Float32Array(8));
+ /* the fixed layer goes on top, still, drawn only over the 32x32 tiles where it has content (a
+    third of the area), so it costs little fill. Its tiles come from a tiny copy of its alpha. */
+ let fx=null,fxU,fxI,fxZ,fxN=0,fxBusy=false,fxGen=0;
+ function fetchFixed(){if(!opt.fixed||fxBusy||(fx&&fxGen===texGen))return;fxBusy=true;const g=texGen,S=texSize||960;
+  const src=opt.fixed.s&&small()?opt.fixed.s:opt.fixed.f;
+  const viaImg_=()=>new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src=src;});
+  (window.createImageBitmap?fetch(src).then(r=>r.ok?r.blob():Promise.reject()).then(b=>createImageBitmap(b,{premultiplyAlpha:'premultiply',resizeWidth:S,resizeHeight:S,resizeQuality:'high'})).catch(viaImg_):viaImg_()).then(im=>{
+   fxBusy=false;if(g!==texGen||lost){if(im.close)im.close();return;}
+   const T=32,c=document.createElement('canvas');c.width=c.height=T;const x=c.getContext('2d');x.drawImage(im,0,0,T,T);const a=x.getImageData(0,0,T,T).data;
+   const UV=[],I=[];for(let j=0;j<T;j++)for(let i=0;i<T;i++){let on=false;for(let dj=-1;dj<=1&&!on;dj++)for(let di=-1;di<=1&&!on;di++){const y=j+dj,z=i+di;if(y>=0&&y<T&&z>=0&&z<T&&a[(y*T+z)*4+3]>0)on=true;}
+    if(!on)continue;const v=UV.length/2;UV.push(i/T,j/T,(i+1)/T,j/T,i/T,(j+1)/T,(i+1)/T,(j+1)/T);I.push(v,v+2,v+1,v+1,v+2,v+3);}
+   fxU=buf(new Float32Array(UV));fxI=buf(new Uint16Array(I),gl.ELEMENT_ARRAY_BUFFER);fxZ=buf(new Float32Array(UV.length));fxN=I.length;
+   const t=fx||gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,im instanceof HTMLImageElement);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);if(im.close)im.close();
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+   fx=t;fxGen=g;dirty=true;}).catch(()=>{fxBusy=false;setTimeout(fetchFixed,3000);});}
  /* flow (tools/house_views.py): 'FLW1', uint16 fields, uint16 grid, float32 scale per field, int8
     values; fields k→k+1 then k+1→k. Until it arrives (or if it fails) the frames simply blend. */
  let flows=null,flowDone=!opt.flow;
@@ -28,77 +49,96 @@ function create(box,canvas,views,opt){
   if(nf!==n*2||ab.byteLength!==8+nf*4+nf*sz)return;const q=new Int8Array(ab,8+nf*4);
   const out=[];for(let m=0;m<nf;m++){const k=dv.getFloat32(8+m*4,true),f=new Float32Array(sz);for(let i=0;i<sz;i++)f[i]=q[m*sz+i]*k;out.push(f);}
   mesh(G);flows=out.map(f=>buf(f));}).catch(()=>{}).finally(()=>{flowDone=true;dirty=true;});
- /* frames: nothing downloads until the hero is about to scroll into view. Then the front frames
-    the idle sway uses (+-40 degrees) and the flow; the rest once the hero is ready or the visitor
-    starts turning. Each is decoded off the main thread at the canvas's
-    own pixel size (no shimmer from minifying, less GPU memory on phones) and uploaded one per
-    animation frame after the first paint. Uploads wait while a drag is in progress unless the
-    frame on screen is missing. Devices reporting under 4 GB keep only the POOL nearest frames. */
- const tex=views.map(()=>null),imgs=views.map(()=>null);let dirty=true,cur=0,texSize=0;
- const POOL=(navigator.deviceMemory&&navigator.deviceMemory<4)?16:views.length;
+ /* Frames. Nothing downloads until the hero is about to scroll into view; then the flow and the
+    front frames the idle sway uses (+-40 degrees), the rest once the hero is ready or the visitor
+    starts turning. Each frame is decoded off the main thread at the canvas's pixel size
+    (texSize) and uploaded one per animation frame, never during a drag unless the frame on screen
+    is missing; the decoded copy is released right after upload. Devices reporting under 4 GB keep
+    only the POOL nearest frames on the GPU and re-fetch others from the HTTP cache when needed.
+    A frame that fails to load is retried with backoff. */
+ const N=n,all=views;
+ const tex=all.map(()=>null),gen=all.map(()=>0),dec=all.map(()=>null),busy=all.map(()=>false),fails=all.map(()=>0),retry=all.map(()=>0);
+ let dirty=true,cur=0,texSize=0,texGen=1,started=false,allFetched=false,lost=false;
+ const POOL=(navigator.deviceMemory&&navigator.deviceMemory<4)?16:n;
  const A=views.map(v=>v.a),adist=(i,th)=>Math.abs(((A[i]-th)%360+540)%360-180);
- const order=views.map((v,i)=>i).sort((a,b)=>adist(a,0)-adist(b,0));
+ /* use the copy the fallback <img> already loaded (so frame 0 is not fetched twice); before it has chosen, pick by size: phones get the 768px copies */
+ const small=()=>{const s=opt.front&&opt.front.currentSrc;return s?s.indexOf('/sm/')>=0&&texSize<=768:texSize<=768;};
+ const url=i=>small()&&all[i].s?all[i].s:all[i].f;
  const viaImg=i=>new Promise((ok,no)=>{const im=new Image();im.decoding='async';im.onload=()=>ok(im);im.onerror=no;im.src=url(i);});
- const url=i=>texSize<=768&&views[i].s?views[i].s:views[i].f;   /* phones get the 768px copies */
- const fetchImg=i=>{if(imgs[i]!==null)return;imgs[i]=false;
-  const S=texSize||960;
+ function fetchImg(i){if(busy[i]||dec[i]||(tex[i]&&gen[i]===texGen)||performance.now()<retry[i])return;busy[i]=true;
+  const S=texSize||960,g=texGen;
   (window.createImageBitmap?fetch(url(i)).then(r=>r.ok?r.blob():Promise.reject()).then(b=>createImageBitmap(b,{premultiplyAlpha:'premultiply',resizeWidth:S,resizeHeight:S,resizeQuality:'high'})).catch(()=>viaImg(i)):viaImg(i))
-   .then(im=>{imgs[i]=im;dirty=true;}).catch(()=>{imgs[i]=null;});};
- let allFetched=false;const fetchRest=()=>{if(allFetched)return;allFetched=true;order.forEach(fetchImg);};
- let started=false;function startFetch(){if(started||!texSize)return;started=true;if(opt.flow)fetchFlow();order.filter(i=>adist(i,0)<=40).forEach(fetchImg);}
+   .then(im=>{busy[i]=false;if(g!==texGen){if(im.close)im.close();return;}dec[i]=im;fails[i]=0;dirty=true;})
+   .catch(()=>{busy[i]=false;fails[i]++;retry[i]=performance.now()+Math.min(30000,1000*2**fails[i]);dirty=true;});}
+ const fetchRest=()=>{allFetched=true;for(let i=0;i<N;i++)fetchImg(i);};
+ function startFetch(){if(started||!texSize)return;started=true;if(opt.flow)fetchFlow();fetchFixed();for(let i=0;i<n;i++)if(adist(i,0)<=40)fetchImg(i);}
+ /* keep asking for what the current view needs (covers evicted frames and failed downloads) */
+ function want(){if(!started)return;fetchFixed();let live=0;for(let i=0;i<n;i++)if(tex[i])live++;
+  for(let i=0;i<n;i++){const d=adist(i,cur);if(d<=40||(allFetched&&(tex[i]||live<POOL)))fetchImg(i);}}
  function upload(needed){
-  let best=-1;for(let i=0;i<n;i++)if(imgs[i]&&!tex[i]&&(best<0||adist(i,cur)<adist(best,cur)))best=i;
-  if(best<0)return;if(drag&&needed.indexOf(best)<0)return;
-  const live=tex.map((t,i)=>t?i:-1).filter(i=>i>=0);let t;
-  if(live.length>=Math.min(POOL,n)){const far=live.reduce((a,b)=>adist(b,cur)>adist(a,cur)?b:a);if(adist(far,cur)<=adist(best,cur))return;t=tex[far];tex[far]=null;}
-  else t=gl.createTexture();
-  const im=imgs[best],bmp=!(im instanceof HTMLImageElement);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,!bmp);
+  let best=-1;for(let i=0;i<N;i++)if(dec[i]&&(best<0||adist(i,cur)<adist(best,cur)))best=i;
+  if(best<0||(drag&&needed.indexOf(best)<0))return;
+  let t=tex[best];
+  if(!t){const live=[];for(let i=0;i<n;i++)if(tex[i])live.push(i);
+   if(live.length>=POOL){const far=live.reduce((a,b)=>adist(b,cur)>adist(a,cur)?b:a);
+    if(adist(far,cur)<=adist(best,cur)){if(dec[best].close)dec[best].close();dec[best]=null;return;}
+    t=tex[far];tex[far]=null;gen[far]=0;}
+   else t=gl.createTexture();}
+  const im=dec[best],bmp=!(im instanceof HTMLImageElement);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,!bmp);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im);
   const w=im.width||im.naturalWidth,h=im.height||im.naturalHeight,pot=!(w&(w-1))&&!(h&(h-1));if(pot)gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,pot?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  tex[best]=t;dirty=true;}
+  if(im.close)im.close();dec[best]=null;tex[best]=t;gen[best]=texGen;dirty=true;}
  function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,(t-a0)/(a1-a0)];}return [0,1,0];}
+ const bind=(u,i)=>{gl.bindBuffer(gl.ARRAY_BUFFER,u);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,i);};
  const layer=(t,fl,k,w)=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.bindBuffer(gl.ARRAY_BUFFER,fl);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.uniform1f(U.k,k);gl.uniform1f(U.w,w);gl.drawElements(gl.TRIANGLES,NI,gl.UNSIGNED_SHORT,0);};
+ const still=(t,w)=>{bind(qU,qI);gl.bindTexture(gl.TEXTURE_2D,t);gl.bindBuffer(gl.ARRAY_BUFFER,qZ);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);gl.uniform1f(U.k,0);gl.uniform1f(U.w,w);gl.drawElements(gl.TRIANGLES,6,gl.UNSIGNED_SHORT,0);};
  /* returns true once the frame shows exactly what was asked for */
  function draw(th){
+  if(lost)return false;
   const [k,j,f]=pair(th),ta=tex[k],tb=tex[j];
   /* spun faster than uploads: hold on the nearest frame that is ready */
   let near=-1;if(!ta&&!tb){for(let i=0;i<n;i++)if(tex[i]&&(near<0||adist(i,th)<adist(near,th)))near=i;if(near<0)return false;}
   gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
   gl.uniform1f(U.asp,canvas.width/canvas.height);gl.uniform1i(U.tex,0);gl.activeTexture(gl.TEXTURE0);
-  gl.bindBuffer(gl.ARRAY_BUFFER,bU);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(1);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,bI);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
-  if(near>=0){layer(tex[near],zero,0,1);return false;}
-  if(ta&&tb){const s=f*f*(3-2*f);
-   if(s<1)layer(ta,flows?flows[2*k]:zero,f,1-s);
-   if(s>0)layer(tb,flows?flows[2*k+1]:zero,1-f,s);
-   return true;}
-  layer(ta||tb,zero,0,1);return false;
+  gl.enableVertexAttribArray(0);gl.enableVertexAttribArray(1);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
+  let exact=false;const s=f*f*(3-2*f);
+  if(near>=0)still(tex[near],1);
+  else if(ta&&tb&&s>0&&s<1){bind(bU,bI);
+   layer(ta,flows?flows[2*k]:zero,f,1-s);layer(tb,flows?flows[2*k+1]:zero,1-f,s);exact=true;}
+  else if(ta&&tb){still(s>=1?tb:ta,1);exact=true;}
+  else still(ta||tb,1);
+  if(fx){gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);bind(fxU,fxI);gl.bindTexture(gl.TEXTURE_2D,fx);gl.bindBuffer(gl.ARRAY_BUFFER,fxZ);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
+   gl.uniform1f(U.k,0);gl.uniform1f(U.w,1);gl.drawElements(gl.TRIANGLES,fxN,gl.UNSIGNED_SHORT,0);}
+  return exact&&(!opt.fixed||!!fx);
  }
  /* interaction */
- let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,vis=true,last=0,ready=false,t0=0;
+ let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,inView=false,vis=false,last=0,ready=false,t0=0;
  function size(){const dpr=Math.min(window.devicePixelRatio||1,2),r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));dirty=true;
-  if(!texSize&&r.width>0)texSize=Math.max(256,Math.min(960,canvas.width));}
- function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);upload([pr_[0],pr_[1]]);
-  if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=.94;}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
+  if(r.width<=0)return;const want_=Math.max(256,Math.min(960,canvas.width));
+  if(!texSize)texSize=want_;
+  else if(want_>texSize*1.25){texSize=want_;texGen++;for(let i=0;i<N;i++){if(dec[i]&&dec[i].close)dec[i].close();dec[i]=null;}}}   /* grew a lot (rotation, wider window): re-decode, nearest first */
+ function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);want();upload([pr_[0],pr_[1]]);
+  if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=Math.pow(.94,dt*60);}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
   /* follow the pointer closely; drift back into the idle sway gently */
   const prev=th;let step=(target-th)*Math.min(1,dt*(idle?1.6:7));if(idle)step=Math.max(-50*dt,Math.min(50*dt,step));th+=step;if(Math.abs(th-prev)>.001)dirty=true;
   if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&flowDone){ready=true;t0=ts;box.classList.add('ready');setTimeout(fetchRest,300);}}
-  raf=vis?requestAnimationFrame(frame):0;}
- box.addEventListener('pointerdown',e=>{fetchRest();drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
+  raf=vis&&!lost?requestAnimationFrame(frame):0;}
+ const run=()=>{vis=inView&&!document.hidden;if(vis&&!raf&&!lost){last=0;raf=requestAnimationFrame(frame);}};
+ box.addEventListener('pointerdown',e=>{clearTimeout(idleT);fetchRest();drag={x:e.clientX,t:target,px:e.clientX,pt:performance.now()};idle=false;vel=0;box.setPointerCapture(e.pointerId);box.classList.add('drag','used');});
  box.addEventListener('pointermove',e=>{if(!drag)return;const w=box.clientWidth||400;target=drag.t-(e.clientX-drag.x)/w*200;const now=performance.now();vel=-(e.clientX-drag.px)/w*200/Math.max(1,(now-drag.pt)/16.7);drag.px=e.clientX;drag.pt=now;});
  /* after a pause, resume the sway from wherever the house was left, the short way round */
- function rest(){clearTimeout(idleT);idleT=setTimeout(()=>{const w=360*Math.round(th/360);th-=w;target=th;vel=0;idle=true;t0=performance.now()-Math.asin(Math.max(-1,Math.min(1,th/34)))/.22*1000;},4500);}
+ function rest(){clearTimeout(idleT);idleT=setTimeout(()=>{if(drag)return;const w=360*Math.round(th/360);th-=w;target=th;vel=0;idle=true;t0=performance.now()-Math.asin(Math.max(-1,Math.min(1,th/34)))/.22*1000;},4500);}
  const up=()=>{if(!drag)return;drag=null;box.classList.remove('drag');rest();};
  box.addEventListener('pointerup',up);box.addEventListener('pointercancel',up);
  box.addEventListener('keydown',e=>{const k={ArrowLeft:-20,ArrowRight:20}[e.key];if(k===undefined)return;fetchRest();e.preventDefault();idle=false;box.classList.add('used');target+=k;rest();});
+ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;box.classList.remove('ready');if(opt.lost)opt.lost();});
  new ResizeObserver(size).observe(box);size();
- new IntersectionObserver(es=>{vis=es[0].isIntersecting&&!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}}).observe(box);
+ new IntersectionObserver(es=>{inView=es[0].isIntersecting;run();}).observe(box);
  new IntersectionObserver(es=>{if(es[0].isIntersecting){size();startFetch();}},{rootMargin:'400px 0px'}).observe(box);
- document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!raf){last=0;raf=requestAnimationFrame(frame);}});
- raf=requestAnimationFrame(frame);
- return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw,ready:()=>ready&&!!flows};
+ document.addEventListener('visibilitychange',run);
+ return {set(a){target=th=a;idle=false;dirty=true;draw(a);},draw,ready:()=>ready&&!!flows,angle:()=>th};
 }
 return {create};
 })();

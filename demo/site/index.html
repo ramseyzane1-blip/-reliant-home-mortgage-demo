@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Public+Sans:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="css/site.css">
-<link rel="preload" as="image" href="images/turn/turn-000.webp" imagesrcset="images/turn/sm/turn-000.webp 768w, images/turn/turn-000.webp 960w" imagesizes="(max-width: 900px) min(480px, calc(100vw - 32px)), 560px" fetchpriority="high">
+<link rel="preload" as="image" href="images/turn/turn-000.webp?v=00253bb2" imagesrcset="images/turn/sm/turn-000.webp?v=00253bb2 768w, images/turn/turn-000.webp?v=00253bb2 960w" imagesizes="(max-width: 900px) and (min-resolution: 2.5dppx) 240px, (max-width: 520px) calc(100vw - 32px), (max-width: 900px) 480px, 560px" fetchpriority="high">
+<link rel="preload" as="image" href="images/turn/fixed.webp?v=00253bb2" imagesrcset="images/turn/sm/fixed.webp?v=00253bb2 768w, images/turn/fixed.webp?v=00253bb2 960w" imagesizes="(max-width: 900px) and (min-resolution: 2.5dppx) 240px, (max-width: 520px) calc(100vw - 32px), (max-width: 900px) 480px, 560px" fetchpriority="high">
 <script src="js/config.js" defer></script>
 <script src="js/util.js" defer></script>
 <script src="js/data.js" defer></script>
@@ -61,7 +62,9 @@
         </div>
       </div>
       <div class="hphoto" id="hphoto" tabindex="0" role="img" aria-label="Model of a family home. Drag, or use the arrow keys, to turn it all the way around.">
-        <img class="hp-fallback" src="images/turn/turn-000.webp" srcset="images/turn/sm/turn-000.webp 768w, images/turn/turn-000.webp 960w" sizes="(max-width: 900px) min(480px, calc(100vw - 32px)), 560px" alt="" width="960" height="960" fetchpriority="high" decoding="async">
+        <!-- sizes makes the browser load the same copy the canvas will use (768px on phones) -->
+        <img class="hp-fallback" src="images/turn/turn-000.webp?v=00253bb2" srcset="images/turn/sm/turn-000.webp?v=00253bb2 768w, images/turn/turn-000.webp?v=00253bb2 960w" sizes="(max-width: 900px) and (min-resolution: 2.5dppx) 240px, (max-width: 520px) calc(100vw - 32px), (max-width: 900px) 480px, 560px" alt="" width="960" height="960" fetchpriority="high" decoding="async">
+        <img class="hp-fixed" src="images/turn/fixed.webp?v=00253bb2" srcset="images/turn/sm/fixed.webp?v=00253bb2 768w, images/turn/fixed.webp?v=00253bb2 960w" sizes="(max-width: 900px) and (min-resolution: 2.5dppx) 240px, (max-width: 520px) calc(100vw - 32px), (max-width: 900px) 480px, 560px" alt="" width="960" height="960" fetchpriority="high" decoding="async">
         <canvas id="hcanvas"></canvas>
         <span class="hp-hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg>Drag to walk around the house</span>
       </div>
