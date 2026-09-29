@@ -42,7 +42,7 @@ function demo(title,body,data,btns){
 function closeModal(){$('modal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
 $('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();if(!$('drawer').hidden){$('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');$('burger').focus();}}
+  if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();if(!$('drawer').hidden){setDrawer(false);$('burger').focus();}}
   if(e.key==='Tab'&&!$('modal').hidden){const f=[...$('modal').querySelectorAll('button,a[href]')].filter(x=>x.offsetParent);if(!f.length)return;
     const i=f.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&(i===f.length-1||i<0)){e.preventDefault();f[0].focus();}}});
 const DEMOS={call:["Call (513) 783-4018","On the live site, this starts a phone call to the Reliant office in Middletown."],email:["Email the team","On the live site, this opens an email to jenb@relianthomemtg.com."],intro:["Introduction requested","On the live site, this sends your request to the Reliant team, and they connect you with the partner by phone or email."]};
@@ -649,7 +649,7 @@ function route(){
   document.title=title;document.querySelector('meta[name=description]').setAttribute('content',desc||'');
   const nav={program:'',loans:'',start:'',contact:'',apply:''}[page]??page;document.querySelectorAll('.mainnav a').forEach(a=>a.classList.toggle('on',a.dataset.nav===nav));
   $('ctaband').hidden=['start','contact','apply'].includes(page);ctaFor(page);updateCmp();hidePop();
-  $('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');
+  setDrawer(false);
   if(SCROLL[h])pendingScroll=SCROLL[h];
   const target=pendingScroll;pendingScroll=null;
   if(target&&$(target))requestAnimationFrame(()=>$(target).scrollIntoView({block:'start'}));else window.scrollTo(0,0);
@@ -662,7 +662,13 @@ addEventListener('hashchange',route);
 (()=>{if(!('IntersectionObserver' in window))return;const seen=new Set(),io=new IntersectionObserver(es=>{es.forEach(e=>e.isIntersecting?seen.add(e.target):seen.delete(e.target));document.body.classList.toggle('cta-in-view',seen.size>0);});
   document.querySelectorAll('main a.btn-primary[href="#start"],main .btn-go,#ctaGo').forEach(el=>io.observe(el));})();
 addEventListener('scroll',()=>document.querySelector('header').classList.toggle('scrolled',scrollY>8),{passive:true});
-$('burger').addEventListener('click',()=>{const o=$('drawer').hidden;$('drawer').hidden=!o;$('burger').setAttribute('aria-expanded',o);});
+// phone menu: closes on any link (even the page you're on), a tap outside the header, scrolling the page, or widening past the menu breakpoint
+function setDrawer(open){$('drawer').hidden=!open;$('burger').setAttribute('aria-expanded',open);$('burger').textContent=open?'Close':'Menu';document.body.classList.toggle('drawer-open',open);}
+$('burger').addEventListener('click',()=>setDrawer($('drawer').hidden));
+$('drawer').addEventListener('click',e=>{if(e.target.closest('a'))setDrawer(false);});
+document.addEventListener('click',e=>{if(!$('drawer').hidden&&!e.target.closest('header'))setDrawer(false);});
+{let y0=0;$('burger').addEventListener('click',()=>{y0=scrollY;});addEventListener('scroll',()=>{if(!$('drawer').hidden&&Math.abs(scrollY-y0)>40)setDrawer(false);},{passive:true});}
+matchMedia('(min-width:1041px)').addEventListener('change',e=>{if(e.matches)setDrawer(false);});
 
 renderReviews();renderPrograms();renderFinder();breakeven();rates();renderGloss();renderGDetail();calc();afford();renderDir();renderChk();renderPros();teaser();
 document.querySelectorAll('label output').forEach(o=>o.setAttribute('aria-hidden','true'));
