@@ -39,24 +39,16 @@ stamps a `?v=` content version in `index.html` and `js/app.js` (`MODEL_V`).
 
 ## How the 3D images were prepared
 
-The walk-through images in `demo/site/images/` are AI-generated renders of a fictional house
-supplied by the client; the hero turntable is rendered from a 3D model of that house (above; a close match, not exact).
-Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
-Don't use them anywhere else on the site.
+The client supplied AI-generated renders of a fictional house; the hero is a 3D model of that
+house (above; a close match, not exact). The renders themselves are no longer on the site.
 
 - `model/`: the hero's live 3D model, made from the 3D model in `tools/blender/house_scene.py`
   (Blender, Cycles lighting baked in) by `tools/blender/web_model.py` and
   `tools/pack_web_model.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
   siding, roof, stone and grass textures, a patio set); `tools/blender/fetch_assets.py`
   downloads them into `tools/blender/assets/`, which is not committed.
-- `door.jpg` and `inside-2.jpg`: the walk-through (a push into the door, a dissolve to the living
-  room). Each has an anchor rectangle in image pixels in `Walk.SHOTS` in `js/engines.js`: the door
-  (found by detecting the dark green door slab) and the fireplace. The photo scales about it.
-- `walk_checks.py` checks the walk-through's behaviour (see its docstring).
-
-The source renders (PNG, ~1.5 MB each) are not in the repo. If you regenerate an image,
-keep the framing, dusk lighting and camera height consistent, and re-measure its anchor
-rectangle.
+- The door walk-through after the pre-qualification (`door.jpg`, `inside-2.jpg`, `Walk` in
+  `js/engines.js`, `walk_checks.py`) was removed; it is in git history.
 
 ## Logo
 

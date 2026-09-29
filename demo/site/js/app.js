@@ -382,83 +382,6 @@ const MODEL_V='c7743004';   /* content version of images/model/, stamped by tool
  const still=()=>{box.classList.add('static');box.removeAttribute('tabindex');box.setAttribute('aria-label','Model of a family home.');};   /* no WebGL: a still picture */
  try{const tt=Turntable.create(box,$('hcanvas'),{reduced,lib:'./vendor/three-hero.min.js',base:'images/model/',v:MODEL_V,lost:still});if(!tt)still();window.__turntable=tt;}catch(e){still();}})();
 
-/* ---------- knock, the door opens, walk inside ---------- */
-let soundOn=true;
-/* The sound of the door, all synthesized: evening air on the porch, three knuckle raps on a solid
-   wood door, footsteps inside, the deadbolt and latch, air moving as the door swings, then the fire.
-   doorAudio(ctx) also runs in an OfflineAudioContext, so it can be rendered to a file and checked. */
-function doorAudio(ac){
-  const sr=ac.sampleRate,out=ac.createGain();out.gain.value=soundOn?1:0;
-  const comp=ac.createDynamicsCompressor();comp.threshold.value=-12;comp.ratio.value=4;out.connect(comp).connect(ac.destination);
-  const buf=(sec,fill)=>{const n=Math.floor(sr*sec),b=ac.createBuffer(1,n,sr);fill(b.getChannelData(0),n);return b;};
-  const white=buf(2,(d,n)=>{for(let i=0;i<n;i++)d[i]=Math.random()*2-1;});
-  // a small porch: a short cloud of soft reflections
-  const verb=ac.createConvolver();verb.buffer=(()=>{const n=Math.floor(sr*.5),b=ac.createBuffer(2,n,sr);for(let c=0;c<2;c++){const d=b.getChannelData(c);let lp=0;for(let i=0;i<n;i++){lp+=(Math.random()*2-1-lp)*.3;d[i]=lp*Math.exp(-i/sr/.07);}}return b;})();
-  const wet=ac.createGain();wet.gain.value=.5;verb.connect(wet).connect(out);
-  const bus=(level,rev,lp)=>{const g=ac.createGain();g.gain.value=level;let head=g;if(lp){head=ac.createBiquadFilter();head.type='lowpass';head.frequency.value=lp;head.connect(g);}
-    g.connect(out);if(rev){const s=ac.createGain();s.gain.value=rev;g.connect(s).connect(verb);}return head;};
-  function tone(t,f,tau,amp,dest,f2){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+tau*3);
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.0012);g.gain.setTargetAtTime(0,t+.0012,tau);o.connect(g).connect(dest);o.start(t);o.stop(t+tau*8+.02);}
-  function burst(t,tau,amp,dest,type,f,q){const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=white;fl.type=type;fl.frequency.value=f;fl.Q.value=q||.7;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(amp,t+.0008);g.gain.setTargetAtTime(0,t+.0008,tau);s.connect(fl).connect(g).connect(dest);s.start(t,Math.random()*1.5);s.stop(t+tau*8+.02);}
-  // a solid painted door: a few low panel modes that die fast, a dull knuckle click, the weight of the hand
-  const MODES=[[98,.05,1],[174,.036,.75],[251,.028,.6],[372,.02,.42],[528,.014,.3],[742,.009,.2],[1060,.006,.12]];
-  function knock(t,i){const v=[1,.84,.92][i]||.9,d=1+(Math.random()-.5)*.05,g=bus(.34*v,.55);
-    MODES.forEach(([f,tau,a])=>tone(t,f*d,tau*(.9+Math.random()*.2),a*.42,g));
-    tone(t,130*d,.022,.8,g,62);burst(t,.0035,.9,g,'bandpass',1700*d,.9);burst(t,.012,.55,g,'lowpass',380);}
-  // footsteps on a wood floor, heard through the door: heel, then toe, getting closer
-  const inside=bus(.55,.35,420);
-  function step(t,i){const v=[.3,.5,.75][i]||.6;tone(t,72,.028,.45*v,inside,46);burst(t,.012,.8*v,inside,'lowpass',650);burst(t+.075,.009,.4*v,inside,'lowpass',950);}
-  // small brass parts: a couple of inharmonic partials over a sharp click
-  function metal(t,f,amp,dest){[[1,.018],[2.71,.01],[5.2,.006]].forEach(([m,tau])=>tone(t,f*m,tau,amp/Math.sqrt(m),dest));burst(t,.0025,amp*1.1,dest,'bandpass',f*1.4,1.5);}
-  function bolt(t){const g=bus(.2,.4,3400);burst(t,.008,.45,g,'bandpass',850,1.1);metal(t+.1,1780,.55,g);burst(t+.1,.006,.6,g,'lowpass',480);}
-  function latch(t){const g=bus(.22,.35);metal(t,2250,.45,g);metal(t+.05,2600,.3,g);burst(t,.004,.35,g,'lowpass',650);}
-  // the weatherstrip lets go, then air moves with the door (the same spring the picture uses)
-  function swing(t){tone(t,82,.03,.12,bus(1,.2));const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=white;s.loop=true;f.type='bandpass';f.Q.value=.5;
-    const dur=1.8,N=90,c=new Float32Array(N);let mx=0;for(let k=0;k<N;k++){const u=k/(N-1)*dur;c[k]=Math.exp(-3.36*u)*Math.sin(2.52*u);mx=Math.max(mx,c[k]);}for(let k=0;k<N;k++)c[k]=c[k]/mx*.06;
-    g.gain.setValueCurveAtTime(c,t,dur);f.frequency.setValueAtTime(260,t);f.frequency.linearRampToValueAtTime(620,t+.3);f.frequency.linearRampToValueAtTime(300,t+dur);
-    s.connect(f).connect(g).connect(bus(1,.3));s.start(t);s.stop(t+dur+.05);}
-  // beds: evening air outside, the fire inside (a low roar plus sparse crackles)
-  const loop=(b,type,f,level,dest)=>{const s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;s.loop=true;fl.type=type;fl.frequency.value=f;g.gain.value=level;s.connect(fl).connect(g).connect(dest);s.start(0,Math.random());};
-  const air=ac.createGain(),room=ac.createGain();air.gain.value=0;room.gain.value=0;air.connect(out);room.connect(out);
-  const airBand=ac.createBiquadFilter();airBand.type='highpass';airBand.frequency.value=90;airBand.connect(air);loop(white,'lowpass',650,.1,airBand);
-  const crackle=buf(6,(d,n)=>{for(let x=.05;x<5.9;x+=-Math.log(1-Math.random())/6){const a=Math.pow(Math.random(),2.4),len=Math.floor(sr*(.002+Math.random()*.01)),s0=Math.floor(x*sr);for(let k=0;k<len&&s0+k<n;k++)d[s0+k]+=(Math.random()*2-1)*a*Math.exp(-k/(len/4));}});
-  loop(white,'lowpass',170,.45,room);loop(crackle,'highpass',700,.28,room);
-  const to=(p,v,tau)=>p.setTargetAtTime(v,ac.currentTime,tau);
-  return {
-    cue(name,i,delay){const t=ac.currentTime+(delay||0);
-      if(name==='start')to(air.gain,1,.6);
-      else if(name==='knock')knock(t,i);else if(name==='step')step(t,i);else if(name==='bolt')bolt(t);else if(name==='latch')latch(t);
-      else if(name==='swing'){swing(t);air.gain.setTargetAtTime(.5,t,.5);room.gain.setTargetAtTime(.45,t,.5);}
-      else if(name==='inside'){air.gain.setTargetAtTime(0,t,.8);room.gain.setTargetAtTime(.8,t,.8);}},
-    mute(m){to(out.gain,m?0:1,.05);},
-    stop(){to(out.gain,0,.15);if(ac.close)setTimeout(()=>ac.close().catch(()=>{}),1000);}};
-}
-function playDoor(name,done){
-  if(reduced()){done();return;}
-  let snd=null;try{const ac=new (window.AudioContext||window.webkitAudioContext)();ac.resume();snd=doorAudio(ac);}catch(e){snd=null;}
-  const ds=document.createElement('div');ds.className='ds';ds.setAttribute('role','dialog');ds.setAttribute('aria-modal','true');ds.setAttribute('aria-label','Welcome home');ds.tabIndex=-1;
-  ds.innerHTML=`<div class="ds-view"></div>
-   <div class="ds-ui"><p class="ds-cap"></p><div class="ds-actions"><button class="btn btn-white btn-lg" data-ds="go">See my results →</button></div></div>
-   <div class="ds-top"><button data-ds="sound">${soundOn?'Sound on':'Sound off'}</button><button data-ds="go">Skip</button></div>`;
-  document.body.appendChild(ds);const shown=performance.now();requestAnimationFrame(()=>ds.classList.add('on'));
-  ds.focus({preventScroll:true});
-  // once the overlay is opaque, stop painting the page beneath it (restored before it fades out)
-  ds.addEventListener('transitionend',e=>{if(e.target===ds&&ds.classList.contains('on')&&!ds.classList.contains('out'))document.body.classList.add('ds-covered');});
-  const q=x=>ds.querySelector(x);let P=null,stopped=false;
-  function finish(){if(stopped)return;stopped=true;removeEventListener('hashchange',finish);if(P)P.stop();P=null;if(window.__walk)window.__walk=null;if(snd)snd.stop();document.body.classList.remove('ds-covered');ds.classList.add('out');done();setTimeout(()=>ds.remove(),900);}
-  addEventListener('hashchange',finish); // Back or a link mid-walk ends it
-  ds.addEventListener('click',e=>{const b=e.target.closest('[data-ds]');if(!b)return;if(b.dataset.ds==='go')finish();if(b.dataset.ds==='sound'){soundOn=!soundOn;b.textContent=soundOn?'Sound on':'Sound off';if(snd)snd.mute(!soundOn);}});
-  ds.addEventListener('keydown',e=>{if(e.key==='Escape')finish();});
-  if(window.__turntable)window.__turntable.sleep();   /* the hero gives its GPU memory back */
-  Promise.race([Walk.preload().then(a=>a.every(Boolean)),new Promise(r=>setTimeout(()=>r(false),7000))]).then(ok=>{
-    if(stopped)return;if(!ok){finish();return;}
-    P=Walk.play(q('.ds-view'),{cap:q('.ds-cap'),capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
-      onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');const f=document.activeElement;if(g&&!stopped&&(f===ds||!ds.contains(f)))g.focus({preventScroll:true});},60);}});
-    window.__walk=P;
-    setTimeout(()=>{if(!stopped)P.start();},Math.max(0,950-(performance.now()-shown)));}); // start once the overlay has faded in
-}
-
 /* ---------- pre-qualification ---------- */
 const money=v=>usd(v);
 const Q=[
@@ -572,14 +495,15 @@ function savePQ(){const n=$('pqNoteText'),a=$('pqRetry');if(a)a.hidden=true;
     $('pqNoteText').textContent=(r&&r.reason==='timeout'?'Saving your answers is taking too long.':'Your answers didn\'t save.')+' Your results below are still here. Try again, or call our Middletown office at (513) 783-4018.';
     $('pqRetry').hidden=false;});}
 function submitPQ(){
-  if(submitting)return;submitting=true;const sb=$('wiz').querySelector('[data-w=submit]');if(sb){sb.disabled=true;sb.textContent='Opening your results…';}
+  if(submitting)return;submitting=true;const sb=$('wiz').querySelector('[data-w=submit]');if(sb){sb.disabled=true;sb.textContent='Saving…';}
   renderResults();
   const answers={};vis().forEach(s=>{if(s.type==='choice'||s.type==='range')answers[s.lab]=fmtAns(s);});
   pqRow={goal:ans.goal||null,answers,first_name:ans.name||null,phone:ans.phone||null,email:ans.email||null,loan_officer:ans.lo?TEAM[+ans.lo].n:null,wants_quote:!!ans.quote};
   savePQ();
-  playDoor(ans.name,()=>{if(curPage!=='start'){history.replaceState(null,'','#start');route();} // left mid-walk: the results are still where this ends
-    $('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;persist();window.scrollTo(0,0);
-    const h=$('results').querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}});}
+  /* straight to the results: a check draws itself and the cards ease in (CSS, .fresh; none with reduced motion) */
+  $('pqHead').hidden=true;$('pqForm').hidden=true;$('pqResults').hidden=false;persist();window.scrollTo(0,0);
+  const res=$('results');res.classList.remove('fresh');void res.offsetWidth;res.classList.add('fresh');
+  const h=res.querySelector('h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}
 function showErr(m){const e=$('pqErr');e.textContent=m;e.hidden=false;}
 function summaryLines(){const byId=Object.fromEntries(vis().map(s=>[s.id,s]));const out=[];
   for(const [g,ids] of GROUPS){const rows=ids.filter(i=>byId[i]);if(!rows.length)continue;out.push(g.toUpperCase());rows.forEach(i=>out.push('  '+byId[i].lab+': '+fmtAns(byId[i])));out.push('');}
@@ -602,7 +526,7 @@ function renderResults(){
     if(newLoan<=0){big='Paid off';sub='Your home';note='With no balance left, a cash-out refinance or a home equity line of credit is the usual way to borrow against your home.';r.push('cash-out-refinance','heloc');}
     else note=`New loan of ${usd(newLoan)} (${ltv.toFixed(0)}% of your home's value) at an example ${ex.toFixed(3)}%`+(ex<a.rate?`, ${(a.rate-ex).toFixed(2).replace(/\.?0+$/,'')} points under your current rate`:', about the same as your current rate')+'. Principal and interest only.'+(ltv>80&&cash?' Most cash-out programs cap near 80% of value, so a HELOC may fit better.':'');}
   const recs=[...new Set(r)].slice(0,3),lo=ans.lo?[+ans.lo]:[];
-  $('results').innerHTML=`<div class="res-hero"><p class="eyebrow">Pre-qualification complete</p><h1>Welcome home, ${esc(a.name)}.</h1><p class="muted" style="max-width:34em;font-size:1.08rem">Here's where you stand. ${lo.length===1?esc(TEAM[lo[0]].n.split(' ')[0])+' will':'A loan officer from our Middletown office will'} reach out to go over your numbers${wantQuote?' and your personal rate quote':' and today\'s rates'}.</p></div>
+  $('results').innerHTML=`<div class="res-hero"><svg class="res-check" viewBox="0 0 52 52" width="52" height="52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l7 7 15-16"/></svg><p class="eyebrow">Pre-qualification complete</p><h1>Welcome home, ${esc(a.name)}.</h1><p class="muted" style="max-width:34em;font-size:1.08rem">Here's where you stand. ${lo.length===1?esc(TEAM[lo[0]].n.split(' ')[0])+' will':'A loan officer from our Middletown office will'} reach out to go over your numbers${wantQuote?' and your personal rate quote':' and today\'s rates'}.</p></div>
     <div class="demo-note" role="status"><span class="badge">Demo site</span><p id="pqNoteText">This is a demo. Saving your answers to the demo database…</p><button class="btn btn-line" id="pqRetry" hidden>Try again</button><details><summary class="disc"><span>See what your loan officer receives</span>${DISC}</summary><pre>${esc(summaryLines().join('\n'))}</pre></details></div>
     <div class="grid2" style="align-items:start"><div style="display:grid;gap:18px">
       <div class="est"><span class="eyebrow">${sub}</span><div class="big num">${big}</div><p>${esc(note)}</p></div>
@@ -655,7 +579,6 @@ function route(){
   let sec=document.querySelector(`.page[data-page="${page}"]`);if(!sec){sec=document.querySelector('.page[data-page="home"]');page='home';}
   curPage=page;document.body.dataset.page=page;document.querySelectorAll('.page').forEach(p=>p.hidden=p!==sec);
   if(page==='learn'){const tab=TABS[h]||'course';document.querySelectorAll('[data-tabpanel]').forEach(p=>p.hidden=p.dataset.tabpanel!==tab);document.querySelectorAll('.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.tab===tab));if(tab==='course')renderLesson();if(tab==='glossary'){renderGloss();renderGDetail();}}
-  if(page==='start')Walk.preload();
   if(page==='start'&&$('pqResults').hidden){drawQ();$('pqLede').textContent=wantQuote?'A few quick questions, then your results and a personal rate quote from your loan officer.':carried?'We brought along your price and down payment. A few more questions, then your results. No credit check.':'A few quick questions, then your results. No Social Security number and no credit check.';}
   // each page (and each Learn tab, legal page and loan) gets its own title and description
   let title=sec.dataset.title,desc=sec.dataset.desc;

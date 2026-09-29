@@ -6,7 +6,7 @@ Usage (from the repo root):
 
 Checks the hero turntable (loads with its depth, turns when dragged), checks every page at phone
 width for sideways scrolling, walks the full pre-qualification
-(including an Edit from the review step), plays the walk-through, and saves screenshots to
+(including an Edit from the review step), checks the results open with their confirmation, and saves screenshots to
 tools/out/. WebGL runs through SwiftShader so it works headless.
 """
 import asyncio, os
@@ -67,12 +67,11 @@ async def main():
         await pg.screenshot(path=f'{OUT}/review.png', full_page=True)
         await pg.click('#wiz [data-w=submit]'); await pg.wait_for_timeout(2500)
         if 'Up to' not in await pg.evaluate("document.getElementById('results').textContent"): errs.append('results show no affordability estimate')
-        if await pg.evaluate('!!window.__walk'):
-            await pg.evaluate('__walk.stop()')
-            for t in [.5, 1.4, 2.4, 3.9]:
-                await pg.evaluate(f'__walk.render({t})'); await pg.wait_for_timeout(250)
-                await pg.screenshot(path=f'{OUT}/walk_{t}.png')
-        await pg.click('.ds [data-ds=go]'); await pg.wait_for_timeout(1800)
+        # submitting goes straight to the results (a check and the cards easing in), no overlay
+        if await pg.evaluate("document.getElementById('pqResults').hidden"): errs.append('results not shown after submitting')
+        if not await pg.evaluate("!!document.querySelector('#results.fresh .res-check')"): errs.append('results confirmation check missing')
+        if await pg.evaluate("document.activeElement!==document.querySelector('#results h1')"): errs.append('focus did not move to the results heading')
+        await pg.wait_for_timeout(1000)
         await pg.screenshot(path=f'{OUT}/results.png', full_page=True)
         # the home payment estimate carries its price and down payment into the pre-qualification
         t = await b.new_page(viewport={'width': 1280, 'height': 800})
