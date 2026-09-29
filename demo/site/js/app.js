@@ -423,7 +423,7 @@ function playDoor(name,done){
     if(stopped)return;if(!ok){finish();return;}q('.ds-load').remove();
     P=Walk.play(q('.ds-view'),{cap:q('.ds-cap'),capA:'<small>Your results are ready</small><span class="kk">Knock,</span> <span class="kk">knock.</span>',capB:`<small>Reliant Home Mortgage</small>Welcome home${name?', '+esc(name):''}.`,cue:snd?snd.cue:null,
       onExplore(){q('.ds-actions').classList.add('show');setTimeout(()=>{const g=q('.ds-actions button');if(g&&!stopped)g.focus({preventScroll:true});},60);}});
-    window.__walk=P;P.start();});
+    if(!P){finish();return;}window.__walk=P;P.start();});
 }
 
 /* ---------- pre-qualification ---------- */
