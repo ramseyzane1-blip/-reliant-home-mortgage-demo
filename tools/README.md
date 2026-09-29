@@ -11,6 +11,7 @@ walk-through). Don't use them anywhere else on the site.
 - `house-00.jpg` … `house-12.jpg`: 13 views of the model home on its plinth, 1100×1100,
   ordered by camera angle. The angles are in `HOUSE_VIEWS` in `js/app.js`
   (0° front, 90° right side, 180° back, 270° left side).
+- `house-depth.bin`: the turntable's per-view depth relief, from `turntable_depth.py`.
 - `approach-2…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
   door slab. `approach-1.jpg` (a wide shot of a different porch design) was dropped so the whole
