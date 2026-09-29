@@ -40,8 +40,8 @@ function create(box,canvas,views,opt){
  function texture(i){if(!tex.has(i))upload(i);return tex.get(i)||null;}
  function uploadNext(){const [a,b]=pair(th);for(const i of [a,b,(b+1)%n,(a-1+n)%n,...views.keys()])if(!tex.has(i)&&(bmp[i]||!window.createImageBitmap)&&upload(i))return;} // nearest views first, once resized off-thread
  views.forEach((v,i)=>img(i));
- if(opt.depth)fetch(opt.depth).then(r=>r.ok?r.arrayBuffer():null).then(ab=>{if(!ab)return;const g=(N+1)*(N+1),a=new Uint8Array(ab);const at=v=>v.d??views.indexOf(v);if(a.length<g*(Math.max(...views.map(at))+1))return;
-  views.forEach((v,i)=>{const k=at(v);pos[i]=relief(a.subarray(k*g,(k+1)*g));});dirty=true;}).catch(()=>{});
+ if(opt.depth)fetch(opt.depth).then(r=>r.ok?r.arrayBuffer():null).then(ab=>{if(!ab)return;const g=(N+1)*(N+1),a=new Uint8Array(ab);if(a.length<g*views.length)return;
+  views.forEach((v,i)=>{pos[i]=relief(a.subarray(i*g,(i+1)*g));});dirty=true;}).catch(()=>{});
  const A=views.map(v=>v.a),n=views.length;
  function pair(th){th=((th%360)+360)%360;for(let k=0;k<n;k++){const a0=A[k],a1=k+1<n?A[k+1]:A[0]+360;let t=th;if(t<a0)t+=360;if(t>=a0&&t<a1)return [k,(k+1)%n,a0,a1,t];}return [0,1,A[0],A[1],th];}
  const bg=opt.bg||[.949,.918,.882];let dirty=true;

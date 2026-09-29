@@ -59,15 +59,6 @@ header.scrolled{box-shadow:0 10px 30px -22px rgba(16,32,26,.45)}
 .logo-d{display:none}
 :root[data-theme="dark"] .logo-l{display:none}:root[data-theme="dark"] .logo-d{display:block}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
-/* dusk for the model home in dark mode: a touch dimmer, with a soft vignette so the card doesn't glare */
-:root[data-theme="dark"] .hphoto{background:#2a2621;box-shadow:0 40px 80px -40px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.07)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hphoto{background:#2a2621;box-shadow:0 40px 80px -40px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.07)}}
-:root[data-theme="dark"] .hphoto canvas,:root[data-theme="dark"] .hphoto .hp-fallback{filter:brightness(.84) contrast(1.05)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hphoto canvas,:root:not([data-theme="light"]) .hphoto .hp-fallback{filter:brightness(.84) contrast(1.05)}}
-:root[data-theme="dark"] .hphoto::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(85% 80% at 50% 42%,transparent 48%,rgba(9,15,12,.55) 100%)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hphoto::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(85% 80% at 50% 42%,transparent 48%,rgba(9,15,12,.55) 100%)}}
-:root[data-theme="dark"] .hp-hint{background:rgba(21,32,27,.82);color:#e8eeea;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hp-hint{background:rgba(21,32,27,.82);color:#e8eeea;box-shadow:0 4px 14px rgba(0,0,0,.35)}}
 .mainnav{display:flex;gap:2px}
 .mainnav a{text-decoration:none;color:var(--muted);font-weight:600;font-size:.95rem;padding:8px 12px;border-radius:8px;white-space:nowrap}
 .mainnav a:hover{color:var(--ink);background:var(--alt)}
@@ -128,12 +119,12 @@ header.scrolled{box-shadow:0 10px 30px -22px rgba(16,32,26,.45)}
 .face+.face{margin-left:-10px}
 .trust p{font-size:.93rem;line-height:1.45}
 .trust button{background:none;border:0;padding:0;color:var(--accent-ink);font-weight:700;cursor:pointer;text-align:left}
-.hphoto{position:relative;justify-self:end;width:100%;max-width:520px;aspect-ratio:1/1;border-radius:26px;overflow:hidden;background:#f2eae1;box-shadow:0 40px 70px -34px rgba(16,32,26,.45),0 0 0 1px rgba(16,32,26,.06);cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.hphoto{position:relative;justify-self:end;width:100%;max-width:560px;aspect-ratio:1/1;border-radius:26px;overflow:hidden;background:#f2eae1;box-shadow:0 40px 70px -34px rgba(16,32,26,.45),0 0 0 1px rgba(16,32,26,.06);cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .hphoto.drag{cursor:grabbing}
 .hphoto .hp-fallback{display:block;width:100%;height:100%;object-fit:cover}
 .hphoto canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .6s}
 .hphoto.ready canvas{opacity:1}
-.hp-hint{z-index:2;position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:.8rem;font-weight:600;color:#10201a;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);border-radius:999px;padding:7px 14px;box-shadow:0 4px 14px rgba(16,32,26,.12);pointer-events:none;transition:opacity .5s}
+.hp-hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;white-space:nowrap;font-size:.8rem;font-weight:600;color:#10201a;background:rgba(255,255,255,.88);backdrop-filter:blur(6px);border-radius:999px;padding:7px 14px;box-shadow:0 4px 14px rgba(16,32,26,.12);pointer-events:none;transition:opacity .5s}
 .hphoto.used .hp-hint{opacity:0}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;grid-template-areas:"copy" "photo" "trust";padding-block:36px 44px;row-gap:32px}.hphoto{justify-self:center;max-width:480px}.hero-trust{grid-template-columns:1fr}.hero-trust .trust{flex-wrap:wrap}}
 

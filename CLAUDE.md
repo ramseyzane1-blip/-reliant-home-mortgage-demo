@@ -118,9 +118,7 @@ Without WebGL the walk is skipped.
 
 The client's feedback: "getting better, but clunky and not smooth." Planned fixes, in order:
 
-1. Done: turntable textures up front, 1024 + mipmaps. The duplicate render (`house-10.jpg`, a
-   copy of `house-09.jpg` that doubled the house between 318° and 327°) is no longer a view; a
-   real 327° render can go back into `HOUSE_VIEWS` with `"d": 10` once the depth is re-run.
+1. Done: turntable textures up front, 1024 + mipmaps.
 2. Done for the walk: depth reliefs, steering, center-out handoffs and one exposure grade. What is
    left there comes from the renders themselves (for example, the porch lantern differs between
    approach shots); fixing that needs consistent re-renders. The turntable now uses depth too;

@@ -8,12 +8,9 @@ All images in `demo/site/images/` are AI-generated renders of a fictional house 
 the client. They are used **only** in the two 3D pieces (the hero turntable and the
 walk-through). Don't use them anywhere else on the site.
 
-- `house-00.jpg` … `house-12.jpg`: 13 renders of the model home on its plinth, 1024×1024 so the
-  turntable can mipmap them, ordered by camera angle. The angles are in `HOUSE_VIEWS` in
-  `js/app.js` (0° front, 90° right side, 180° back, 270° left side). `house-10.jpg` is a
-  byte-for-byte copy of `house-09.jpg`, so it isn't used as a view (it doubled the house between
-  318° and 327°); `turntable_depth.py` still reads all 13 files, and each view's `d` in
-  `HOUSE_VIEWS` points at its grid in `house-depth.bin`.
+- `house-00.jpg` … `house-12.jpg`: 13 views of the model home on its plinth, 1100×1100,
+  ordered by camera angle. The angles are in `HOUSE_VIEWS` in `js/app.js`
+  (0° front, 90° right side, 180° back, 270° left side).
 - `house-depth.bin`: the turntable's per-view depth relief, from `turntable_depth.py`.
 - `approach-1…4.jpg`, `door.jpg`: the walk up to the front door. Each has a door rectangle
   (in image pixels) in `Walk.SHOTS` in `js/engines.js`, found by detecting the dark green
