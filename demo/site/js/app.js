@@ -20,9 +20,15 @@ const LX={
  'dscr-loan':['Often 20% to 25%','Varies','Rental property investors'],
  'land-loans':['Often 20% or more','Varies','Buying land to build later'],
  'doctor-loans':['Low or no down payment','Often no PMI','Physicians and medical professionals']};
-/* sliders fill up to the thumb */
-const fillRange=r=>r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min)*100).toFixed(2)+'%');
+/* sliders fill up to the thumb, and screen readers hear the value as shown ("$250,000"), not the raw number.
+   The value printed in each label is for sight only (aria-hidden), so the slider's name stays short. */
+const rangeOut=r=>(r.labels&&r.labels[0]&&r.labels[0].querySelector('output'))||document.getElementById(r.id+'-o');
+const fillRange=r=>{r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min)*100).toFixed(2)+'%');
+  requestAnimationFrame(()=>{const o=rangeOut(r);if(o&&o.textContent)r.setAttribute('aria-valuetext',o.textContent);});};
 document.addEventListener('input',e=>{if(e.target.type==='range')fillRange(e.target);},true);
+/* calculator results are read out once the visitor pauses, in one short sentence (never on page load) */
+let lastInput=0;['input','click','keydown'].forEach(t=>document.addEventListener(t,()=>{lastInput=Date.now();},true));
+const say=(()=>{let tm;return text=>{if(Date.now()-lastInput>1500)return;clearTimeout(tm);tm=setTimeout(()=>{const l=document.getElementById('srLive');l.textContent='';requestAnimationFrame(()=>l.textContent=text);},700);};})();
 const catName=c=>c==='Purchase'?'Buying':c==='Refinance'?'Refinancing':'Specialty';
 
 /* ---------- demo modal ---------- */
@@ -35,7 +41,10 @@ function demo(title,body,data,btns){
 }
 function closeModal(){$('modal').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
 $('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(!$('modal').hidden)closeModal();hidePop();if(!$('drawer').hidden){$('drawer').hidden=true;$('burger').setAttribute('aria-expanded','false');$('burger').focus();}}
+  if(e.key==='Tab'&&!$('modal').hidden){const f=[...$('modal').querySelectorAll('button,a[href]')].filter(x=>x.offsetParent);if(!f.length)return;
+    const i=f.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();f[f.length-1].focus();}else if(!e.shiftKey&&(i===f.length-1||i<0)){e.preventDefault();f[0].focus();}}});
 const DEMOS={call:["Call (513) 783-4018","On the live site, this starts a phone call to the Reliant office in Middletown."],email:["Email the team","On the live site, this opens an email to jenb@relianthomemtg.com."],intro:["Introduction requested","On the live site, this sends your request to the Reliant team, and they connect you with the partner by phone or email."]};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-demo]');if(!b)return;e.preventDefault();const d=DEMOS[b.dataset.demo];demo(d[0],d[1]);});
 function extLink(label,url){const a=document.createElement('a');a.className='btn btn-primary';a.href=url;a.target='_blank';a.rel='noopener';a.textContent=label;return a;}
@@ -78,7 +87,7 @@ function renderReviews(){document.querySelectorAll('[data-reviews]').forEach(el=
 $('revfilter').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;revFilter=c.dataset.f;$('revfilter').querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));renderReviews();});
 const GURL="https://search.google.com/local/reviews?placeid=ChIJEViXMQNdQIgRb8VN-N0-fS0";
 $('starpick').innerHTML=[1,2,3,4,5].map(n=>`<button aria-label="${n} star${n>1?'s':''}" data-n="${n}">★</button>`).join('');
-$('starpick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const n=+b.dataset.n;$('starpick').querySelectorAll('button').forEach(x=>x.classList.toggle('on',+x.dataset.n<=n));$('starBtns').innerHTML='';
+$('starpick').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const n=+b.dataset.n;$('starpick').querySelectorAll('button').forEach(x=>{x.classList.toggle('on',+x.dataset.n<=n);x.setAttribute('aria-pressed',+x.dataset.n===n);});$('starBtns').innerHTML='';
   if(n>=4){$('starMsg').textContent='Thank you! Would you share that on Google? It takes about a minute.';$('starBtns').appendChild(extLink('Review us on Google',GURL));}
   else{$('starMsg').textContent="We're sorry it wasn't a great experience. Tell us what happened and our team will follow up personally.";const a=document.createElement('a');a.className='btn btn-primary';a.href='#contact';a.textContent='Tell us what happened';$('starBtns').appendChild(a);}});
 $('posts').innerHTML=POSTS.map(p=>`<article><span class="eyebrow" style="font-size:.68rem">${p[0]}</span><h4>${p[1]}</h4><p class="muted" style="font-size:.93rem">${p[2]}</p></article>`).join('');
@@ -116,7 +125,7 @@ const FQ=[
  {id:'credit',q:'How would you describe your credit?',o:['Strong (680+)','Building (under 680)','Not sure']},
  {id:'extra',q:'Anything else? Pick any that apply.',o:['First home','Rural or small town','Home needs repairs','Self-employed','Medical professional','Higher-priced home'],multi:1}];
 const F={mil:'No',down:'Under 5%',credit:'Not sure',extra:new Set(['First home'])};
-$('finderQs').innerHTML=FQ.map(q=>`<div class="qgroup"><span class="flabel">${q.q}</span><div class="chips" data-fq="${q.id}">${q.o.map(o=>`<button class="chip" aria-pressed="${q.multi?F.extra.has(o):F[q.id]===o}">${o}</button>`).join('')}</div></div>`).join('')+'<p class="fine">Your answers stay on this page. Nothing is sent.</p>';
+$('finderQs').innerHTML=FQ.map(q=>`<div class="qgroup"><span class="flabel" id="fq-${q.id}">${q.q}</span><div class="chips" role="group" aria-labelledby="fq-${q.id}" data-fq="${q.id}">${q.o.map(o=>`<button class="chip" aria-pressed="${q.multi?F.extra.has(o):F[q.id]===o}">${o}</button>`).join('')}</div></div>`).join('')+'<p class="fine">Your answers stay on this page. Nothing is sent.</p>';
 $('finderQs').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const g=c.parentElement,id=g.dataset.fq;
   if(id==='extra'){const v=c.textContent;F.extra.has(v)?F.extra.delete(v):F.extra.add(v);c.setAttribute('aria-pressed',F.extra.has(v));}
   else{F[id]=c.textContent;g.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));}
@@ -140,6 +149,7 @@ function renderFinder(){
   const top=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,3);
   $('matches').innerHTML=`<p class="flabel" style="margin-bottom:2px">Your best matches</p>`+top.map((s,k)=>{const p=PBY[s],l=LX[s];return `<div class="mcard${k===0?' top':''}">${k===0?'<span class="pill">Best match</span>':''}<h3>${esc(p.n)}</h3><p class="why">${esc(why[s][0])}</p><div class="facts"><div><small>Down payment</small><span>${esc(l[0])}</span></div><div><small>Mortgage insurance</small><span>${esc(l[1])}</span></div></div><div class="btn-row"><a class="linkish" href="#program-${s}">How ${esc(p.n.replace(/s$/,''))} works →</a></div></div>`;}).join('')+
    `<div class="card" style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;background:var(--alt)"><p style="font-size:.95rem;max-width:26em">Want a loan officer to confirm and add your numbers?</p><a class="btn btn-primary" href="#start" data-goal="buy">Get pre-qualified</a></div>`;
+  say('Best match: '+PBY[top[0]].n+'.');
   const rest=P.filter(p=>p.c==='Purchase'&&!top.includes(p.s));$('otherBuy').innerHTML=rest.map(p=>lrow(p,false)).join('');$('otherSum').textContent=`Other loans for buyers (${rest.length})`;
 }
 
@@ -153,6 +163,7 @@ function breakeven(){
   if(save<=0){$('be-months').textContent='No savings';v.className='pill bad';v.textContent='Not at this rate';}
   else{$('be-months').textContent=months<12?months+' months':(months/12).toFixed(1)+' years';
     if(months<=stay*12*0.5){v.className='pill good';v.textContent='Likely worth it';}else if(months<=stay*12){v.className='pill mid';v.textContent='Borderline';}else{v.className='pill bad';v.textContent='Probably not yet';}}
+  say(save>0?`Break-even in ${$('be-months').textContent}. ${v.textContent}. Saves ${usd(save)} a month.`:'No monthly savings at this rate.');
   // chart
   const W=600,H=210,pl=48,pr=12,pt=14,pb=30,N=stay*12;const vals=[];for(let m=0;m<=N;m++)vals.push(save*m-cost);
   const mn=Math.min(0,...vals),mx=Math.max(0,...vals),sy=v2=>pt+(mx-v2)/((mx-mn)||1)*(H-pt-pb),sx=m=>pl+m/N*(W-pl-pr);
@@ -173,11 +184,11 @@ const RF=[
  {id:'use',label:'Property',o:[['Primary home',0],['Second home',6],['Rental',16]],d:0},
  {id:'pts',label:'Discount points',o:[['None',0],['1 point',-8],['2 points',-15]],d:0}];
 const RFs={credit:1,equity:1,use:0,pts:0};
-$('rfQs').innerHTML=RF.map(f=>`<div class="qgroup"><span class="flabel">${f.label}</span><div class="chips" data-rf="${f.id}">${f.o.map((o,k)=>`<button class="chip" aria-pressed="${RFs[f.id]===k}" data-k="${k}">${o[0]}</button>`).join('')}</div></div>`).join('');
+$('rfQs').innerHTML=RF.map(f=>`<div class="qgroup"><span class="flabel" id="rf-${f.id}">${f.label}</span><div class="chips" role="group" aria-labelledby="rf-${f.id}" data-rf="${f.id}">${f.o.map((o,k)=>`<button class="chip" aria-pressed="${RFs[f.id]===k}" data-k="${k}">${o[0]}</button>`).join('')}</div></div>`).join('');
 $('rfQs').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;const g=c.parentElement;RFs[g.dataset.rf]=+c.dataset.k;g.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));rates();});
 function rates(){let s=50;const parts=RF.map(f=>{const [name,v]=f.o[RFs[f.id]];s+=v;return [f.label,name,v];});s=Math.max(4,Math.min(96,s));
   $('rf-dot').style.left=s+'%';
-  $('rf-head').textContent=s<35?'Toward the lower end of the range':s<60?'Around the middle of the range':'Toward the higher end of the range';
+  $('rf-head').textContent=s<35?'Toward the lower end of the range':s<60?'Around the middle of the range':'Toward the higher end of the range';say($('rf-head').textContent+'.');
   $('rf-fx').innerHTML=parts.map(([l,n,v])=>{const w=Math.min(50,Math.abs(v)*2);return `<div><span>${l}</span><span class="bar"><span style="left:${v<0?50-w:50}%;width:${w}%;background:${v<0?'var(--good)':v>0?'var(--warn)':'var(--line)'}"></span></span><em style="color:${v<0?'var(--good)':v>0?'var(--warn)':'var(--muted)'}">${v<0?'Lower':v>0?'Higher':'Neutral'}</em></div>`;}).join('');}
 
 /* ---------- glossary + inline terms ---------- */
@@ -278,6 +289,7 @@ function renderLesson(){
    <div class="box"><h4>Check yourself</h4><p style="margin-bottom:12px">${esc(L.q[0])}</p><div class="quiz" id="quiz">${L.q[1].map((o,k)=>`<button data-k="${k}">${esc(o)}</button>`).join('')}<p class="fb" id="fb" aria-live="polite"></p></div></div>
    <div class="lnav"><button class="btn btn-line" data-go="${curLesson-1}" ${curLesson?'':'style="visibility:hidden"'}>← Previous</button>
    ${curLesson<LESSONS.length-1?`<button class="btn btn-primary" id="lessonDone">Mark complete and continue →</button>`:`<button class="btn btn-primary" id="lessonDone">Finish the course</button>`}</div>`;
+  $('lesson').querySelectorAll('label output').forEach(o=>o.setAttribute('aria-hidden','true'));
   $('lesson').querySelectorAll('input[type=range]').forEach(r=>{fillRange(r);const up=()=>{const o=$(r.id+'-o');if(o)o.textContent=FMT[r.dataset.fmt](+r.value);tr.f();};r.addEventListener('input',up);up();});
   $('lesson').querySelectorAll('[data-cc]').forEach(c=>c.addEventListener('change',tr.f));tr.f();
   $('quiz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=+b.dataset.k,ok=k===L.q[2];$('quiz').querySelectorAll('button').forEach(x=>x.classList.remove('right','wrong'));b.classList.add(ok?'right':'wrong');$('fb').textContent=ok?L.q[3]:'Not quite. Try another answer.';});
@@ -289,7 +301,10 @@ document.addEventListener('click',e=>{const g=e.target.closest('#lessonNav [data
 
 /* ---------- payment calculator + amortization ---------- */
 let term=30;
-document.querySelectorAll('#terms button').forEach(b=>b.addEventListener('click',()=>{term=+b.dataset.t;document.querySelectorAll('#terms button').forEach(x=>x.setAttribute('aria-checked',x===b));calc();}));
+const termBtns=[...document.querySelectorAll('#terms button')];
+function pickTerm(b){term=+b.dataset.t;termBtns.forEach(x=>{x.setAttribute('aria-checked',x===b);x.tabIndex=x===b?0:-1;});calc();}
+termBtns.forEach((b,i)=>{b.tabIndex=b.getAttribute('aria-checked')==='true'?0:-1;b.addEventListener('click',()=>pickTerm(b));
+  b.addEventListener('keydown',e=>{const d={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(!d)return;e.preventDefault();const n=termBtns[(i+d+termBtns.length)%termBtns.length];pickTerm(n);n.focus();});});
 ['price','down','rate'].forEach(id=>$(id).addEventListener('input',calc));
 function calc(){const price=+$('price').value,dp=+$('down').value,rate=+$('rate').value,loan=price*(1-dp/100),tax=price*0.019/12;
   $('o-price').textContent=usd(price);$('o-down').textContent=dp+'% · '+usd(price*dp/100);$('o-rate').textContent=rate.toFixed(3)+'%';
@@ -300,12 +315,13 @@ function calc(){const price=+$('price').value,dp=+$('down').value,rate=+$('rate'
   let g=`<text x="${pl-6}" y="${pt+8}" text-anchor="end">${usd(mx)}</text><text x="${pl-6}" y="${H-pb}" text-anchor="end">$0</text>`;
   yrs.forEach(([pp,ip],y)=>{const x=pl+y*bw+1,hp=pp/mx*(H-pt-pb),hi=ip/mx*(H-pt-pb);g+=`<rect x="${x}" y="${H-pb-hp}" width="${bw-2}" height="${hp}" style="fill:var(--forest)"/><rect x="${x}" y="${H-pb-hp-hi}" width="${bw-2}" height="${hi}" style="fill:var(--sand)"/>`;});
   [1,Math.round(term/3),Math.round(term*2/3),term].forEach(y=>g+=`<text x="${pl+(y-.5)*bw}" y="${H-8}" text-anchor="middle">Yr ${y}</text>`);
+  say(`Estimated monthly payment ${usd(pi+tax)}. Total interest ${usd(pi*term*12-loan)}.`);
   $('amort').innerHTML=g;const cross=yrs.findIndex(([pp,ip])=>pp>=ip);
   $('amortNote').textContent=`In year 1, ${Math.round(yrs[0][1]/(pi*12)*100)}% of your payments go to interest.`+(cross>0?` From year ${cross+1}, most of each payment pays down your loan.`:' Most of each payment pays down your loan from the start.');}
 function afford(){const inc=+$('af-inc').value,debt=+$('af-debt').value,down=+$('af-down').value,rate=+$('af-rate').value;
   $('af-inc-o').textContent=usd(inc);$('af-debt-o').textContent=usd(debt)+'/mo';$('af-down-o').textContent=usd(down);$('af-rate-o').textContent=rate.toFixed(3)+'%';
   const M=Math.max(0,inc/12*0.43-debt),f=pmt(1,rate,30),price=Math.max(0,(M+f*down)/(f+0.019/12));const lo=Math.round(price*0.9/5000)*5000,hi=Math.round(price/5000)*5000;
-  $('af-price').textContent=hi>0?usd(lo)+' – '+usd(hi):'$0';$('af-pay').textContent='Housing budget about '+usd(M)+'/mo including taxes and insurance.';}
+  $('af-price').textContent=hi>0?usd(lo)+' – '+usd(hi):'$0';$('af-pay').textContent='Housing budget about '+usd(M)+'/mo including taxes and insurance.';say('Estimated price range '+$('af-price').textContent.replace('–','to')+'.');}
 ['af-inc','af-debt','af-down','af-rate'].forEach(id=>$(id).addEventListener('input',afford));
 
 /* ---------- local help ---------- */
@@ -336,7 +352,7 @@ function renderDir(){const list=DIR.filter(d=>(!dS||d[3]===dS||d[3]==='US')&&(!d
     <div class="acts"><a href="${d[2]}" target="_blank" rel="noopener">Visit site ↗</a><button class="save" data-save="${d[0]}" aria-pressed="${!!saved[d[0]]}">${saved[d[0]]?'Saved':'Save to checklist'}</button></div></article>`).join('')||'<p class="muted">Nothing matches. Try fewer filters.</p>';}
 function renderChk(){const ids=Object.keys(saved),n=ids.filter(k=>saved[k]==='done').length;
   $('chkMeta').textContent=ids.length?`${n} of ${ids.length} done`:'Save resources and check them off as you go.';
-  $('chkList').innerHTML=ids.map(k=>{const d=DIR.find(x=>x[0]===k);return d?`<li class="${saved[k]==='done'?'done':''}"><input type="checkbox" data-done="${k}" ${saved[k]==='done'?'checked':''} aria-label="Mark ${esc(d[1])} done"><span>${esc(d[1])}</span><button data-rm="${k}" aria-label="Remove">×</button></li>`:'';}).join('');}
+  $('chkList').innerHTML=ids.map(k=>{const d=DIR.find(x=>x[0]===k);return d?`<li class="${saved[k]==='done'?'done':''}"><input type="checkbox" data-done="${k}" ${saved[k]==='done'?'checked':''} aria-label="Mark ${esc(d[1])} done"><span>${esc(d[1])}</span><button data-rm="${k}" aria-label="Remove ${esc(d[1])}">×</button></li>`:'';}).join('');}
 document.addEventListener('click',e=>{const s=e.target.closest('[data-save]');if(s){const k=s.dataset.save;if(saved[k])delete saved[k];else saved[k]='todo';store.set('rhm-checklist',saved);renderDir();renderChk();}
   const r=e.target.closest('[data-rm]');if(r){delete saved[r.dataset.rm];store.set('rhm-checklist',saved);renderDir();renderChk();}});
 document.addEventListener('change',e=>{const d=e.target.closest('[data-done]');if(!d)return;saved[d.dataset.done]=d.checked?'done':'todo';store.set('rhm-checklist',saved);renderChk();});
@@ -461,6 +477,7 @@ function reviewHTML(ed){const byId=Object.fromEntries(vis().map(s=>[s.id,s]));le
     h+=`<section><h4>${g}</h4><dl>${rows.map(i=>{const s=byId[i];return `<div class="r"><dt>${s.lab}</dt><dd>${esc(fmtAns(s))}</dd>${ed?`<button class="ed" data-edit="${i}" aria-label="Edit ${esc(s.lab)}">Edit</button>`:'<span></span>'}</div>`;}).join('')}</dl></section>`;}
   h+=`<section><h4>How we'll reach you</h4><dl>${contactRows().map(([k,v])=>`<div class="r"><dt>${k}</dt><dd>${esc(v)}</dd>${ed?`<button class="ed" data-edit="contact" aria-label="Edit ${k}">Edit</button>`:'<span></span>'}</div>`).join('')}</dl></section></div>`;return h;}
 function drawQ(){
+  const hadFocus=$('wiz').contains(document.activeElement);
   const V=vis();if(qi>=V.length)qi=V.length-1;const s=V[qi];const W=$('wiz');let body='',step='';
   const qn=V.slice(0,qi+1).filter(x=>x.type==='choice'||x.type==='range').length,grp=(GROUPS.find(g=>g[1].includes(s.id))||[''])[0];
   if(s.type==='choice'){step=`${grp} · Question ${qn} of ${nQs()}`;body=`<div class="opts${s.big?' lg':''}">${s.opts.map(o=>`<button class="opt" aria-pressed="${ans[s.id]===o[0]}" data-v="${esc(o[0])}"><b>${esc(o[0])}</b>${o[1]?`<small>${esc(o[1])}</small>`:''}</button>`).join('')}</div>`;}
@@ -477,7 +494,8 @@ function drawQ(){
   const nav=s.type==='range'?`<button class="btn btn-primary" data-w="next">${editing?'Save and review →':'Continue →'}</button>`:s.type==='contact'?`<button class="btn btn-primary" data-w="toreview">Review my answers →</button>`:s.type==='review'?`<button class="btn btn-primary btn-lg" data-w="submit">See my results →</button>`:'<span class="fine">Pick one to continue</span>';
   W.innerHTML=`<div class="wiz-prog"><span style="width:${pct}%"></span></div><div class="wiz-body"><p class="wiz-step">${step}</p><h2 class="wiz-q">${esc(s.q)}</h2>${s.help?`<p class="muted" style="margin:-12px 0 18px">${esc(s.help)}</p>`:''}${body}
     <div class="wiz-nav"><button class="btn btn-line" data-w="back" ${qi?'':'style="visibility:hidden"'}>← Back</button>${nav}</div></div>`;
-  if(s.type==='range'){const r=W.querySelector('input[type=range]'),o=W.querySelector('.wiz-val'),show=v=>{o.value=s.fmt(v);};
+  if(hadFocus){const q=W.querySelector('.wiz-q');q.tabIndex=-1;q.focus({preventScroll:true});}
+  if(s.type==='range'){const r=W.querySelector('input[type=range]'),o=W.querySelector('.wiz-val'),show=v=>{o.value=s.fmt(v);r.setAttribute('aria-valuetext',s.fmt(v));};
     fillRange(r);r.addEventListener('input',()=>{ans[s.id]=+r.value;show(+r.value);});
     // typing an exact amount: "$250,000", "250k" and "6.75%" all work; out-of-range values are brought inside the range
     o.addEventListener('change',()=>{const t=o.value.toLowerCase(),k=/\dk\b|\dk$/.test(t)?1e3:/\dm\b|\dm$/.test(t)?1e6:1;let v=parseFloat(t.replace(/[^0-9.]/g,''))*k;
@@ -576,7 +594,7 @@ function renderResults(){
 let carried=false;
 function teaser(){const pr=+$('tz-price').value,dp=+$('tz-down').value,down=pr*dp/100,pi=pmt(pr-down,6.5,30),ti=pr*.019/12,tot=pi+ti;
   $('tz-price-o').textContent=usd(pr);$('tz-down-o').textContent=dp+'% · '+usd(down);
-  $('tz-pay').innerHTML=usd(tot)+'<span>/mo</span>';$('tz-pi').textContent=usd(pi);$('tz-ti').textContent=usd(ti);$('tz-bpi').style.width=(pi/tot*100).toFixed(1)+'%';}
+  $('tz-pay').innerHTML=usd(tot)+'<span>/mo</span>';$('tz-pi').textContent=usd(pi);$('tz-ti').textContent=usd(ti);$('tz-bpi').style.width=(pi/tot*100).toFixed(1)+'%';say(`Estimated monthly payment ${usd(tot)}.`);}
 ['tz-price','tz-down'].forEach(id=>$(id).addEventListener('input',teaser));
 document.addEventListener('click',e=>{if(!e.target.closest('[data-carry]')||!$('pqResults').hidden)return;const pr=+$('tz-price').value;
   ans.price=pr;ans.down=Math.min(200000,Math.round(pr*+$('tz-down').value/100/1000)*1000);carried=true;});
@@ -594,7 +612,9 @@ const TABS={learn:'course',course:'course',rates:'rates',calculator:'calculator'
 const ALIAS={purchase:'buy',programs:'loans',rates:'learn',calculator:'learn',glossary:'learn',course:'learn','local-resources':'local-help',professionals:'local-help',pros:'local-help',blog:'about',newsletter:'about',letter:'about',team:'about',family:'about',reviews:'about','review-us':'about'};
 const SCROLL={professionals:'pros',pros:'pros',blog:'letter',newsletter:'letter',letter:'letter',reviews:'reviewsSec','review-us':'reviewUs'};
 let curPage='home';
+let routed=false;
 function route(){
+  const prevPage=curPage,focusWasHidden=!document.activeElement||document.activeElement===document.body||!!document.activeElement.closest('.page[hidden]');
   let h=decodeURIComponent(location.hash.slice(1))||'home',page=ALIAS[h]||h;
   if(h.startsWith('program-'))page=renderProgram(h.slice(8))?'program':'loans';
   if(LEGAL[h]){page='legal';$('legal-title').textContent=LEGAL[h][0];$('legal-crumb').textContent=LEGAL[h][0];$('legal-body').textContent=LEGAL[h][1];}
@@ -610,6 +630,10 @@ function route(){
   if(SCROLL[h])pendingScroll=SCROLL[h];
   const target=pendingScroll;pendingScroll=null;
   if(target&&$(target))requestAnimationFrame(()=>$(target).scrollIntoView({block:'start'}));else window.scrollTo(0,0);
+  // move focus to where the visitor landed, so keyboard and screen reader users start there too (never on first load)
+  if(routed){const t=target&&$(target),hd=t?(t.querySelector('h2,h1')||t):sec.querySelector('h1');
+    if(hd&&(t||page!==prevPage||focusWasHidden)){hd.tabIndex=-1;hd.focus({preventScroll:true});}}
+  routed=true;
 }
 addEventListener('hashchange',route);
 (()=>{if(!('IntersectionObserver' in window))return;const seen=new Set(),io=new IntersectionObserver(es=>{es.forEach(e=>e.isIntersecting?seen.add(e.target):seen.delete(e.target));document.body.classList.toggle('cta-in-view',seen.size>0);});
@@ -618,5 +642,8 @@ addEventListener('scroll',()=>document.querySelector('header').classList.toggle(
 $('burger').addEventListener('click',()=>{const o=$('drawer').hidden;$('drawer').hidden=!o;$('burger').setAttribute('aria-expanded',o);});
 
 renderReviews();renderPrograms();renderFinder();breakeven();rates();renderGloss();renderGDetail();calc();afford();renderDir();renderChk();renderPros();teaser();
+document.querySelectorAll('label output').forEach(o=>o.setAttribute('aria-hidden','true'));
 document.querySelectorAll('input[type=range]').forEach(fillRange);
+// skip link: straight to the current page's heading
+document.querySelector('[data-skip]').addEventListener('click',e=>{e.preventDefault();const h=document.querySelector('.page:not([hidden]) h1');if(h){h.tabIndex=-1;h.focus();}});
 route();

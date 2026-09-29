@@ -78,7 +78,8 @@ header.scrolled{box-shadow:0 10px 30px -22px rgba(16,32,26,.45)}
 @media (max-width:760px){
   .mbar{display:grid;grid-template-columns:1fr 2fr;position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));gap:10px}
   .mbar{transition:transform .25s}
-  body.cta-in-view .mbar{transform:translateY(110%)}
+  .mbar{transition:transform .25s,visibility 0s}
+  body.cta-in-view .mbar{transform:translateY(110%);visibility:hidden;transition:transform .25s,visibility 0s .25s}
   .mbar .btn{padding:12px 8px}
   body[data-page="start"] .phead{padding-block:22px 20px}
   body[data-page="start"] .phead .crumbs{display:none}
@@ -246,7 +247,7 @@ input[type=range]::-moz-range-progress{height:6px;border-radius:999px;background
 input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--surface);border:2px solid var(--forest);box-shadow:0 2px 8px rgba(16,32,26,.28)}
 .est input[type=range]::-webkit-slider-thumb{border-color:#fff}
 .in{padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
-.in:focus{border-color:var(--forest);outline:none}
+.in:focus{border-color:var(--forest);outline:2px solid var(--forest);outline-offset:1px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
 @media (max-width:560px){.row2{grid-template-columns:1fr}}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -603,3 +604,9 @@ footer{background:var(--alt);border-top:1px solid var(--line);padding-block:56px
 .ds-load{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.8);font-size:.9rem;letter-spacing:.08em}
 /* motion stays short and optional */
 @media (prefers-reduced-motion:reduce){.btn,.arr,.path .pi,header,.mbar,.tz-bar i{transition:none}.btn-primary:hover,.btn-white:hover,.btn-go:hover .arr,.path:hover .arr{transform:none}}
+/* skip link and screen-reader-only text */
+.skip{position:absolute;left:12px;top:-60px;z-index:90;background:var(--forest);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;text-decoration:none}
+.skip:focus{top:12px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+h1[tabindex="-1"]:focus,h2[tabindex="-1"]:focus,section[tabindex="-1"]:focus{outline:none}
+h1[tabindex="-1"]:focus-visible,h2[tabindex="-1"]:focus-visible{outline:3px solid var(--forest);outline-offset:4px;border-radius:4px}

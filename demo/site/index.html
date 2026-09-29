@@ -22,6 +22,8 @@
 <script src="js/app.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main" data-skip>Skip to content</a>
+<div id="srLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div class="demo-bar">Redesign concept. Demo only: forms and calls show a notice instead of sending.</div>
 
 <header>
@@ -45,7 +47,7 @@
   </nav></div></div>
 </header>
 
-<main>
+<main id="main">
 <!-- ================= HOME ================= -->
 <section class="page" data-page="home" data-title="Home Loans in Middletown, OH | Reliant Home Mortgage">
   <div class="hero">
@@ -101,7 +103,7 @@
           <div class="field" style="margin:0"><label for="tz-down">Down payment <output id="tz-down-o" class="num"></output></label><input type="range" id="tz-down" min="0" max="30" step="0.5" value="5"></div>
         </div>
       </div>
-      <div class="est tease-out" aria-live="polite">
+      <div class="est tease-out">
         <span class="eyebrow">Estimated monthly payment</span>
         <div class="big num" id="tz-pay"></div>
         <div class="tz-bar" aria-hidden="true"><i id="tz-bpi"></i><i></i></div>
@@ -219,7 +221,7 @@
         <div class="field"><label for="be-cost">Closing costs <output id="be-cost-o" class="num"></output></label><input type="range" id="be-cost" min="0" max="20000" step="250" value="5500"><span class="fine">Often about 2% to 5% of the loan amount.</span></div>
         <div class="field" style="margin:0"><label for="be-stay">Years you plan to stay <output id="be-stay-o" class="num"></output></label><input type="range" id="be-stay" min="1" max="15" step="1" value="7"></div>
       </div>
-      <div class="out" aria-live="polite">
+      <div class="out">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><span class="eyebrow">Your break-even point</span><span class="pill" id="be-verdict"></span></div>
         <div class="big num" id="be-months"></div>
         <div class="stats"><div><small>Monthly savings</small><b class="num" id="be-save"></b></div><div><small>Closing costs</small><b class="num" id="be-costs"></b></div><div><small>Net over your stay</small><b class="num" id="be-net"></b></div></div>
@@ -254,7 +256,7 @@
   </div></div>
   <section class="band" style="padding-top:34px"><div class="wrap">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:26px">
-      <div class="chips" id="pchips"><button class="chip" aria-pressed="true" data-cat="">All</button><button class="chip" aria-pressed="false" data-cat="Purchase">Buying</button><button class="chip" aria-pressed="false" data-cat="Refinance">Refinancing</button><button class="chip" aria-pressed="false" data-cat="Specialty">Specialty</button></div>
+      <div class="chips" id="pchips" role="group" aria-label="Filter loans"><button class="chip" aria-pressed="true" data-cat="">All</button><button class="chip" aria-pressed="false" data-cat="Purchase">Buying</button><button class="chip" aria-pressed="false" data-cat="Refinance">Refinancing</button><button class="chip" aria-pressed="false" data-cat="Specialty">Specialty</button></div>
       <input class="in" id="psearch" placeholder="Search loans" aria-label="Search loans" style="max-width:260px">
     </div>
     <div id="cmpPanel" hidden></div>
@@ -298,7 +300,7 @@
       <div class="sec-head"><p class="eyebrow">Try your profile</p><h2 style="font-size:1.7rem">What moves your rate</h2><p>Change any factor and watch where you land. This shows direction, not an actual rate.</p></div>
     <div class="calc">
       <div class="card" id="rfQs"></div>
-      <div class="out" aria-live="polite">
+      <div class="out">
         <span class="eyebrow">Where you'd likely land</span>
         <h3 id="rf-head"></h3>
         <div><div class="meter"><i id="rf-dot"></i></div><div class="meter-lab"><span>Lower rate</span><span>Higher rate</span></div></div>
@@ -331,7 +333,7 @@
             <button role="radio" aria-checked="false" data-t="15"><span>15-year</span><b class="num" id="t15"></b></button>
           </div>
         </div>
-        <div class="out" aria-live="polite">
+        <div class="out">
           <span class="eyebrow">Estimated monthly payment</span>
           <div class="big num" id="pay"></div>
           <div class="stats"><div><small>Principal &amp; interest</small><b class="num" id="pp-pi"></b></div><div><small>Taxes &amp; insurance</small><b class="num" id="pp-ti"></b></div><div><small>Total interest</small><b class="num" id="pp-int"></b></div></div>
@@ -360,7 +362,7 @@
           <div class="gx-tools">
             <input class="in" id="gsearch" placeholder="Search a term, like escrow or PMI" aria-label="Search glossary" style="max-width:480px">
             <div class="gsug"><span class="flabel">Start with these</span><div class="chips" id="gsug"></div></div>
-            <div class="letters" id="letters"></div>
+            <div class="letters" id="letters" role="group" aria-label="Terms by first letter"></div>
           </div>
           <p class="fine" id="gcount" style="margin-top:14px"></p>
           <div class="glist" id="glist"></div>
@@ -383,8 +385,8 @@
   <section class="band" id="dirTop" style="padding-top:40px"><div class="wrap dir">
     <div>
       <div class="dtools">
-        <div class="chips" id="dState"></div>
-        <div class="chips" id="dNeed"></div>
+        <div class="chips" id="dState" role="group" aria-label="State"></div>
+        <div class="chips" id="dNeed" role="group" aria-label="What you need"></div>
         <input class="in" id="dSearch" placeholder="Search resources" aria-label="Search resources" style="max-width:340px">
       </div>
       <p class="dcount" id="dCount" aria-live="polite"></p>
@@ -394,7 +396,7 @@
   </div></section>
   <section class="band alt" id="pros"><div class="wrap">
     <div class="sec-head"><p class="eyebrow">Trusted local pros</p><h2>The people our clients rely on</h2><p>We handle your loan. For everything else in the move, here's who does what, when you'll need them, and who we refer. Ask and we'll make an introduction.</p></div>
-    <div class="chips" id="proCats"></div>
+    <div class="chips" id="proCats" role="group" aria-label="Kind of pro"></div>
     <div id="proPanel"></div>
   </div></section>
 </section>
@@ -411,11 +413,11 @@
   <section class="band" id="bios" style="padding-top:40px"><div class="wrap"><div class="bios" id="biosList"></div></div></section>
   <section class="band alt" id="reviewsSec"><div class="wrap">
     <div class="sec-head"><p class="eyebrow">Google reviews</p><h2>What clients and agents say</h2></div>
-    <div class="chips" id="revfilter" style="margin-bottom:22px"><button class="chip" aria-pressed="true" data-f="">All</button><button class="chip" aria-pressed="false" data-f="Kevin">Mentions Kevin</button><button class="chip" aria-pressed="false" data-f="Jennifer">Mentions Jennifer</button><button class="chip" aria-pressed="false" data-f="agent">From agents</button></div>
+    <div class="chips" id="revfilter" role="group" aria-label="Filter reviews" style="margin-bottom:22px"><button class="chip" aria-pressed="true" data-f="">All</button><button class="chip" aria-pressed="false" data-f="Kevin">Mentions Kevin</button><button class="chip" aria-pressed="false" data-f="Jennifer">Mentions Jennifer</button><button class="chip" aria-pressed="false" data-f="agent">From agents</button></div>
     <div class="reviews" data-reviews="all"></div>
     <div class="card" id="reviewUs" style="margin-top:28px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
       <div><h3>Worked with us? How did we do?</h3><p class="muted" style="margin-top:6px" id="starMsg">Tap a rating.</p><div class="btn-row" id="starBtns" style="margin-top:12px"></div></div>
-      <div class="starpick" id="starpick"></div>
+      <div class="starpick" id="starpick" role="group" aria-label="Your rating"></div>
     </div>
   </div></section>
   <section class="band" id="letter"><div class="wrap grid2" style="align-items:start">
