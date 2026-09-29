@@ -2,20 +2,22 @@
 
     python3 tools/blender/fetch_assets.py
     python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64     (about 80 minutes on 4 CPU cores)
-    python3 tools/house_views.py /tmp/turn [/tmp/mid]                   (needs numpy, opencv-python-headless, pillow)
+    python3 tools/blender/house_scene.py depth 960 /tmp/depth ROT1 ROT2 ...   (every frame's rotation, about 40 s each)
+    python3 tools/blender/house_scene.py ringdepth 960 /tmp/depth/ring.exr   (the ring alone: it stays still)
+    python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth          (needs numpy, opencv-python-headless, pillow, OpenEXR)
+    python3 tools/house_views.py depth /tmp/depth                       (only the depth, for the frames already on the site)
 
 /tmp/mid holds optional in-between renders (house_scene.py angles mode, files *_ROT.png) for the
-pairs where the morph is not good enough; HOUSE_VIEWS angles need not be evenly spaced.
+sides and back; HOUSE_VIEWS angles need not be evenly spaced.
 
 One step, into demo/site/images/turn/:
 - fixed.webp: everything that looks the same in every frame (most of the ring and the front of the
-  round plinth). The page draws it on top, still, so the morph never drags it along.
+  round plinth). The page draws it on top, still, so turning never drags it along.
 - turn-NNN.webp: the frames with those fixed pixels cut out, one per 360/N degrees, 960px, plus
   sm/ copies at 768px for phones (the browser resizes either to the canvas).
-- flow-front.bin, flow-rest.bin: dense optical flow between each pair of neighboring frames
-  (computed on the moving parts only), which the turntable uses to morph one frame into the next.
-  The front file holds the pairs within FRONT degrees of the front (the idle sway and a first
-  drag) and loads with the front frames; the rest loads once the hero is ready.
+- depth-front.bin, depth-rest.bin: each frame's depth from Blender on a DGRID x DGRID mesh, so the
+  page can turn a frame in 3D to any angle between frames. The front file holds the views within
+  FRONT degrees of the front (the idle sway and a first drag) and loads with the front frames.
 Then it stamps a content version (?v=) on every turn/ URL in index.html and js/app.js, so browsers
 never mix cached frames from an older render, and sets HOUSE_VIEWS to the frame count.
 """
@@ -25,87 +27,57 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'demo', 'site', 'images')
-R = 512    # flow is computed at this resolution
 SMALL = 768  # phone copies in turn/sm/
 FIXED_TOL = 6 / 255  # a pixel is fixed if it never differs from the median frame by more than this
-GRID = int(os.environ.get('GRID', 33))  # stored on a GRID x GRID vertex grid (in the file header). 49 and 65 morph a
-# little better (ghosting 12.8 and 12.0 vs 14.1; a plain cross-fade is ~22) but the extra triangles cost frame time
-FRONT = 40  # degrees: pairs with both frames this close to the front go in flow-front.bin
-# flow-*.bin: b'FLW2', uint16 pair count, uint16 GRID, uint16 pair index k per pair (frames k and k+1),
-# one float32 scale per field, then int8 values: displacement in texture units = value * scale.
-# Fields: for each pair, k->k+1 then k+1->k.
+FRONT = 40  # degrees: views this close to the front go in depth-front.bin (loaded with the front frames)
+DGRID = 121  # depth mesh: DGRID x DGRID vertices over the frame (8px apart at 960; frames 2.5 degrees apart each turn at most ~1.25)
+# depth-*.bin: b'DEP1', uint16 view count, uint16 DGRID, then per view uint16 index, float32 near,
+# float32 far (meters along the camera axis), then uint8 depth per vertex per view (0 = near,
+# 254 = far, 255 = the ring, which does not turn). Background (no surface) takes the depth of the
+# nearest surface, so silhouettes against the page never tear.
 
 
-def _dis(A, B):
-    d = cv2.DISOpticalFlow_create(cv2.DISOPTICAL_FLOW_PRESET_MEDIUM)
-    d.setFinestScale(0); d.setGradientDescentIterations(25); d.setVariationalRefinementIterations(5)
-    d.setPatchSize(12); d.setPatchStride(4)
-    return d.calc(A, B, None)
+def exr_depth(path):
+    import OpenEXR
+    f = OpenEXR.File(path)
+    part = next(p for p in f.parts if 'Depth' in str(p.name))
+    Z = np.array(part.channels[next(k for k in part.channels if k.endswith('.Z'))].pixels, np.float32)
+    return Z.reshape(Z.shape[-2:]) if Z.ndim > 2 else Z
 
 
-def _warp(F, img):
-    ys, xs = np.mgrid[0:R, 0:R].astype(np.float32)
-    return cv2.remap(img, xs + F[..., 0], ys + F[..., 1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+def view_depth(exr, ring=None):
+    """planar depth (Cycles Z pass) of one render, cleaned and sampled at the mesh vertices, and
+    which vertices show the ring (ring: the depth of the ring rendered alone)"""
+    Z = exr_depth(exr)
+    bg = Z > 1e4
+    st = np.zeros(Z.shape, bool) if ring is None else (ring < 1e4) & (np.abs(Z - ring) < .05)
+    # background: depth (and ring or not) of the nearest surface
+    _, lab = cv2.distanceTransformWithLabels(bg.astype(np.uint8), cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
+    src = np.zeros(lab.max() + 1, np.float32); sst = np.zeros(lab.max() + 1, bool)
+    src[lab[~bg]] = Z[~bg]; sst[lab[~bg]] = st[~bg]
+    Z = np.where(bg, src[lab], Z); st = np.where(bg, sst[lab], st)
+    # one-sample depth is noisy in leaves and grass: a median, then sample at the vertices
+    Z = cv2.medianBlur(Z, 5)
+    W = Z.shape[0]; g = np.clip(np.round(np.linspace(0, W - 1, DGRID)).astype(int), 0, W - 1)
+    return Z[np.ix_(g, g)], st[np.ix_(g, g)]
 
 
-def _smooth(F, w, sig):
-    num = cv2.GaussianBlur(F * w[..., None], (0, 0), sig)
-    den = cv2.GaussianBlur(w, (0, 0), sig)
-    return num / np.maximum(den, 1e-4)[..., None], den
-
-
-def pair_flow(a, b, fab, fba, still=None):
-    """Flow a->b in pixels, trusted only where it is forward-backward consistent and on the model;
-    elsewhere it falls back to a smoother field so the morph never tears. Pixels in `still` (the
-    fixed layer) count as known zero motion, so nothing next to them gets pulled away from them."""
-    err = np.linalg.norm(fab + _warp(fab, fba), axis=2)
-    w = np.exp(-(err / 3) ** 2) * np.clip(a[..., 3] * 2, 0, 1) * np.clip(_warp(fab, b[..., 3]), 0, 1) + 1e-3
-    if still is not None:
-        fab = np.where(still[..., None], 0, fab); w = np.where(still, 1.0, w)
-    fine, den = _smooth(fab, w, R / GRID * 1.5)
-    coarse, _ = _smooth(fab, w, R / GRID * 6)
-    c = np.clip(den / .35, 0, 1)[..., None]
-    return fine * c + coarse * (1 - c)
-
-
-def flows(views, fixed=None):
-    """For each k: flow k->k+1 then k+1->k, sampled at the mesh vertices (float32, texture units)."""
-    still = cv2.resize(fixed.astype(np.uint8), (R, R), interpolation=cv2.INTER_NEAREST) > 0 if fixed is not None else None
-    small = [cv2.resize(v, (R, R), interpolation=cv2.INTER_AREA).astype(np.float32) / 255 for v in views]
-    gray = [cv2.cvtColor(((s[..., :3] * s[..., 3:] + .9 * (1 - s[..., 3:])) * 255).astype(np.uint8), cv2.COLOR_RGB2GRAY) for s in small]
-    g = (np.arange(GRID) / (GRID - 1)) * R - .5
-    X, Y = [m.astype(np.float32) for m in np.meshgrid(g, g)]
-    out = []
-    for k in range(len(views)):
-        j = (k + 1) % len(views)
-        fab, fba = _dis(gray[k], gray[j]), _dis(gray[j], gray[k])
-        for a, b, f1, f2 in ((small[k], small[j], fab, fba), (small[j], small[k], fba, fab)):
-            F = pair_flow(a, b, f1, f2, still)
-            v = np.dstack([cv2.remap(F[..., c], X, Y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE) for c in (0, 1)]) / R
-            out.append(v.astype(np.float32))
-        print('flow', k, '->', j, 'mean px', round(float(np.abs(fab).mean()), 1))
-    return np.stack(out)
-
-
-def write_flow(fields, pairs, path):
-    """fields: for each k, k->k+1 then k+1->k (all pairs); writes the given pairs only."""
-    fields = np.concatenate([fields[2 * k:2 * k + 2] for k in pairs])
-    scales = np.maximum(np.abs(fields).reshape(len(fields), -1).max(1), 1e-6) / 127
-    q = np.round(fields / scales[:, None, None, None]).clip(-127, 127).astype(np.int8)
-    with open(path, 'wb') as f:
-        f.write(b'FLW2'); f.write(np.array([len(pairs), GRID], '<u2').tobytes()); f.write(np.array(pairs, '<u2').tobytes())
-        f.write(scales.astype('<f4').tobytes()); f.write(q.tobytes())
-    err = np.abs(q * scales[:, None, None, None] - fields).max() * 960
-    print('%s: %d pairs, grid %d, %d bytes, max rounding error %.2f px at 960' % (os.path.basename(path), len(pairs), GRID, os.path.getsize(path), err))
-
-
-def write_flows(fields, angles):
+def write_depth(angles, ddir):
+    """depth-front.bin (views within FRONT degrees of the front) and depth-rest.bin"""
     near = lambda a: abs((a + 180) % 360 - 180) <= FRONT
-    n = len(angles); front = [k for k in range(n) if near(angles[k]) and near(angles[(k + 1) % n])]
-    write_flow(fields, front, os.path.join(OUT, 'turn', 'flow-front.bin'))
-    write_flow(fields, [k for k in range(n) if k not in front], os.path.join(OUT, 'turn', 'flow-rest.bin'))
-    old = os.path.join(OUT, 'turn', 'flow.bin')
-    if os.path.exists(old): os.remove(old)
+    rp = os.path.join(ddir, 'ring.exr'); ring = exr_depth(rp) if os.path.exists(rp) else None
+    D = [view_depth(os.path.join(ddir, 'depth_%g.exr' % ((360 - a) % 360)), ring) for a in angles]
+    for name, idx in (('front', [i for i, a in enumerate(angles) if near(a)]), ('rest', [i for i, a in enumerate(angles) if not near(a)])):
+        path = os.path.join(OUT, 'turn', 'depth-%s.bin' % name)
+        with open(path, 'wb') as f:
+            f.write(b'DEP1'); f.write(np.array([len(idx), DGRID], '<u2').tobytes())
+            q = []
+            for i in idx:
+                z, st = D[i]; lo, hi = float(z[~st].min()), float(z[~st].max())
+                f.write(np.array([i], '<u2').tobytes()); f.write(np.array([lo, hi], '<f4').tobytes())
+                q.append(np.where(st, 255, np.round((np.clip(z, lo, hi) - lo) / max(hi - lo, 1e-6) * 254)).astype(np.uint8))
+            f.write(np.stack(q).tobytes())
+        print('%s: %d views, grid %d, %d bytes' % (os.path.basename(path), len(idx), DGRID, os.path.getsize(path)))
 
 
 def save(im, name, alpha=(80, 70)):
@@ -115,10 +87,10 @@ def save(im, name, alpha=(80, 70)):
     im.resize((SMALL, SMALL), Image.LANCZOS).save(os.path.join(OUT, 'turn', 'sm', name), quality=72, method=6, alpha_quality=alpha[1])
 
 
-def main(src, extra=None):
+def main(src, extra=None, ddir=None):
     """src: Blender frames turn-NNN.png, evenly spaced. extra: optional folder of in-between renders
     named *_ROT.png (ROT = Blender rotation in degrees, from house_scene.py angles mode), added
-    only where the morph between two frames is not good enough."""
+    on the sides and back. ddir: depth renders (house_scene.py depth mode), depth_ROT.exr."""
     uni = sorted(glob.glob(os.path.join(src, 'turn-*.png')))
     shots = [((360 - i * 360 / len(uni)) % 360, f) for i, f in enumerate(uni)]
     # Blender turns the house counter-clockwise; the site angle runs the other way so that
@@ -148,7 +120,9 @@ def main(src, extra=None):
     for old in glob.glob(os.path.join(OUT, 'turn', 'turn-*.webp')) + glob.glob(os.path.join(OUT, 'turn', 'sm', 'turn-*.webp')):   # stale frames from a longer set
         if int(re.findall(r'(\d+)\.webp$', old)[0]) >= len(files): os.remove(old)
     print('wrote', len(files), 'frames')
-    write_flows(flows(views, fixed), angles)
+    if ddir: write_depth(angles, ddir)
+    for old in ('flow.bin', 'flow-front.bin', 'flow-rest.bin'):   # the optical flow these replaced
+        if os.path.exists(os.path.join(OUT, 'turn', old)): os.remove(os.path.join(OUT, 'turn', old))
     stamp(angles)
 
 
@@ -171,5 +145,13 @@ def stamp(angles):
     print('set HOUSE_VIEWS to', len(angles), 'views; version', ver)
 
 
+def current_angles():
+    js = open(os.path.join(ROOT, 'demo', 'site', 'js', 'app.js'), encoding='utf-8').read()
+    return [float(a) for a in re.search(r'HOUSE_VIEWS=\[([^\]]+)\]', js).group(1).split(',')]
+
+
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
+    if sys.argv[1] == 'depth':   # only the depth files, for the frames already on the site
+        write_depth(current_angles(), sys.argv[2]); stamp(current_angles())
+    else:
+        main(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None, sys.argv[3] if len(sys.argv) > 3 else None)

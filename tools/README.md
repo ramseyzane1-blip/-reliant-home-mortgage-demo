@@ -16,20 +16,23 @@
 python3 tools/blender/fetch_assets.py                                  # once
 python3 tools/blender/house_scene.py angles 640 /tmp/p 48 0 90 180 270  # test views (~1 min each)
 python3 tools/blender/house_scene.py frames 36 /tmp/turn 960 64         # the turn (~80 min, 4 cores)
-python3 tools/blender/house_scene.py angles 960 /tmp/mid/b 64 45 55 65 75 85 95 105 115 125 135 195 225 235 265 275 285 295 305 315
-python3 tools/house_views.py /tmp/turn /tmp/mid                        # in-betweens where 10° ghosted
+python3 tools/blender/house_scene.py angles 960 /tmp/mid/b 64 <the 108 rotations on the 2.5° grid that are not multiples of 10>   # ~2.3 min each
+python3 tools/blender/house_scene.py depth 960 /tmp/depth <all 144 Blender rotations>   # depth (~15 s each)
+python3 tools/blender/house_scene.py ringdepth 960 /tmp/depth/ring.exr # the ring alone (it stays still)
+python3 tools/house_views.py /tmp/turn /tmp/mid /tmp/depth             # needs pip install OpenEXR
+python3 tools/house_views.py depth /tmp/depth                          # only the depth, for the frames on the site
 ```
 
 `house_views.py` writes into `demo/site/images/turn/`: `fixed.webp` (everything that looks the same
 in every frame, drawn still on top), `turn-NNN.webp` (the frames with those parts cut out,
 keeping a 2px overlap so no seam opens; transparent, 960×960, about 89 KB each), `sm/` copies
-(768×768 for phones, about 64 KB), `flow-front.bin` and `flow-rest.bin` (optical flow between
-neighboring frames on a 33×33 grid, forward-backward checked, smoothed where the match is poor
-and held at zero on the fixed parts; int8 with one scale per field. The front file holds the
-pairs within `FRONT` = 40° of the front and loads with the front frames, 35 KB, 18 KB brotli;
-the rest loads later, 205 KB, 90 KB brotli). It stamps a `?v=` content version on those URLs in `index.html` and
-`js/app.js` and sets `HOUSE_VIEWS` to the frame count. `GRID=49` or `65` morphs a little better
-but costs frame time. The house turns; the camera, lights and ring stay
+(768×768 for phones, about 64 KB), `depth-front.bin` and `depth-rest.bin` (each frame's depth
+from the Cycles Z pass, median-filtered, sampled on a 121×121 mesh, uint8 between that frame's
+near and far; background takes the depth of the nearest surface, and 255 marks the ring, found by
+comparing with the ring rendered alone. The front file holds the views within `FRONT` = 40° of
+the front and loads with the front frames, 112 KB brotli; the rest loads later, 382 KB brotli).
+The page turns each frame in 3D with it. It stamps a `?v=` content version on those URLs in `index.html` and
+`js/app.js` and sets `HOUSE_VIEWS` to the frame count. The house turns; the camera, lights and ring stay
 fixed. `ZOOM="lens,x,z"` before `angles` renders a close-up for checking details.
 
 ## How the 3D images were prepared
@@ -39,7 +42,7 @@ supplied by the client; the hero turntable is rendered from a 3D model of that h
 Rendered images are used **only** in the two 3D pieces (the hero turntable and the walk-through).
 Don't use them anywhere else on the site.
 
-- `turn/turn-NNN.webp` (55 frames) and `turn/flow-*.bin`: the hero turntable, rendered from the
+- `turn/turn-NNN.webp` (144 frames, 2.5° apart) and `turn/depth-*.bin`: the hero turntable, rendered from the
   3D model in `tools/blender/house_scene.py` (Blender, Cycles) and converted by
   `tools/house_views.py`. The model uses CC0 assets from Poly Haven (a scanned tree, scanned
   siding, roof, stone and grass textures, a patio set); `tools/blender/fetch_assets.py`

@@ -3,6 +3,8 @@
     python3 tools/blender/house_scene.py preview [angle] [res] [out.png] [samples]   one test frame
     python3 tools/blender/house_scene.py angles RES OUTPREFIX SAMPLES A1 A2 ...       several test angles
     python3 tools/blender/house_scene.py frames N OUTDIR [res] [samples]             N frames around the house
+    python3 tools/blender/house_scene.py depth RES OUTDIR ROT1 ROT2 ...             depth (EXR) at those rotations
+    python3 tools/blender/house_scene.py ringdepth RES OUT.exr                      depth of the ring alone
     ZOOM="lens,x,z" before any of them renders a close-up (longer lens, shifted camera).
 
 Needs the `bpy` package (pip install bpy). Everything is built in code so the model stays
@@ -1047,7 +1049,7 @@ SKY_STRENGTH = float(os.environ.get('SKY_STRENGTH', '.75'))
 SUN_ENERGY = float(os.environ.get('SUN_ENERGY', '3.2'))
 
 
-def lighting_camera(res, samples=64):
+def lighting_camera(res, samples=64, P=None, ringob=None):
     sc = C.scene
     sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'
     sc.cycles.samples = samples; sc.cycles.use_denoising = True; sc.cycles.denoiser = 'OPENIMAGEDENOISE'
@@ -1071,6 +1073,20 @@ def lighting_camera(res, samples=64):
     s = D.lights.new('sun', 'SUN'); s.energy = SUN_ENERGY; s.color = (1.0, .62, .36); s.angle = math.radians(1.2)
     so = D.objects.new('sun', s); link(so)
     so.rotation_euler = (math.pi / 2 - SUN_EL, 0, SUN_AZ + math.pi / 2)   # lamp shines along -Z
+    if P is not None and ringob is not None and os.environ.get('SUN_TURNS'):   # not used for the frames on the site yet
+        # The sun turns with the house, like walking around a real house on a sunny afternoon, so
+        # every frame has the same light and shadows on the house and the site can turn one frame
+        # into the next in 3D without a jump. (The sky only varies with height, so it looks the
+        # same from every side.) The ring stays still, so it gets its own fixed sun that lights
+        # only the ring and that nothing else shades, and the house's sun ignores the ring.
+        so.parent = P
+        only = D.collections.new('ring_only'); only.objects.link(ringob)
+        excl = D.collections.new('not_ring'); excl.objects.link(ringob)
+        excl.collection_objects[0].light_linking.link_state = 'EXCLUDE'
+        so.light_linking.receiver_collection = excl; so.light_linking.blocker_collection = excl
+        s2 = D.lights.new('ring_sun', 'SUN'); s2.energy = SUN_ENERGY; s2.color = s.color; s2.angle = s.angle
+        so2 = D.objects.new('ring_sun', s2); link(so2); so2.rotation_euler = so.rotation_euler.copy()
+        so2.light_linking.receiver_collection = only; so2.light_linking.blocker_collection = only
     cam = D.cameras.new('cam'); cam.lens = 80
     co = D.objects.new('cam', cam); link(co); sc.camera = co
     el = math.radians(7); dist = 60
@@ -1089,8 +1105,8 @@ def build(res=768, samples=64):
     M = materials()
     P = D.objects.new('turn', None); link(P)
     PR = protos(M)
-    house(M, P); grounds(M, P, PR); plantings(M, P, PR); ring(M)
-    lighting_camera(res, samples)
+    house(M, P); grounds(M, P, PR); plantings(M, P, PR); rg = ring(M)
+    lighting_camera(res, samples, P, rg)
     return P
 
 
@@ -1112,6 +1128,30 @@ if __name__ == '__main__':
             P.rotation_euler = (0, 0, math.radians(float(a)))
             C.scene.render.filepath = '%s_%s.png' % (pre, a)
             bpy.ops.render.render(write_still=True)
+    elif mode == 'depth':         # depth only, for the turntable's 3D reprojection: depth res outdir rot1 rot2 ...
+        res, outdir = int(args[1]), args[2]
+        os.makedirs(outdir, exist_ok=True)
+        P = build(res, 1)
+        sc = C.scene; sc.cycles.use_denoising = False; sc.cycles.max_bounces = 0; sc.cycles.transparent_max_bounces = 16
+        sc.view_layers[0].use_pass_z = True; sc.view_layers[0].pass_alpha_threshold = 0   # glass, leaves and grass edges count
+        sc.render.image_settings.media_type = 'MULTI_LAYER_IMAGE'; sc.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'; sc.render.image_settings.color_depth = '32'
+        for a in args[3:]:
+            fp = os.path.join(outdir, 'depth_%s.exr' % a)
+            if os.path.exists(fp): continue
+            P.rotation_euler = (0, 0, math.radians(float(a)))
+            sc.render.filepath = fp
+            bpy.ops.render.render(write_still=True)
+            print('depth', a, flush=True)
+    elif mode == 'ringdepth':     # depth of the ring alone (it does not turn): ringdepth res out.exr
+        res, out = int(args[1]), args[2]
+        build(res, 1)
+        sc = C.scene; sc.cycles.use_denoising = False; sc.cycles.max_bounces = 0
+        for ob in D.objects:
+            if ob.type != 'CAMERA' and ob.name != 'ring': ob.hide_render = True
+        sc.view_layers[0].use_pass_z = True; sc.view_layers[0].pass_alpha_threshold = 0
+        sc.render.image_settings.media_type = 'MULTI_LAYER_IMAGE'; sc.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'; sc.render.image_settings.color_depth = '32'
+        sc.render.filepath = out
+        bpy.ops.render.render(write_still=True)
     elif mode == 'frames':
         n, outdir = int(args[1]), args[2]
         res = int(args[3]) if len(args) > 3 else 768
