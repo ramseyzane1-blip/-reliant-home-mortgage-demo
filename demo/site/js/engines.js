@@ -174,11 +174,18 @@ function glView(canvas){
   const sel=g=>{const a=[];for(let i=0;i<g;i+=2)a.push(i);if(a[a.length-1]!==g-1)a.push(g-1);return a;},X=sel(gx),Y=sel(gy),c=[];
   for(let y=0;y<Y.length-1;y++)for(let x=0;x<X.length-1;x++){const a=Y[y]*gx+X[x],b=Y[y]*gx+X[x+1],d=Y[y+1]*gx+X[x],e=Y[y+1]*gx+X[x+1];c.push(a,b,d,b,e,d);}
   return grids[k]={uv:buf(uv),idx:buf(idx,gl.ELEMENT_ARRAY_BUFFER),n:idx.length,idx2:buf(new Uint16Array(c),gl.ELEMENT_ARRAY_BUFFER),n2:c.length};}
- const tex=src=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);if(gl2)gl.generateMipmap(gl.TEXTURE_2D);[[gl.TEXTURE_MIN_FILTER,gl2?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]].forEach(([k,v])=>gl.texParameteri(gl.TEXTURE_2D,k,v));return t;};
+ const params=(mip)=>[[gl.TEXTURE_MIN_FILTER,mip?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]].forEach(([k,v])=>gl.texParameteri(gl.TEXTURE_2D,k,v));
+ const tex=(src,mip)=>{mip=mip&&gl2;const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);if(mip)gl.generateMipmap(gl.TEXTURE_2D);params(mip);return t;};
+ // for streaming: an empty texture, then horizontal bands, then (optionally) its mipmaps
+ const alloc=(w,h)=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);params(false);return t;};
+ const band=(t,y,src)=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texSubImage2D(gl.TEXTURE_2D,0,0,y,gl.RGBA,gl.UNSIGNED_BYTE,src);};
+ const finish=(t,mip)=>{if(mip&&gl2){gl.bindTexture(gl.TEXTURE_2D,t);gl.generateMipmap(gl.TEXTURE_2D);params(true);}};
  let W=1,H=1;
  const api={gl,post:[1,0],coarse:false,
-  tex,
+  tex,alloc,band,finish,gl2,drop:t=>gl.deleteTexture(t),
+  read(t,pts){const fb=gl.createFramebuffer(),px=new Uint8Array(4),out=[];gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);
+   pts.forEach(([x,y])=>{gl.readPixels(x,y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,px);out.push([...px].slice(0,3));});gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.deleteFramebuffer(fb);return out;}, // for tests
   shape(inv,gx,gy){const g=grid(gx,gy);return {g,inv:buf(inv)};},
   resize(w,h,dpr){W=w;H=h;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);gl.viewport(0,0,canvas.width,canvas.height);},
   clear(){gl.clearColor(.027,.039,.031,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);},
@@ -207,14 +214,35 @@ function play(root,opts){
  let V;try{V=glView(canvas);}catch(e){V=null;}
  if(!V){canvas.remove();return null;}
  const name=f=>f.split('/').pop().replace('.jpg','');
- const T0={};const texOf=f=>T0[f]||(T0[f]=V.tex(imgs[f]));
- const mk=s=>({s,key:name(s.f),tex:texOf(s.f),st:{ox:0,oy:0,sc:1,a:0},sc0:0,shape:null,extra:0});
+ /* Textures (graphics memory). Mipmaps only on a software renderer, which draws at a reduced scale
+    and minifies; at full scale on a GPU the photos are never shown small enough to need them.
+    The shots on the way to the door are uploaded now; the rooms stream in during the knock, one
+    band per frame (decoded off the main thread); shots behind you are freed. Any texture needed
+    before it has fully arrived is uploaded on the spot, so drawing never depends on timing. */
+ const SOFT=(()=>{const i=V.gl.getExtension('WEBGL_debug_renderer_info'),r=i?String(V.gl.getParameter(i.UNMASKED_RENDERER_WEBGL)):'';return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(r);})();
+ const TX={},mem={now:0,peak:0},MIP=SOFT;
+ const account=d=>{mem.now+=d;mem.peak=Math.max(mem.peak,mem.now);};
+ const size=(w,h,mip)=>w*h*4*(mip&&V.gl2?4/3:1);
+ function upload(f,src){src=src||imgs[f];drop(f);const t=V.tex(src,MIP),b=size(src.naturalWidth||src.width,src.naturalHeight||src.height,MIP);TX[f]={t,b,ready:true};account(b);return t;}
+ function tx(f){const e=TX[f];return e&&e.ready?e.t:upload(f);}
+ function drop(f){const e=TX[f];if(!e)return;V.drop(e.t);account(-e.b);delete TX[f];}
+ const mk=s=>({s,key:name(s.f),st:{ox:0,oy:0,sc:1,a:0},sc0:0,shape:null,extra:0});
  /* On a tall screen the door close-up can only be shown so large (it must cover the height) that
     the door fills the width, so there the approach ends on the porch shot and the door opens on it. */
  const tall=(root.clientHeight||innerHeight)>(root.clientWidth||innerWidth)*1.1,appShots=tall?SHOTS.approach.slice(0,-1):SHOTS.approach;
  const app=appShots.map(mk),ins=SHOTS.inside.map(mk),layers=[...app,...ins],appDoor=app[app.length-1];
  const door=appShots[appShots.length-1],opn=SHOTS.open,gSide=glowCanvas(door,false),gLeaf=glowCanvas(door,true);
- const texSide=gSide&&V.tex(gSide),texLeaf=gLeaf&&V.tex(gLeaf),texOpen=texOf(opn.f);
+ if(gSide)upload('glow-side',gSide);if(gLeaf)upload('glow-leaf',gLeaf);
+ [...app.map(L=>L.s.f),opn.f].forEach(f=>tx(f)); // the way to the door, and the view through it
+ const STREAM=SHOTS.inside.slice(1).map(s=>s.f),BANDS=4,bands={};
+ // decode the bands from the file's bytes (HTTP cache): createImageBitmap on a Blob decodes off
+ // the main thread, whereas cropping an <img> copies its pixels on the main thread
+ let decoding=false;const decode=()=>{if(decoding||!window.createImageBitmap)return;decoding=true;STREAM.forEach(f=>{const im=imgs[f],w=im.naturalWidth,H=im.naturalHeight,h=Math.ceil(H/BANDS);bands[f]=[];
+  fetch(f).then(r=>r.blob()).then(bl=>{for(let i=0;i<BANDS;i++)createImageBitmap(bl,0,i*h,w,Math.min(h,H-i*h)).then(b=>{if(stopped)b.close&&b.close();else bands[f][i]=b;}).catch(()=>{});}).catch(()=>{});});};
+ function stream(){for(const f of STREAM){const e=TX[f];if(e&&e.ready)continue;const B=bands[f];if(!B)return;const im=imgs[f],h=Math.ceil(im.naturalHeight/BANDS);
+   if(!e){const b=size(im.naturalWidth,im.naturalHeight,MIP);TX[f]={t:V.alloc(im.naturalWidth,im.naturalHeight),b,ready:false,next:0};account(b);return;}
+   const bm=B[e.next];if(!bm)return;V.band(e.t,e.next*h,bm);bm.close&&bm.close();B[e.next]=null;
+   if(++e.next===BANDS){V.finish(e.t,MIP);e.ready=true;}return;}} // at most one step per frame
  // the relief of each shot
  const flatInv=new Float32Array(4).fill(1);
  const attach=ab=>{const all=ab&&new Uint8Array(ab);layers.forEach(L=>{if(L.shape)return;const d=DEPTH.shots[L.key];
@@ -272,7 +300,7 @@ function play(root,opts){
  let A0,A1,I1,stopped=false,explore=false,capState='',p=0,pt=0,py=0,pty=0,lastMove=0,drag=null;
  /* Render scale: full resolution on a GPU. A software renderer (no GPU, or a blocklisted one) starts
     at .3, and a governor steps the scale down while frames run long and back up when they are quick. */
- let rs=1,ema=16,since=0;{const i=V.gl.getExtension('WEBGL_debug_renderer_info'),r=i?String(V.gl.getParameter(i.UNMASKED_RENDERER_WEBGL)):'';if(/swiftshader|llvmpipe|softpipe|software|basic render/i.test(r))rs=.3;V.coarse=rs<1;}
+ let rs=SOFT?.3:1,ema=16,since=0;V.coarse=rs<1;
  function govern(dt){ema+=(dt*1000-ema)*.1;since++;const up=ema<12&&since>120&&rs<1,down=ema>22&&since>15&&rs>.3;
   if(up||down){rs=Math.round(Math.min(1,Math.max(.3,rs*(up?1.15:.85)))*100)/100;since=0;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);V.coarse=rs<1;}}
  function layout(){vw=root.clientWidth||innerWidth;vh=root.clientHeight||innerHeight;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);
@@ -284,13 +312,13 @@ function play(root,opts){
  function drawDoor(L){const st=L.st,a=st.a,r=door.a,w=rw(r),h=r[3]-r[1],S=(x,y)=>[st.ox+st.sc*x,st.oy+st.sc*y];
   const rect=(x0,y0,x1,y1,u0,v0,u1,v1)=>[[...S(x0,y0),1,u0,v0,0,0],[...S(x1,y0),1,u1,v0,1,0],[...S(x0,y1),1,u0,v1,0,1],[...S(x1,y1),1,u1,v1,1,1]];
   const th=D.th*rad,open=D.open;
-  const q=door.glass;if(D.lit>0&&texSide)V.quad(rect(q[0],q[1],q[2],q[3],q[0]/door.wh[0],q[1]/door.wh[1],q[2]/door.wh[0],q[3]/door.wh[1]),0,{tex:texSide,a:a*D.lit*.55});
-  if(open){const o=opn.door,W1=opn.wh[0],H1=opn.wh[1];V.quad(rect(r[0],r[1],r[2],r[3],o[0]/W1,o[1]/H1,o[2]/W1,o[3]/H1),0,{tex:texOpen,a,bright:.92,cg:ins[0].cg});}
+  const q=door.glass;if(D.lit>0&&TX['glow-side'])V.quad(rect(q[0],q[1],q[2],q[3],q[0]/door.wh[0],q[1]/door.wh[1],q[2]/door.wh[0],q[3]/door.wh[1]),0,{tex:tx('glow-side'),a:a*D.lit*.55});
+  if(open){const o=opn.door,W1=opn.wh[0],H1=opn.wh[1];V.quad(rect(r[0],r[1],r[2],r[3],o[0]/W1,o[1]/H1,o[2]/W1,o[3]/H1),0,{tex:tx(opn.f),a,bright:.92,cg:ins[0].cg});}
   if(D.gap>0)V.quad(rect(r[2]-30*K,r[1],r[2]+10*K,r[3],0,0,1,1),3,{a:a*D.gap});
   if(open||D.lit>0){ // the leaf, hinged on the left, seen with the same 1600px perspective the render was matched to
    const pt=(u,v,z)=>{const X=u*Math.cos(th)+z*Math.sin(th),Z=-u*Math.sin(th)+z*Math.cos(th),f=P/(P-Z);return [...S(r[0]+X*f,r[1]+h/2+(v-h/2)*f),1/f];};
    const Wd=door.wh[0],Hd=door.wh[1],u0=r[0]/Wd,u1=r[2]/Wd,v0=r[1]/Hd,v1=r[3]/Hd;
-   V.quad([[...pt(0,0,0),u0,v0,0,0],[...pt(w,0,0),u1,v0,1,0],[...pt(0,h,0),u0,v1,0,1],[...pt(w,h,0),u1,v1,1,1]],1,{tex:L.tex,glow:texLeaf,glowA:D.lit*.55,shade:D.shade,a,cg:L.cg});
+   V.quad([[...pt(0,0,0),u0,v0,0,0],[...pt(w,0,0),u1,v0,1,0],[...pt(0,h,0),u0,v1,0,1],[...pt(w,h,0),u1,v1,1,1]],1,{tex:tx(L.s.f),glow:TX['glow-leaf']&&tx('glow-leaf'),glowA:D.lit*.55,shade:D.shade,a,cg:L.cg});
    if(open)V.quad([[...pt(w,0,22*K),0,0,0,0],[...pt(w,0,0),0,0,1,0],[...pt(w,h,22*K),0,0,0,1],[...pt(w,h,0),0,0,1,1]],2,{a});}
   if(D.spill>0)V.quad(rect(r[0]-w*.35,r[3]-6,r[0]+w*1.35,r[3]-6+h*.3,0,0,1,1),4,{a:a*D.spill});}
  /* Exposure, like one camera: each space has one grade (NATIVE, chained from CORR, the
@@ -310,7 +338,10 @@ function play(root,opts){
   const w=L.s.wh[0]*st.sc,h=L.s.wh[1]*st.sc,ex=st.ox+st.sc*cx(L.s.a),ey=st.oy+st.sc*cy(L.s.a),hx=Math.abs(head[0])+1,hy=Math.abs(head[1])+1;
   // the least a far point may shrink toward the anchor and still cover the screen
   const gmin=Math.max(ex>st.ox+.5?(ex+hx)/(ex-st.ox):0,st.ox+w-ex>.5?(vw-ex+hx)/(st.ox+w-ex):0,ey>st.oy+.5?(ey+hy)/(ey-st.oy):0,st.oy+h-ey>.5?(vh-ey+hy)/(st.oy+h-ey):0);
-  V.mesh(L.tex,L.s.wh,L.shape,st,st.a,[ex,ey],cl(DOLLY*(1-L.sc0/st.sc)+L.extra,-1,.9),Math.min(gmin,1.2),head,L.wipe&&st.a<1,L.cg);if(L===appDoor)drawDoor(L);});
+  V.mesh(tx(L.s.f),L.s.wh,L.shape,st,st.a,[ex,ey],cl(DOLLY*(1-L.sc0/st.sc)+L.extra,-1,.9),Math.min(gmin,1.2),head,L.wipe&&st.a<1,L.cg);if(L===appDoor)drawDoor(L);});
+  // free what is behind you: each shot once the next one has fully taken over, and the door once inside
+  [app,ins].forEach(list=>{let top=-1;list.forEach((L,i)=>{if(L.st.a>=1)top=i;});for(let i=0;i<top;i++)if(list[i].st.a<=0)drop(list[i].s.f);});
+  if(t>T.xf1+.3){drop(appDoor.s.f);drop('glow-side');drop('glow-leaf');}
 }
 
  function render(t){
@@ -364,7 +395,7 @@ function play(root,opts){
  }
  function setCap(k,h){if(capState!==k){capState=k;opts.cap.innerHTML=h;}}
  let clock=0,lastTs=0;
- function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(dt)govern(dt);render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
+ function loop(ts){if(stopped)return;const dt=lastTs?(ts-lastTs)/1000:0;clock+=Math.min(.1,dt);lastTs=ts;if(dt)govern(dt);if(clock>2)decode();if(clock>T.app1&&clock<T.crack)stream();render(clock);requestAnimationFrame(loop);} // capped steps: a hidden tab or a slow frame pauses, never skips
  root.addEventListener('pointermove',e=>{if(!explore)return;lastMove=performance.now();if(drag){pt=cl(drag.p-(e.clientX-drag.x)/vw*2.2,-1,1);pty=cl(drag.py-(e.clientY-drag.y)/vh*1.2,-.4,.4);}else if(e.pointerType==='mouse'){pt=cl((e.clientX/vw-.5)*2.2,-1,1);pty=cl((e.clientY/vh-.5)*.8,-.4,.4);}});
  root.addEventListener('pointerdown',e=>{if(!explore||e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,p:pt,py:pty};root.classList.add('drag');lastMove=performance.now();});
  const up=()=>{drag=null;root.classList.remove('drag');};root.addEventListener('pointerup',up);root.addEventListener('pointercancel',up);
@@ -372,11 +403,11 @@ function play(root,opts){
  /* Warm up behind the loading overlay: draw every shot and every door piece once (textures, mipmaps
     and shader paths get their first use now, not in the middle of the walk), then reset. */
  (function prewarm(){const d={...D};Object.assign(D,{th:30,open:true,lit:1,gap:.5,spill:.5,shade:.3,warm:.2});
-  layers.forEach(L=>{Object.assign(L.st,{ox:0,oy:0,sc:cover(L.s)*1.01,a:.01});L.wipe=L!==app[0];});draw(1);V.gl.finish();
+  layers.forEach(L=>{Object.assign(L.st,{ox:0,oy:0,sc:cover(L.s)*1.01,a:TX[L.s.f]?.01:0});L.wipe=L!==app[0];});draw(1);V.gl.finish();
   Object.assign(D,d);layers.forEach(L=>{L.st.a=0;L.sc0=0;L.t0=null;L.wipe=false;});})();
  render(0); // first frame now, so there is no blank canvas before the loop starts
- return {start(){requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
-  time:()=>clock,scale:v=>{if(v){rs=v;V.coarse=rs<1;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
+ return {start(){requestAnimationFrame(loop);},stop(){stopped=true;removeEventListener('resize',layout);Object.values(bands).forEach(B=>B.forEach(b=>b&&b.close&&b.close()));const x=V.gl.getExtension('WEBGL_lose_context');setTimeout(()=>{if(x&&!canvas.isConnected)x.loseContext();},1500);},render,T,
+  mem:()=>({now:mem.now,peak:mem.peak,textures:Object.keys(TX).length}),look:()=>({p,py}),probe:(f,pts)=>TX[f]&&TX[f].ready?V.read(TX[f].t,pts):null,time:()=>clock,scale:v=>{if(v){rs=v;V.coarse=rs<1;V.resize(vw,vh,Math.min(2,devicePixelRatio||1)*rs);}return rs;}, // the walk clock and render scale, for tools/walk_perf.py
   shots:()=>layers.filter(L=>L.st.a>0).map(L=>L.key+':'+L.st.a.toFixed(2)+'@'+(L.sc0?(1-L.sc0/L.st.sc).toFixed(2):'-')).join(' ')};
 }
 return {preload,play,SHOTS};

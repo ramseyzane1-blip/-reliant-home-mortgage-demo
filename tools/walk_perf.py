@@ -36,7 +36,7 @@ async def start_walk(pg):
 
 INSTRUMENT = """() => {
   const f = [], cues = [];
-  (function tick(ts) { f.push([ts, window.__walk ? __walk.time() : -1, window.__walk ? __walk.scale() : 0]); if (f.length < 20000) requestAnimationFrame(tick); })(performance.now());
+  (function tick(ts) { f.push([ts, window.__walk ? __walk.time() : -1, window.__walk ? __walk.scale() : 0, window.__walk && __walk.mem ? __walk.mem().now : 0]); if (f.length < 20000) requestAnimationFrame(tick); })(performance.now());
   window.__perf = {f, cues};
 }"""
 # wrap the cue hand-off (after app.js has defined doorAudio) to log when each sound will play
@@ -65,6 +65,9 @@ async def pacing(b, size, rate):
     for i, dd in enumerate(d):
         if dd > 20: k = int(f[i + 1][1]); slow[k] = slow.get(k, 0) + 1
     out['slow_by_second'] = dict(sorted(slow.items()))
+    mb = [x[3] / 2**20 for x in f]
+    out['texture_mb'] = {'peak': round(max(mb), 1), 'at_start': round(mb[0], 1), 'at_end': round(mb[-1], 1),
+                         'by_second': {int(x[1]): round(x[3] / 2**20, 1) for x in f[::30]}}
     sc = [x[2] for x in f]; out['render_scale'] = [round(min(sc), 2), round(max(sc), 2), round(sc[-1], 2)]  # min, max, final
     sync = {}
     for c in data['cues']:
