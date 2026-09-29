@@ -543,7 +543,7 @@ function play(root,opts){
    const inGate=gate(ins,hIns,FADE,t);
    // keep walking at the speed we crossed the threshold with, then ease to a stop (a Hermite curve in log size)
    const S0=ins[0]._start,S={w:S0.w*I1.w,x:I1.x+S0.x*vw,y:I1.y+S0.y*vh},s1=seg(t,T.xf1,T.in1),u=eio(s1),walkAmt=Math.sin(Math.PI*s1),Dur=T.in1-T.xf1,L0=Math.log(S.w),L1=Math.log(I1.w);
-   const m0=Math.min(2*PUSH/(T.xf1-T.swing-.35)*Dur,3*Math.max(L1-L0,0)),s2=s1*s1,s3=s2*s1;
+   const m0=clipMode?0:Math.min(2*PUSH/(T.xf1-T.swing-.35)*Dur,3*Math.max(L1-L0,0)), /* after the clip (which ends still) the walk starts from rest */s2=s1*s1,s3=s2*s1;
    let W=Math.exp((2*s3-3*s2+1)*L0+(s3-2*s2+s1)*m0+(3*s2-2*s3)*L1),x=lerp(S.x,I1.x,u),y=lerp(S.y,I1.y,u);head=[sway*walkAmt*4+br*2.2,bob*walkAmt*3+br*1.4].map(v=>v*calm(t));
    if(t>=T.in1){ // look around
     if(!explore){explore=true;root.classList.add('explore');opts.onExplore&&opts.onExplore();}
