@@ -132,14 +132,19 @@ screen waits until the turn moves on, so nothing pops. On a throttled phone prof
 interactive after about 430 KB at 3.2 s (one flow file: 650 KB at 4.6 to 5.2 s).
 Frames decode off the main thread (`createImageBitmap`) at the canvas's pixel size (re-decoded if
 the canvas grows a lot) and upload one per animation frame, never during a drag unless the frame
-on screen is missing; the decoded copy is released after upload. Touch devices and devices
-reporting under 4 GB (`navigator.deviceMemory`, Chromium only) keep the 16 nearest on the GPU
-(about 29 MB on a 390px phone); the others are fetched into the HTTP cache and decoded again
-when needed. About a second after the hero is well out of view (scrolled away, another page, or
+on screen is missing; the decoded copy is released after upload. Every frame stays on the GPU
+(a spin that has to wait for an evicted frame shows as a jump; a 16-frame cap made 19% of a fast
+phone spin jump). Phones decode at most 672px (all 55: about 97 MB), devices reporting under 4 GB
+(`navigator.deviceMemory`, Chromium only) 512px (about 55 MB).
+Blend width follows turning speed: a blend of two frames is softer than either, so in a fast spin,
+whose screen frames land at random points between frames, a full-width blend alternates sharp
+and soft (flicker). Turning fast, each frame is shown alone, bent along the flow, crossing over
+only in a short window halfway; slow or idle, the frames blend across the whole step. Frame to
+frame sharpness change in a fast desktop spin: 8% (was 12%). `?tt=a` (always full blend) and
+`?tt=c` (always short) are there for comparing. About a second after the hero is well out of view (scrolled away, another page, or
 the walk-through, which also puts it to sleep directly) it releases every texture and its
 drawing buffer and the two `<img>`s show again; coming back, it re-uploads from the HTTP cache
-(ready in about 0.2 s). At the walk's peak on a 390px phone that leaves only the walk's textures
-on the GPU (73 MB with drawing buffers; was 139 MB with the hero's 63 MB still held). Failed
+(ready in about 0.2 s). At the walk's peak the hero holds nothing on the GPU. Failed
 frames retry with backoff. Drag, arrow
 keys (with a focus ring), or idle sway around the front; reduced motion turns the sway off;
 without WebGL, or if the context is lost, the two `<img>`s stay as a still picture and the hero

@@ -59,16 +59,18 @@ function create(box,canvas,views,opt){
     two frames next to the front, then the rest the idle sway uses (+-40 degrees), then the others
     once those are in or the visitor starts turning. Each frame is decoded off the main thread at the canvas's pixel size
     (texSize) and uploaded one per animation frame, never during a drag unless the frame on screen
-    is missing; the decoded copy is released right after upload. Phones and devices reporting under
-    4 GB keep only the POOL nearest frames on the GPU (the others are fetched into the HTTP cache
-    and decoded again when needed). A frame that fails to load is retried with backoff. About a
+    is missing; the decoded copy is released right after upload. A frame that fails to load is
+    retried with backoff. About a
     second after the hero is well out of view (scrolled away, another page, the walk-through) it
     sleeps: every texture and its drawing buffer are released and the still <img>s show again; it
     wakes and re-uploads from the HTTP cache as it comes back. */
  const N=n,all=views;
  const tex=all.map(()=>null),gen=all.map(()=>0),dec=all.map(()=>null),busy=all.map(()=>false),fails=all.map(()=>0),retry=all.map(()=>0);
  let dirty=true,cur=0,texSize=0,texGen=1,started=false,allFetched=false,lost=false,asleep=false,sleepT=0;
- const POOL=Math.min(n,(navigator.deviceMemory&&navigator.deviceMemory<4)||matchMedia('(pointer: coarse)').matches?16:n);   /* phones: at most ~33 MB of frames on the GPU */
+ /* every frame stays on the GPU (a spin that has to wait for a frame shows as a jump); phones decode
+    them a little smaller so all of them fit: 672px x 55 frames = 95 MB, 512px = 55 MB on devices
+    reporting under 4 GB */
+ const POOL=n,TEXMAX=navigator.deviceMemory&&navigator.deviceMemory<4?512:matchMedia('(pointer: coarse)').matches?672:960;
  const A=views.map(v=>v.a),adist=(i,th)=>Math.abs(((A[i]-th)%360+540)%360-180);
  /* use the copy the fallback <img> already loaded (so frame 0 is not fetched twice); before it has chosen, pick by size: phones get the 768px copies */
  const small=()=>{const s=opt.front&&opt.front.currentSrc;return s?s.indexOf('/sm/')>=0&&texSize<=768:texSize<=768;};
@@ -124,10 +126,14 @@ function create(box,canvas,views,opt){
   gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
   gl.uniform1f(U.asp,canvas.width/canvas.height);gl.uniform1i(U.tex,0);gl.activeTexture(gl.TEXTURE0);
   gl.enableVertexAttribArray(0);gl.enableVertexAttribArray(1);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
-  let exact=false;const s=f*f*(3-2*f);
+  /* Blend width. A blend of two frames is softer than either, so a fast spin, whose screen frames
+     land at random points between two frames, would alternate sharp and soft (flicker). Turning
+     fast, each frame is shown alone, bent along the flow, and the two cross over only in a short
+     window halfway; slow or idle, they blend across the whole step. */
+  let exact=false;const g=Math.max(0,Math.min(1,(f-.5)/blendW()+.5)),s=g*g*(3-2*g);
   if(near>=0)still(tex[near],1);
-  else if(ta&&tb&&s>0&&s<1){bind(bU,bI);
-   const F=flows[k];layer(ta,F?F[0]:zero,f,1-s);layer(tb,F?F[1]:zero,1-f,s);exact=true;}
+  else if(ta&&tb&&f>0&&f<1&&(s>0&&s<1||flows[k])){bind(bU,bI);
+   const F=flows[k];if(s<1)layer(ta,F?F[0]:zero,f,1-s);if(s>0)layer(tb,F?F[1]:zero,1-f,s);exact=true;}
   else if(ta&&tb){still(s>=1?tb:ta,1);exact=true;}
   else still(ta||tb,1);
   if(fx){gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);bind(fxU,fxI);gl.bindTexture(gl.TEXTURE_2D,fx);gl.bindBuffer(gl.ARRAY_BUFFER,fxZ);gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
@@ -135,9 +141,11 @@ function create(box,canvas,views,opt){
   return exact&&(!opt.fixed||!!fx);
  }
  /* interaction */
- let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,inView=false,vis=false,last=0,ready=false,t0=0;
+ let th=0,target=0,vel=0,drag=null,idle=true,idleT=0,raf=0,inView=false,vis=false,last=0,ready=false,t0=0,spd=0;
+ const MODE=(location.search.match(/[?&]tt=([abc])/)||[])[1]||'b';   /* a: always the full blend, c: always the short one (for comparing) */
+ function blendW(){return MODE==='a'?1:MODE==='c'?.2:1-.8*Math.max(0,Math.min(1,(spd-20)/80));}
  function size(){if(asleep)return;const dpr=Math.min(window.devicePixelRatio||1,2),r=box.getBoundingClientRect();canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));dirty=true;
-  if(r.width<=0)return;const want_=Math.max(256,Math.min(960,canvas.width));
+  if(r.width<=0)return;const want_=Math.max(256,Math.min(TEXMAX,canvas.width));
   if(!texSize)texSize=want_;
   else if(want_>texSize*1.25){texSize=want_;texGen++;for(let i=0;i<N;i++){if(dec[i]&&dec[i].close)dec[i].close();dec[i]=null;}}}   /* grew a lot (rotation, wider window): re-decode, nearest first */
  function frame(ts){const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;cur=th;const pr_=pair(th);want();upload([pr_[0],pr_[1]]);
@@ -146,6 +154,7 @@ function create(box,canvas,views,opt){
   if(ready&&!drag){if(Math.abs(vel)>.02){target+=vel*dt*60;vel*=Math.pow(.94,dt*60);}else if(idle&&!opt.reduced()){target=Math.sin((ts-t0)/1000*.22)*34;}}
   /* follow the pointer closely; drift back into the idle sway gently */
   const prev=th;let step=(target-th)*Math.min(1,dt*(idle?1.6:7));if(idle)step=Math.max(-50*dt,Math.min(50*dt,step));th+=step;if(Math.abs(th-prev)>.001)dirty=true;
+  spd+=(Math.abs(th-prev)/Math.max(dt,.001)-spd)*Math.min(1,dt*8);   /* degrees per second, smoothed so the blend width eases */
   if(dirty){const ok=draw(th);dirty=!ok;if(ok&&!ready&&tex[0]&&tex[1%n]&&tex[n-1]&&flowFront){ready=true;t0=ts;box.classList.add('ready');}}
   raf=vis&&!lost?requestAnimationFrame(frame):0;}
  const run=()=>{vis=inView&&!document.hidden;if(vis)wake();if(vis&&!raf&&!lost){last=0;raf=requestAnimationFrame(frame);}};
