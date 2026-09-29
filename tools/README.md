@@ -16,7 +16,10 @@ walk-through). Don't use them anywhere else on the site.
   door slab.
 - `door-open.jpg`: the same door open, with the doorway and fireplace rectangles.
 - `inside-1…4.jpg`, `look-left.jpg`, `look-right.jpg`: the walk inside, anchored on the
-  fireplace rectangle.
+  fireplace rectangle. The `inside-*` rectangles are chained from the door-open fireplace
+  rectangle with a scale + offset fit to SIFT matches between each pair of neighbors
+  (OpenCV, RANSAC inliers, about 2px median error), so the whole wall lines up during each fade,
+  not just the fireplace.
 
 The source renders (PNG, ~1.5 MB each) are not in the repo. If you regenerate an image,
 keep the framing, dusk lighting and camera height consistent, and re-measure its anchor

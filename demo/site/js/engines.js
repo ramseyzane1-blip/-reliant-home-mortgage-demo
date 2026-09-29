@@ -88,10 +88,10 @@ const SHOTS={
  open:{f:'images/door-open.jpg',wh:W1448,door:[505,92,915,925],fire:[711,499,826,598]},
  inside:[
   {f:'images/door-open.jpg',wh:W1448,a:[711,499,826,598]},
-  {f:'images/inside-1.jpg',wh:W1448,a:[718,371,847,507]},
-  {f:'images/inside-2.jpg',wh:W1448,a:[693,431,851,607]},
-  {f:'images/inside-3.jpg',wh:W1448,a:[721,452,899,608]},
-  {f:'images/inside-4.jpg',wh:W1448,a:[655,451,850,617]}],
+  {f:'images/inside-1.jpg',wh:W1448,a:[721,369,849,479]},
+  {f:'images/inside-2.jpg',wh:W1448,a:[696,431,852,565]},
+  {f:'images/inside-3.jpg',wh:W1448,a:[729,457,919,620]},
+  {f:'images/inside-4.jpg',wh:W1448,a:[660,461,853,627]}],
  left:{f:'images/look-left.jpg',wh:W1448,a:[1046,448,1256,602]},
  right:{f:'images/look-right.jpg',wh:W1448,a:[304,458,498,630]}};
 const files=()=>{const s=new Set();SHOTS.approach.forEach(x=>s.add(x.f));SHOTS.inside.forEach(x=>s.add(x.f));[SHOTS.open,SHOTS.left,SHOTS.right].forEach(x=>s.add(x.f));return [...s];};
@@ -139,8 +139,8 @@ function play(root,opts){
   L.el.style.transform=`translate3d(${ox}px,${oy}px,0) scale(${sc})`;L.el.style.opacity=alpha;L.el.style.visibility=alpha>0?'visible':'hidden';return {ox,oy,sc};}
  function natural(s,anchor,z){const c=cover(s)*(z||1);return {w:rw(anchor)*c,x:vw/2+(cx(anchor)-s.wh[0]/2)*c,y:vh/2+(cy(anchor)-s.wh[1]/2)*c};}
  /* run a chain of images that share one anchor object; camera = anchor width W and center (x,y) */
- function chain(list,W,x,y,fadeLn){let top=-1;const lnW=Math.log(W);
-  const al=list.map((L,i)=>{if(i===0)return 1;const need=Math.log(rw(L.s.a)*cover(L.s)*1.005);return ss(seg(lnW,need,need+fadeLn));});
+ function chain(list,W,x,y,fadeLn,k=1.005,gate){let top=-1;const lnW=Math.log(W);
+  const al=list.map((L,i)=>{if(i===0)return 1;const need=Math.log(rw(L.s.a)*cover(L.s)*k);const a=ss(seg(lnW,need,need+fadeLn));return gate?gate(i,a):a;});
   for(let i=list.length-1;i>=0;i--)if(al[i]>=1){top=i;break;}if(top<0)top=0;
   list.forEach((L,i)=>{if(i<top||al[i]<=0){L.el.style.opacity=0;L.el.style.visibility='hidden';return;}place(L,W/rw(L.s.a),x,y,L.s.a,al[i]);});}
  function hide(list){list.forEach(L=>{L.el.style.opacity=0;L.el.style.visibility='hidden';});}
@@ -148,13 +148,14 @@ function play(root,opts){
  /* ---- timeline (seconds) ---- */
  /* arrive, three raps, the hall light comes on, footsteps, the lock turns, the door cracks open,
     a beat, then someone swings it wide */
- const T={app0:.5,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in0:12,in1:16.2,cap:15.7,done:16.6};
+ const T={app0:.5,app1:6.4,knock:[7.2,7.41,7.6],light:7.95,steps:[8.25,8.6,8.92],bolt:9.18,crack:9.5,swing:9.85,open1:11.4,xf0:11.45,xf1:12.2,in1:16.5,cap:15.9,done:16.9};
  const cues=[[0,'start'],...T.knock.map((k,i)=>[k,'knock',i]),[T.light,'light'],...T.steps.map((k,i)=>[k,'step',i]),[T.bolt,'bolt'],[T.crack-.03,'latch'],[T.swing,'swing'],[T.xf0,'inside']],fired=new Set();
  const OPEN=72,CRACK=6;
  function doorAngle(t){if(t<T.crack)return 0;const c=CRACK*(1-Math.pow(1-seg(t,T.crack,T.crack+.16),3));if(t<T.swing)return c;
   // a hand on the door: speeds up, then eases out with a slight settle (an underdamped spring from rest)
   const u=t-T.swing,w=4.2,z=.8,wd=w*Math.sqrt(1-z*z);return OPEN-(OPEN-CRACK)*Math.exp(-z*w*u)*(Math.cos(wd*u)+z*w/wd*Math.sin(wd*u));}
  function rap(t){let j=0;T.knock.forEach(k=>{if(t>=k){const d=t-k;j+=Math.exp(-d*30)*Math.cos(d*55);}});return j;} // each knock nudges the camera and the door, then settles
+ const look={a:0,on:false,side:null,t:null},handoff=[];
  let A0,A1,I1,t0=0,stopped=false,explore=false,capState='',p=0,pt=0,py=0,pty=0,lastMove=0,drag=null;
  function layout(){vw=root.clientWidth;vh=root.clientHeight;A0=natural(SHOTS.approach[0],SHOTS.approach[0].a,1);A1=natural(SHOTS.approach[4],SHOTS.approach[4].a,1);
   const J=SHOTS.inside[4];I1=natural(J,J.a,1.05);}
@@ -183,19 +184,28 @@ function play(root,opts){
    if(fx>=1)hide(app);
   }
   // inside
-  if(t>=T.xf1||(t>=T.in0&&t<T.xf1)){
+  if(t>=T.xf1){
    hide(app);if(!ins[0]._start){const o=SHOTS.open,r=ins[0]._t||place(ins[0],cover(ins[0].s)*1.05,vw/2,vh/2,o.door,1);ins[0]._start={w:rw(o.fire)*r.sc,x:r.ox+r.sc*cx(o.fire),y:r.oy+r.sc*cy(o.fire)};}
+   // Inside, each shot waits until it is sharp enough, then fades in over a fixed .6s, one at a time,
+   // so a pair is never left half-blended while the camera creeps (the neighbors differ in parallax).
+   const inGate=(i,a)=>{let s=handoff[i];if(s!==undefined&&t<s-1){handoff.length=i;s=undefined;} // time went backwards (tests)
+    if(s===undefined){if(a<.5||(i>1&&handoff[i-1]===undefined))return 0;s=handoff[i]=Math.max(t,i>1?handoff[i-1]+.6:t);}
+    return ss(seg(t,s,s+.6));};
    const S=ins[0]._start,u=eio(seg(t,T.xf1,T.in1)),walkAmt=Math.sin(Math.PI*seg(t,T.xf1,T.in1));
    let W=Math.exp(lerp(Math.log(S.w),Math.log(I1.w),u)),x=lerp(S.x,I1.x,u)+sway*walkAmt*.8+br*.5,y=lerp(S.y,I1.y,u)+bob*walkAmt*.8+br*.4;
    if(t>=T.in1){ // look around
     if(!explore){explore=true;root.classList.add('explore');opts.onExplore&&opts.onExplore();}
-    if(performance.now()-lastMove>3000&&!drag){pt=Math.sin((t-T.in1)*.28)*.55;pty=Math.sin((t-T.in1)*.21)*.12;}
+    if(performance.now()-lastMove>3000&&!drag){pt=Math.sin((t-T.in1)*.28)*.26;pty=Math.sin((t-T.in1)*.21)*.12;}
     p+=(pt-p)*.05;py+=(pty-py)*.05;
-    const side=p<0?lookL:lookR,k=Math.abs(p),N=natural(side.s,side.s.a,1.05),m=ss(seg(k,.28,.78));
+    const side=p<0?lookL:lookR,k=Math.abs(p),N=natural(side.s,side.s.a,1.05);
     W=Math.exp(lerp(Math.log(I1.w),Math.log(N.w),k));x=lerp(I1.x,N.x,k)+br*.5;y=lerp(I1.y,N.y,k)-py*vh*.08+br*.4;
-    chain(ins,W,x,y,Math.log(1.1));
-    place(side,W/rw(side.s.a),x,y,side.s.a,m);hide([side===lookL?lookR:lookL]);
-   }else{chain(ins,W,x,y,Math.log(1.1));hide([lookL,lookR]);}
+    chain(ins,W,x,y,Math.log(1.07),1,inGate);
+    // The side views are turned too far to line up with the center view, so never rest half-blended:
+    // once you have turned far enough, the side view takes over with a short fade (and hands back the same way).
+    const dt=cl(t-(look.t??t),0,.1);look.t=t;if(look.a<.01)look.side=side;
+    const want=look.side===side&&k>(look.on?.3:.42);look.on=want;look.a+=((want?1:0)-look.a)*(1-Math.exp(-dt/.12));
+    place(look.side,W/rw(look.side.s.a),x,y,look.side.s.a,ss(look.a));hide([look.side===lookL?lookR:lookL]);
+   }else{chain(ins,W,x,y,Math.log(1.07),1,inGate);hide([lookL,lookR]);}
    warm.style.opacity=(.35*(1-seg(t,T.xf1,T.in1))).toFixed(3);
   }
   // sounds: each cue is handed over a moment early with its exact delay, so it lands on the frame it belongs to

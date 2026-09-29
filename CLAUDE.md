@@ -75,7 +75,8 @@ Drag, arrow keys, or idle sway around the front.
 
 **Walk** (after the pre-qualification is submitted): DOM layers with CSS transforms. One
 camera follows the door (outside) then the fireplace (inside); each image takes over when it
-has enough resolution for the current distance. The door leaf is a CSS 3D quad hinged on the
+has enough resolution for the current distance (inside, as a fixed .6s fade, one shot at a time).
+In the look-around, the side views switch in with a short fade instead of resting half-blended. The door leaf is a CSS 3D quad hinged on the
 left, with the open-door render showing through the doorway. The door sequence: three knocks
 (each nudges the camera and the door), the hall light warms the door glass, footsteps, the lock
 turns, the door cracks open with a line of light, then swings wide on an underdamped spring.
